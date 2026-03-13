@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多容器装箱可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f0f0f0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        /* 输入框容器样式 */
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .input-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        #jsonInput {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        #drawBtn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #409eff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #drawBtn:hover {
+            background: #66b1ff;
+        }
+
+        .container-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+
+        .container-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .container-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .canvas-container {
+            position: relative;
+        }
+
+        .packing-canvas {
+            border: 1px solid #ddd;
+            background: white;
+        }
+
+        /* 错误提示样式 */
+        .error-tip {
+            color: #f56c6c;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<!-- JSON输入区域 -->
+<div class="input-container">
+    <div class="input-title">请粘贴JSON格式的装箱数据：</div>
+    <textarea id="jsonInput" placeholder='示例格式：[{"rate":0.06125,"instance":{"gapDistance":1.0,"squareList":[{"id":"xxx","l":100.0,"w":50.0},...],"l":400.0,"w":400.0,"rotateEnable":false},"squareList":[...],"placeSquareList":[{"x":1.0,"y":1.0,"l":80.0,"w":60.0},...]}]'></textarea>
+    <button id="drawBtn">绘制图形</button>
+    <div class="error-tip" id="errorTip">JSON格式错误，请检查后重新输入！</div>
+</div>
+
+<!-- 可视化容器区域 -->
+<div class="container-wrapper" id="containerWrapper"></div>
+
+<script>
+    // 容器固定尺寸（和Java代码一致）
+    const TARGET_L = 400;
+    const TARGET_W = 400;
+
+    // 初始化页面
+    window.onload = function() {
+        // 绑定绘制按钮事件
+        document.getElementById('drawBtn').addEventListener('click', handleDraw);
+
+        // 可选：默认填充示例数据到输入框
+        const sampleData = [
+            {
+                "rate": 0.06125,
+                "instance": {
+                    "gapDistance": 1.0,
+                    "squareList": [
+                        {
+                            "id": "3f33d2a9-3352-46da-b336-3fd2f553953d",
+                            "l": 100.0,
+                            "w": 50.0
+                        },
+                        {
+                            "id": "db519978-d34e-4d36-927c-5357be8e6963",
+                            "l": 80.0,
+                            "w": 60.0
+                        }
+                    ],
+                    "l": 400.0,
+                    "w": 400.0,
+                    "rotateEnable": false
+                },
+                "squareList": [
+                    {
+                        "id": "db519978-d34e-4d36-927c-5357be8e6963",
+                        "l": 80.0,
+                        "w": 60.0
+                    },
+                    {
+                        "id": "3f33d2a9-3352-46da-b336-3fd2f553953d",
+                        "l": 100.0,
+                        "w": 50.0
+                    }
+                ],
+                "placeSquareList": [
+                    {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "l": 80.0,
+                        "w": 60.0
+                    },
+                    {
+                        "x": 82.0,
+                        "y": 1.0,
+                        "l": 100.0,
+                        "w": 50.0
+                    }
+                ]
+            }
+        ];
+        document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+    };
+
+    /**
+     * 处理绘制按钮点击事件
+     */
+    function handleDraw() {
+        const jsonInput = document.getElementById('jsonInput');
+        const errorTip = document.getElementById('errorTip');
+        const wrapper = document.getElementById('containerWrapper');
+
+        // 清空之前的绘制内容和错误提示
+        wrapper.innerHTML = '';
+        errorTip.style.display = 'none';
+
+        try {
+            // 解析JSON数据
+            const jsonData = JSON.parse(jsonInput.value.trim());
+
+            // 验证数据格式（至少是数组）
+            if (!Array.isArray(jsonData)) {
+                throw new Error('数据必须是数组格式');
+            }
+
+            // 渲染所有容器的可视化内容
+            renderAllContainers(jsonData);
+        } catch (error) {
+            // 显示错误提示
+            errorTip.style.display = 'block';
+            console.error('JSON解析失败：', error);
+        }
+    }
+
+    /**
+     * 渲染所有容器的可视化内容（直接绘制全部图形，无按钮）
+     * @param {Array} solutions 解析后的装箱数据数组
+     */
+    function renderAllContainers(solutions) {
+        const wrapper = document.getElementById('containerWrapper');
+
+        solutions.forEach((solution, index) => {
+            // 跳过没有placeSquareList的无效数据
+            if (!solution.placeSquareList || !Array.isArray(solution.placeSquareList)) {
+                return;
+            }
+
+            // 创建容器卡片
+            const containerCard = document.createElement('div');
+            containerCard.className = 'container-card';
+
+            // 创建容器标题（显示利用率）
+            const title = document.createElement('div');
+            title.className = 'container-title';
+            const rate = solution.rate || 0;
+            title.innerText = `容器 ${index + 1} (利用率：${(rate * 100).toFixed(2)}%)`;
+
+            // 创建Canvas容器
+            const canvasContainer = document.createElement('div');
+            canvasContainer.className = 'canvas-container';
+
+            // 创建Canvas元素
+            const canvas = document.createElement('canvas');
+            canvas.className = 'packing-canvas';
+            canvas.width = TARGET_L + 20;  // 留10px边距
+            canvas.height = TARGET_W + 20;
+
+            // 绘制容器边框 + 所有矩形（直接显示全部）
+            drawContainerBorder(canvas);
+            drawAllSquares(canvas, solution.placeSquareList);
+
+            // 组装DOM
+            canvasContainer.appendChild(canvas);
+            containerCard.appendChild(title);
+            containerCard.appendChild(canvasContainer);
+            wrapper.appendChild(containerCard);
+        });
+    }
+
+    /**
+     * 绘制容器边框（模拟Java中的外层矩形）
+     * @param {HTMLCanvasElement} canvas Canvas元素
+     */
+    function drawContainerBorder(canvas) {
+        const ctx = canvas.getContext('2d');
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制容器边框（400x400，留10px边距）
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, TARGET_L, TARGET_W);
+    }
+
+    /**
+     * 绘制所有矩形（直接显示全部）
+     * @param {HTMLCanvasElement} canvas Canvas元素
+     * @param {Array} placeSquareList 已放置的矩形列表
+     */
+    function drawAllSquares(canvas, placeSquareList) {
+        placeSquareList.forEach(square => {
+            // 偏移10px边距，和容器边框对齐
+            const x = (square.x || 0) + 10;
+            const y = (square.y || 0) + 10;
+            const l = square.l || 0;
+            const w = square.w || 0;
+
+            // 绘制单个矩形
+            drawSquare(canvas, x, y, l, w);
+        });
+    }
+
+    /**
+     * 绘制单个矩形（模拟Java中的draw方法）
+     * @param {HTMLCanvasElement} canvas Canvas元素
+     * @param {number} x 矩形X坐标
+     * @param {number} y 矩形Y坐标
+     * @param {number} l 矩形长度
+     * @param {number} w 矩形宽度
+     */
+    function drawSquare(canvas, x, y, l, w) {
+        const ctx = canvas.getContext('2d');
+
+        // 绘制矩形边框（黑色）
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, l, w);
+
+        // 随机填充颜色（带透明度，区分不同矩形）
+        const randomColor = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.6)`;
+        ctx.fillStyle = randomColor;
+        ctx.fillRect(x, y, l, w);
+    }
+</script>
+</body>
+</html>
