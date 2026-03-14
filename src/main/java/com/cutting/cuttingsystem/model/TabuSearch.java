@@ -77,7 +77,7 @@ public class TabuSearch {
             }
             initGhh = new ArrayList<>(LocalGh);
             t++;
-            System.out.println("当前迭代次数为：" + t + ",当前最佳利用率为：" + bestSolution.getRate());
+//            System.out.println("当前迭代次数为：" + t + ",当前最佳利用率为：" + bestSolution.getRate());
         }
         //求解完毕
         System.out.println("最佳迭代次数:" + bestT);
@@ -300,6 +300,10 @@ public class TabuSearch {
 //        return tempGh;
 //    }
     public List<Square> generateNewGh(List<Square> localGh, List<Square> tempGh) {
+        // 边界条件：如果列表长度<=1，无法交换，直接返回原列表
+        if (localGh.size() <= 1) {
+            return new ArrayList<>(localGh);
+        }
         Square temp;
         //将Gh复制到tempGh
         tempGh = new ArrayList<>(localGh);
