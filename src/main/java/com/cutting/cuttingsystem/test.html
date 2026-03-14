@@ -324,9 +324,11 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, l, w);
 
-        // 随机填充颜色（带透明度，区分不同矩形）
-        const randomColor = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.6)`;
-        ctx.fillStyle = randomColor;
+        // 根据宽度计算颜色：使用 HSL 色彩空间，宽度越大色相值越小（偏红），宽度越小色相值越大（偏蓝紫）
+        const hue = 240 - (w / 100) * 240; // 动态计算色相
+        const fillColor = `hsla(${hue}, 70%, 50%, 0.6)`;
+
+        ctx.fillStyle = fillColor;
         ctx.fillRect(x, y, l, w);
     }
 </script>

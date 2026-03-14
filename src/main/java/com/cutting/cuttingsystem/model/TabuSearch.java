@@ -86,7 +86,7 @@ public class TabuSearch {
         return bestSolution;
     }
 
-    //评价函数
+    //评价函数 - 宽度优先匹配策略
     public Solution evaluate(List<Square> squareList) {
         Solution solution = new Solution();
         solution.setInstance(instance);
@@ -97,58 +97,68 @@ public class TabuSearch {
         double gap = instance.getGapDistance();
         placePointList.add(new PlacePoint(gap, gap, L - gap));
 
-        // 开始按照顺序和规则放置
-        for (int i = 0; i < placePointList.size(); ) {
-            PlacePoint placePoint = placePointList.get(i);
-            double maxMark = -1.0d;
-            int maxIndex = -1;
-            double isRotate = -1, curMarks = -1;
-            for (int j = 0; j < squareList.size(); j++) {
-                Square square = squareList.get(j);
+        // 宽度优先匹配：对每个矩形，遍历所有角点找最优位置
+        for (int i = 0; i < squareList.size(); ) {
+            Square square = squareList.get(i);
+            int bestPointIndex = -1;
+            double bestMark = -1.0d;
+            double bestIsRotate = -1;
+            
+            // 遍历所有可用角点，找到最佳匹配位置
+            for (int j = 0; j < placePointList.size(); j++) {
+                PlacePoint placePoint = placePointList.get(j);
                 double[] arr = getMarks(placePoint, square, placeSquareList);
-                double is_rotate = arr[0];
-                curMarks = arr[1];
-                if (curMarks > 0 && curMarks > maxMark) {
-                    maxMark = curMarks;
-                    maxIndex = j;
-                    isRotate = is_rotate;
+                double isRotate = arr[0];
+                double mark = arr[1];
+                
+                if (mark > bestMark) {
+                    bestMark = mark;
+                    bestPointIndex = j;
+                    bestIsRotate = isRotate;
                 }
             }
-            if (maxIndex < 0 && i < placePointList.size()) {
+            
+            // 如果找不到合适的位置，跳过该矩形
+            if (bestPointIndex < 0) {
                 i++;
-            } else if (maxIndex < 0 && i >= placePointList.size()) {
-                break;
-            } else {
-                Square square = squareList.remove(maxIndex);
-                double l = square.getL();
-                double w = square.getW();
-                if (isRotate > 0) {
-                    // 表示进行了旋转
-                    square.setL(w);
-                    square.setW(l);
-                }
-                // 移除当前角点
-                placePointList.remove(i);
-                //新增已放置的 square
-                placeSquareList.add(new PlaceSquare(placePoint.getX(), placePoint.getY(), square.getL(), square.getW()));
-                // 新增两个可行角点
-                double surplus = placePoint.getLen() - square.getL() - gap; // 剩余长度
-                if (surplus > 0) {
-                    placePointList.add(new PlacePoint(placePoint.getX() + square.getL() + gap, placePoint.getY(), surplus));
-                }
-                placePointList.add(new PlacePoint(placePoint.getX(), placePoint.getY() + square.getW() + gap, square.getL()));
-                // 重新排序
-                Collections.sort(placePointList);
-//                System.out.println(placePointList);
-                i = 0;
-                // 还原矩形
-                if (isRotate > 0) {
-                    // 表示进行了旋转
-                    square.setL(l);
-                    square.setW(w);
-                }
+                continue;
             }
+            
+            // 在最佳位置放置矩形
+            PlacePoint bestPoint = placePointList.get(bestPointIndex);
+            double l = square.getL();
+            double w = square.getW();
+            
+            if (bestIsRotate > 0) {
+                square.setL(w);
+                square.setW(l);
+            }
+            
+            // 移除已使用的角点
+            placePointList.remove(bestPointIndex);
+            
+            // 添加已放置的矩形
+            placeSquareList.add(new PlaceSquare(bestPoint.getX(), bestPoint.getY(), square.getL(), square.getW()));
+            
+            // 生成两个新角点
+            double surplus = bestPoint.getLen() - square.getL() - gap;
+            if (surplus > 0) {
+                placePointList.add(new PlacePoint(bestPoint.getX() + square.getL() + gap, bestPoint.getY(), surplus));
+            }
+            placePointList.add(new PlacePoint(bestPoint.getX(), bestPoint.getY() + square.getW() + gap, square.getL()));
+            
+            // 重新排序角点列表
+            Collections.sort(placePointList);
+            
+            // 还原矩形尺寸
+            if (bestIsRotate > 0) {
+                square.setL(l);
+                square.setW(w);
+            }
+            
+            i++;
         }
+        
         // 设置已经放置的矩形列表
         solution.setPlaceSquareList(new ArrayList<>(placeSquareList));
         // 计算利用率
@@ -162,29 +172,35 @@ public class TabuSearch {
         return solution;
     }
 
-    // 评价该点的得分
+    // 评价该点的得分 - 宽度优先策略
     private double[] getMarks(PlacePoint placePoint, Square square, List<PlaceSquare> placeSquareList) {
-        // 返回{是否旋转，分数}
         double delta = 0, mark1 = -1d, mark2 = -1d;
+        
+        // 不旋转的情况
         PlaceSquare placeSquare = new PlaceSquare(placePoint.getX(), placePoint.getY(), square.getL(), square.getW());
-        if (isOverlap(placeSquareList, placeSquare)) {
-            mark1 = -1.0d;
-        } else {
+        if (!isOverlap(placeSquareList, placeSquare)) {
             delta = Math.abs(placePoint.getLen() - square.getL());
             mark1 = 1 - delta / placePoint.getLen();
         }
-        mark2 = -1.0d;
+        
+        // 旋转的情况
+        double mark3 = -1d;
         if (instance.isRotateEnable()) {
             placeSquare = new PlaceSquare(placePoint.getX(), placePoint.getY(), square.getW(), square.getL());
             if (!isOverlap(placeSquareList, placeSquare)) {
                 delta = Math.abs(placePoint.getLen() - square.getW());
-                mark2 = 1 - delta / placePoint.getLen();
+                mark3 = 1 - delta / placePoint.getLen();
             }
         }
-        if (mark1 >= mark2) {
-            return new double[]{-1d, (int) (mark1 * 10)};
+        
+        // 选择最优的放置方式
+        if (mark1 >= mark3) {
+            return new double[]{-1d, mark1};
+        } else if (mark3 > 0) {
+            return new double[]{1d, mark3};
         }
-        return new double[]{1d, (int) (mark2 * 10)};
+        
+        return new double[]{-1d, mark1};
     }
 
     // 判断放置在该位置是否超出边界或者和其他矩形重叠
