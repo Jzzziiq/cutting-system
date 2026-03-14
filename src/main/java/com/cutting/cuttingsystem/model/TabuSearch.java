@@ -8,8 +8,8 @@ import java.util.*;
 
 @Data
 public class TabuSearch {
-    public final int MAX_GEN = 200;//最大的迭代次数(提高这个值可以稳定地提高解质量，但是会增加求解时间)
-    public final int N = 100;//每次搜索领域的个数(这个值不要太大，太大的话搜索效率会降低)
+    public final int MAX_GEN = 100;//最大的迭代次数(提高这个值可以稳定地提高解质量，但是会增加求解时间)
+    public final int N = 200;//每次搜索领域的个数(这个值不要太大，太大的话搜索效率会降低)
     public int sqNum;//矩形数量，手动设置
     public HashMap<String, TabuMapTree> tabuTreeMap = new HashMap<>();
     public List<Square> initGhh;//初始顺序
