@@ -1,287 +1,214 @@
 package com.cutting.cuttingsystem.model;
 
-
 import com.cutting.cuttingsystem.entitys.algorithm.*;
 import lombok.Data;
 
 import java.util.*;
+import java.util.Comparator;
 
 @Data
 public class TabuSearch {
-    public final int MAX_GEN = 100;//最大的迭代次数(提高这个值可以稳定地提高解质量，但是会增加求解时间)
-    public final int N = 200;//每次搜索领域的个数(这个值不要太大，太大的话搜索效率会降低)
-    public int sqNum;//矩形数量，手动设置
+    public final int MAX_GEN = 300; // 最大迭代次数（可调）
+    public final int N = 500;       // 每次领域搜索数（可调）
+    public int sqNum;               // 矩形数量
     public HashMap<String, TabuMapTree> tabuTreeMap = new HashMap<>();
-    public List<Square> initGhh;//初始顺序
-    public List<Square> bestGh;//最佳顺序
-    public List<Square> LocalGh;//当前最好顺序
-    public List<Square> tempGh;//存放临时顺序
-    public int bestT;//最佳的迭代次数
-    public Solution bestSolution;//最优解
-    public Solution LocalSolution;//每次领域搜索的最优解（领域最优解）
-    public Solution tempSolution;//临时解
-    public int t;//当前迭代
-    public Random random;//随机函数对象
-    // 问题实例
-    public Instance instance;
-    double L, W;
+    public List<Square> initGhh;    // 初始顺序
+    public List<Square> bestGh;     // 最佳顺序
+    public List<Square> LocalGh;    // 当前最优顺序
+    public List<Square> tempGh;     // 临时顺序
+    public int bestT;               // 最佳迭代次数
+    public Solution bestSolution;   // 全局最优解
+    public Solution LocalSolution;  // 领域最优解
+    public Solution tempSolution;   // 临时解
+    public int t;                   // 当前迭代次数
+    public Random random;           // 随机数对象
+    public Instance instance;       // 问题实例
+    double L, W;                    // 容器尺寸
+
+    // 天际线线段内部类
+    @Data
+    public static class SkylineSegment {
+        private double x;
+        private double y;
+        private double width;
+
+        public SkylineSegment(double x, double y, double width) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+        }
+    }
 
     public TabuSearch(Instance instance) throws Exception {
         this.instance = instance;
         this.initGhh = new ArrayList<>(instance.getSquareList());
-        // 初始化变量
         random = new Random(System.currentTimeMillis());
         L = instance.getL();
         W = instance.getW();
         sqNum = initGhh.size();
     }
 
+    // 禁忌搜索主逻辑（迭代寻优）
     public Solution search() throws Exception {
         long start = System.currentTimeMillis();
-        // 获取初始解
-        getInitSolution();
-        System.out.println(bestSolution.getRate());
-        //开始迭代，停止条件为达到指定迭代次数
+        getInitSolution(); // 初始化初始解
+        System.out.println("初始利用率：" + bestSolution.getRate());
+
         while (t <= MAX_GEN) {
-            //当前领域搜索次数
             int n = 0;
             LocalSolution = new Solution();
             LocalSolution.setRate(0);
+
+            // 遍历领域，寻找当前最优解
             while (n <= N) {
-                // 随机打乱顺序 得到当前编码Ghh的邻居编码tempGh
                 tempGh = generateNewGh(new ArrayList<>(initGhh), new ArrayList<>(tempGh));
-                // 判断其是否在禁忌表中
-                if (!judge(tempGh)) {
-                    // 如果不在
-                    //加入禁忌表
+                if (!judge(tempGh)) { // 不在禁忌表中
                     enterTabooList(tempGh);
                     tempSolution = evaluate(new ArrayList<>(tempGh));
                     if (tempSolution.getRate() > LocalSolution.getRate()) {
-                        // 如果临时解优于本次领域搜索的最优解
-                        // 那么就将临时解替换本次领域搜索的最优解
                         LocalGh = new ArrayList<>(tempGh);
                         LocalSolution = tempSolution;
                     }
-                } else {
-//                    throw new Exception("重复");
                 }
                 n++;
             }
+
+            // 更新全局最优解
             if (LocalSolution.getRate() > bestSolution.getRate()) {
-                //如果本次搜索的最优解优于全局最优解
-                //那么领域最优解替换全局最优解
                 bestT = t;
                 bestGh = new ArrayList<>(LocalGh);
                 bestSolution = LocalSolution;
-//                bestSolution = evaluate(bestGh);
             }
+
             initGhh = new ArrayList<>(LocalGh);
             t++;
-//            System.out.println("当前迭代次数为：" + t + ",当前最佳利用率为：" + bestSolution.getRate());
         }
-        //求解完毕
-        System.out.println("最佳迭代次数:" + bestT);
-        System.out.println("最佳利用率为:" + bestSolution.getRate());
-        System.out.println("用时：" + (System.currentTimeMillis() - start) + "ms");
+
+        // 输出结果
+        System.out.println("最佳迭代次数：" + bestT);
+        System.out.println("最佳利用率：" + bestSolution.getRate());
+        System.out.println("耗时：" + (System.currentTimeMillis() - start) + "ms");
         return bestSolution;
     }
 
-    //评价函数 - 宽度优先匹配策略
+    // 天际线算法：评价函数（核心）
     public Solution evaluate(List<Square> squareList) {
         Solution solution = new Solution();
         solution.setInstance(instance);
         solution.setSquareList(new ArrayList<>(squareList));
         List<PlaceSquare> placeSquareList = new ArrayList<>();
-        // 创建初始可放置角点
-        List<PlacePoint> placePointList = new ArrayList<>();
         double gap = instance.getGapDistance();
-        placePointList.add(new PlacePoint(gap, gap, L - gap));
+        double containerL = instance.getL();
+        double containerW = instance.getW();
 
-        // 宽度优先匹配：对每个矩形，遍历所有角点找最优位置
-        for (int i = 0; i < squareList.size(); ) {
-            Square square = squareList.get(i);
-            int bestPointIndex = -1;
-            double bestMark = -1.0d;
-            double bestIsRotate = -1;
-            
-            // 遍历所有可用角点，找到最佳匹配位置
-            for (int j = 0; j < placePointList.size(); j++) {
-                PlacePoint placePoint = placePointList.get(j);
-                double[] arr = getMarks(placePoint, square, placeSquareList);
-                double isRotate = arr[0];
-                double mark = arr[1];
-                
-                if (mark > bestMark) {
-                    bestMark = mark;
-                    bestPointIndex = j;
-                    bestIsRotate = isRotate;
+        // 初始化天际线
+        List<SkylineSegment> skyline = new ArrayList<>();
+        skyline.add(new SkylineSegment(gap, gap, containerL - 2 * gap));
+
+        // 遍历矩形放置
+        for (Square square : squareList) {
+            double rectL = square.getL();
+            double rectW = square.getW();
+            boolean rotated = false;
+            double bestX = -1, bestY = -1;
+            double minHeight = Double.MAX_VALUE;
+
+            // 尝试不旋转/旋转
+            List<double[]> rectOptions = new ArrayList<>();
+            rectOptions.add(new double[]{rectL, rectW});
+            if (instance.isRotateEnable()) {
+                rectOptions.add(new double[]{rectW, rectL});
+            }
+
+            // 寻找最优放置位置
+            for (double[] rectSize : rectOptions) {
+                double w = rectSize[0];
+                double h = rectSize[1];
+                for (int i = 0; i < skyline.size(); i++) {
+                    SkylineSegment seg = skyline.get(i);
+                    if (seg.getWidth() >= w && seg.getX() + w + gap <= containerL && seg.getY() + h + gap <= containerW) {
+                        double availableWidth = seg.getWidth();
+                        int j = i;
+                        double currentX = seg.getX();
+                        while (availableWidth < w && j + 1 < skyline.size() && skyline.get(j + 1).getY() == seg.getY()) {
+                            j++;
+                            availableWidth += skyline.get(j).getWidth();
+                        }
+                        if (availableWidth >= w) {
+                            double placeY = seg.getY();
+                            if (placeY < minHeight || (placeY == minHeight && currentX < bestX)) {
+                                minHeight = placeY;
+                                bestX = currentX;
+                                bestY = placeY;
+                                rotated = (rectSize[0] == rectW && rectSize[1] == rectL);
+                            }
+                        }
+                    }
                 }
             }
-            
-            // 如果找不到合适的位置，跳过该矩形
-            if (bestPointIndex < 0) {
-                i++;
-                continue;
+
+            // 放置矩形并更新天际线
+            if (bestX != -1 && bestY != -1) {
+                double finalW = rotated ? square.getW() : square.getL();
+                double finalH = rotated ? square.getL() : square.getW();
+                placeSquareList.add(new PlaceSquare(bestX, bestY, finalW, finalH));
+                updateSkyline(skyline, bestX, bestY, finalW, finalH, gap);
             }
-            
-            // 在最佳位置放置矩形
-            PlacePoint bestPoint = placePointList.get(bestPointIndex);
-            double l = square.getL();
-            double w = square.getW();
-            
-            if (bestIsRotate > 0) {
-                square.setL(w);
-                square.setW(l);
-            }
-            
-            // 移除已使用的角点
-            placePointList.remove(bestPointIndex);
-            
-            // 添加已放置的矩形
-            placeSquareList.add(new PlaceSquare(bestPoint.getX(), bestPoint.getY(), square.getL(), square.getW()));
-            
-            // 生成两个新角点
-            double surplus = bestPoint.getLen() - square.getL() - gap;
-            if (surplus > 0) {
-                placePointList.add(new PlacePoint(bestPoint.getX() + square.getL() + gap, bestPoint.getY(), surplus));
-            }
-            placePointList.add(new PlacePoint(bestPoint.getX(), bestPoint.getY() + square.getW() + gap, square.getL()));
-            
-            // 重新排序角点列表
-            Collections.sort(placePointList);
-            
-            // 还原矩形尺寸
-            if (bestIsRotate > 0) {
-                square.setL(l);
-                square.setW(w);
-            }
-            
-            i++;
         }
-        
-        // 设置已经放置的矩形列表
-        solution.setPlaceSquareList(new ArrayList<>(placeSquareList));
+
         // 计算利用率
-        double rate = 0.0f;
-        double s = 0.0f;
-        for (PlaceSquare placeSquare : placeSquareList) {
-            s += (placeSquare.getL() * placeSquare.getW());
-        }
-        rate = s / (L * W);
-        solution.setRate(rate);
+        solution.setPlaceSquareList(new ArrayList<>(placeSquareList));
+        double totalArea = containerL * containerW;
+        double usedArea = placeSquareList.stream().mapToDouble(p -> p.getL() * p.getW()).sum();
+        solution.setRate(usedArea / totalArea);
         return solution;
     }
 
-    // 评价该点的得分 - 宽度优先策略
-    private double[] getMarks(PlacePoint placePoint, Square square, List<PlaceSquare> placeSquareList) {
-        double delta = 0, mark1 = -1d, mark2 = -1d;
-        
-        // 不旋转的情况
-        PlaceSquare placeSquare = new PlaceSquare(placePoint.getX(), placePoint.getY(), square.getL(), square.getW());
-        if (!isOverlap(placeSquareList, placeSquare)) {
-            delta = Math.abs(placePoint.getLen() - square.getL());
-            mark1 = 1 - delta / placePoint.getLen();
-        }
-        
-        // 旋转的情况
-        double mark3 = -1d;
-        if (instance.isRotateEnable()) {
-            placeSquare = new PlaceSquare(placePoint.getX(), placePoint.getY(), square.getW(), square.getL());
-            if (!isOverlap(placeSquareList, placeSquare)) {
-                delta = Math.abs(placePoint.getLen() - square.getW());
-                mark3 = 1 - delta / placePoint.getLen();
+    // 更新天际线
+    private void updateSkyline(List<SkylineSegment> skyline, double x, double y, double w, double h, double gap) {
+        List<SkylineSegment> newSkyline = new ArrayList<>();
+        double rectRight = x + w + gap;
+        double rectTop = y + h + gap;
+
+        // 分割原有线段
+        for (SkylineSegment seg : skyline) {
+            if (seg.getX() + seg.getWidth() <= x || seg.getX() >= rectRight) {
+                newSkyline.add(seg);
+            } else {
+                if (seg.getX() < x) {
+                    newSkyline.add(new SkylineSegment(seg.getX(), seg.getY(), x - seg.getX()));
+                }
+                if (seg.getX() + seg.getWidth() > rectRight) {
+                    newSkyline.add(new SkylineSegment(rectRight, seg.getY(), seg.getX() + seg.getWidth() - rectRight));
+                }
             }
         }
-        
-        // 选择最优的放置方式
-        if (mark1 >= mark3) {
-            return new double[]{-1d, mark1};
-        } else if (mark3 > 0) {
-            return new double[]{1d, mark3};
-        }
-        
-        return new double[]{-1d, mark1};
+
+        // 添加新线段
+        newSkyline.add(new SkylineSegment(x, rectTop, w));
+        mergeSkylineSegments(newSkyline);
+
+        // 替换天际线
+        skyline.clear();
+        skyline.addAll(newSkyline);
     }
 
-    // 判断放置在该位置是否超出边界或者和其他矩形重叠
-    public boolean isOverlap(List<PlaceSquare> placeSquareList, PlaceSquare tempPlaceSquare) {
-        // 出界
-        double gap = instance.getGapDistance();
-        if (tempPlaceSquare.getL() > L || tempPlaceSquare.getW() > W) {
-            return true;
-        }
-        // 出界（考虑间隔）
-        if (tempPlaceSquare.getX() + tempPlaceSquare.getL() + gap > L || tempPlaceSquare.getY() + tempPlaceSquare.getW() + gap > W) {
-            return true;
-        }
-        for (PlaceSquare placeSquare : placeSquareList) {
-            // 角点重合
-            if (placeSquare.getX() == tempPlaceSquare.getX() && placeSquare.getY() == tempPlaceSquare.getY()) {
-                placeSquareList.remove(placeSquare);
-                return true;
-            }
-            // 判断即将要放置的块是否与之前放置的块有重叠（考虑间隔）
-            if (isOverlap2WithGap(placeSquare, tempPlaceSquare, gap)) {
-                return true;
+    // 合并同高度连续线段
+    private void mergeSkylineSegments(List<SkylineSegment> skyline) {
+        skyline.sort(Comparator.comparingDouble(SkylineSegment::getX));
+        for (int i = 0; i < skyline.size() - 1; ) {
+            SkylineSegment curr = skyline.get(i);
+            SkylineSegment next = skyline.get(i + 1);
+            if (curr.getY() == next.getY() && curr.getX() + curr.getWidth() == next.getX()) {
+                curr.setWidth(curr.getWidth() + next.getWidth());
+                skyline.remove(i + 1);
+            } else {
+                i++;
             }
         }
-        return false;
     }
 
-    // 判断即将要放置的块是否与之前放置的块有重叠
-    public boolean isOverlap2(PlaceSquare placeSquare, PlaceSquare tempPlaceSquare) {
-
-        double x1 = Math.max(placeSquare.getX(), tempPlaceSquare.getX());
-        double y1 = Math.max(placeSquare.getY(), tempPlaceSquare.getY());
-        double x2 = Math.min(placeSquare.getX() + placeSquare.getL(), tempPlaceSquare.getX() + tempPlaceSquare.getL());
-        double y2 = Math.min(placeSquare.getY() + placeSquare.getW(), tempPlaceSquare.getY() + tempPlaceSquare.getW());
-
-        if (x1 >= x2 || y1 >= y2) {
-            return false;
-        }
-
-        return true;
-
-    }
-
-    // 判断即将要放置的块是否与之前放置的块有重叠（考虑间隔距离）
-    public boolean isOverlap2WithGap(PlaceSquare placeSquare, PlaceSquare tempPlaceSquare, double gap) {
-
-        double x1 = Math.max(placeSquare.getX(), tempPlaceSquare.getX());
-        double y1 = Math.max(placeSquare.getY(), tempPlaceSquare.getY());
-        double x2 = Math.min(placeSquare.getX() + placeSquare.getL(), tempPlaceSquare.getX() + tempPlaceSquare.getL());
-        double y2 = Math.min(placeSquare.getY() + placeSquare.getW(), tempPlaceSquare.getY() + tempPlaceSquare.getW());
-
-        // 如果有重叠区域，直接返回 true
-        if (x1 < x2 && y1 < y2) {
-            return true;
-        }
-
-        // 检查 X 方向的间隔
-        double xGap = 0;
-        if (tempPlaceSquare.getX() >= placeSquare.getX() + placeSquare.getL()) {
-            xGap = tempPlaceSquare.getX() - (placeSquare.getX() + placeSquare.getL());
-        } else if (placeSquare.getX() >= tempPlaceSquare.getX() + tempPlaceSquare.getL()) {
-            xGap = placeSquare.getX() - (tempPlaceSquare.getX() + tempPlaceSquare.getL());
-        }
-
-        // 检查 Y 方向的间隔
-        double yGap = 0;
-        if (tempPlaceSquare.getY() >= placeSquare.getY() + placeSquare.getW()) {
-            yGap = tempPlaceSquare.getY() - (placeSquare.getY() + placeSquare.getW());
-        } else if (placeSquare.getY() >= tempPlaceSquare.getY() + tempPlaceSquare.getW()) {
-            yGap = placeSquare.getY() - (tempPlaceSquare.getY() + tempPlaceSquare.getW());
-        }
-
-        // 如果任一方向的间隔小于要求的间隔距离，则认为重叠
-        if (xGap < gap && yGap < gap) {
-            return true;
-        }
-
-        return false;
-    }
-
-    // 生成初始解
+    // 初始化初始解
     public void getInitSolution() throws Exception {
         Collections.shuffle(initGhh);
         bestSolution = evaluate(new ArrayList<>(initGhh));
@@ -291,67 +218,45 @@ public class TabuSearch {
         LocalGh = new ArrayList<>(initGhh);
     }
 
-    //加入禁忌队列
+    // 加入禁忌表
     public void enterTabooList(List<Square> squareList) {
-        if (tabuTreeMap == null) {
-            tabuTreeMap = new HashMap<>();
-        }
+        if (tabuTreeMap == null) tabuTreeMap = new HashMap<>();
         Square square = squareList.get(0);
         String id = square.getId();
         if (tabuTreeMap.containsKey(id)) {
             tabuTreeMap.get(id).add(new ArrayList<>(squareList), 1);
         } else {
-            TabuMapTree tabuMapTree = new TabuMapTree();
-            tabuMapTree.setNodeSquare(square);
-            tabuMapTree.add(new ArrayList<>(squareList), 1);
-            tabuTreeMap.put(id, tabuMapTree);
+            TabuMapTree tree = new TabuMapTree();
+            tree.setNodeSquare(square);
+            tree.add(new ArrayList<>(squareList), 1);
+            tabuTreeMap.put(id, tree);
         }
-
     }
 
-    //生成新解
-//    public List<Square> generateNewGh(List<Square> localGh,List<Square> tempGh) {
-//        tempGh = new ArrayList<>(localGh);
-//        Collections.shuffle(tempGh);
-//        return tempGh;
-//    }
+    // 生成新解（随机交换6次）
     public List<Square> generateNewGh(List<Square> localGh, List<Square> tempGh) {
-        // 边界条件：如果列表长度<=1，无法交换，直接返回原列表
-        if (localGh.size() <= 1) {
-            return new ArrayList<>(localGh);
-        }
-        Square temp;
-        //将Gh复制到tempGh
+        if (localGh.size() <= 1) return new ArrayList<>(localGh);
         tempGh = new ArrayList<>(localGh);
-
+        Square temp;
         for (int i = 0; i < 6; i++) {
-            int r1 = 0;
-            int r2 = 0;
-
-            while (r1 == r2) {
-                r1 = random.nextInt(tempGh.size());
-                r2 = random.nextInt(tempGh.size());
-            }
-            //交换
+            int r1 = random.nextInt(tempGh.size());
+            int r2 = random.nextInt(tempGh.size());
+            while (r1 == r2) r2 = random.nextInt(tempGh.size());
             temp = tempGh.get(r1);
             tempGh.set(r1, tempGh.get(r2));
             tempGh.set(r2, temp);
         }
-
         return new ArrayList<>(tempGh);
     }
 
-    //判断路径编码是否存在于禁忌表中
+    // 判断是否在禁忌表中
     public boolean judge(List<Square> Gh) {
+        if (Gh.isEmpty()) return false;
         Square square = Gh.get(0);
-        if (tabuTreeMap.containsKey(square.getId())) {
-            return tabuTreeMap.get(square.getId()).contains(Gh, 1);
-        } else {
-            return false;
-        }
+        return tabuTreeMap.containsKey(square.getId()) && tabuTreeMap.get(square.getId()).contains(Gh, 1);
     }
 
-    // 判断两个Squre是否相等
+    // 辅助方法（保留，兼容旧逻辑）
     public boolean isEq(Square square1, Square square2) {
         return square1.getId().equals(square2.getId());
     }
