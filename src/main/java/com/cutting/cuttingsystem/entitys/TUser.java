@@ -1,6 +1,8 @@
 package com.cutting.cuttingsystem.entitys;
 
 
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,12 +15,13 @@ import java.util.Date;
  * @TableName t_user
  */
 @Data
+@TableName
 public class TUser implements Serializable {
 
     /**
      * 用户唯一 ID
      */
-
+    @TableId
     private Long userId;
     /**
      * 登录用户名，全局唯一

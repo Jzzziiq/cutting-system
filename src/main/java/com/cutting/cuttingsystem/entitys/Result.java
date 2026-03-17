@@ -33,4 +33,11 @@ public class Result {
         return result;
     }
 
+    // 失败响应
+    public static Result fail(String msg){
+        Result result = new Result();
+        result.setCode(100);
+        result.setMsg(msg);
+        return result;
+    }
 }

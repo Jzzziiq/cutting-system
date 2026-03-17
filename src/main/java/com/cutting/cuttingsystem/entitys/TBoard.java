@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.entitys;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -17,6 +18,7 @@ public class TBoard implements Serializable {
     /**
      * 板材唯一 ID（原材序号）
      */
+    @TableId
     private Long boardId;
     
     /**
