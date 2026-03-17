@@ -7,8 +7,8 @@ public class TBoardDTO {
     private String brand;
     private String materialType;
     private String color;
-    // 以下三个有默认值（前端选择：标准板、长门板、自定义）
-    private String size;
+    private String sizeType;
+    // 以下个有默认值（前端选择：标准板、长门板、自定义）
     private Integer width;
     private Integer length;
     private Integer thickness;

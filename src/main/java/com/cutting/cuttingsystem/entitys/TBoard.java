@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.entitys;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,6 +11,7 @@ import java.util.Date;
  * @TableName t_board
  */
 @Data
+@TableName("t_board")
 public class TBoard implements Serializable {
 
     /**
@@ -31,6 +33,11 @@ public class TBoard implements Serializable {
      * 板材颜色
      */
     private String color;
+
+    /**
+     * 板材尺寸类型
+     */
+    private String sizeType;
     
     /**
      * 板材宽度 (mm)
