@@ -1,5 +1,8 @@
 package com.cutting.cuttingsystem.controller;
 
+import com.cutting.cuttingsystem.entitys.Result;
+import com.cutting.cuttingsystem.service.TUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -8,9 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    @Autowired
+    private TUserService tUserService;
     @RequestMapping("/login")
-    public String login() {
-
-        return "login";
+    public Result login(String username, String password) {
+        if (tUserService.login(username, password))
+            return Result.success();
+        return Result.error("用户名或密码错误");
     }
 }
