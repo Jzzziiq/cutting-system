@@ -1,8 +1,6 @@
-package com.cutting.cuttingsystem.entitys.TBoardVO;
+package com.cutting.cuttingsystem.entitys.VO;
 
 import lombok.Data;
-
-import java.util.Date;
 
 @Data
 public class TBoardVO {

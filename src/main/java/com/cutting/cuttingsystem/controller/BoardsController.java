@@ -3,16 +3,17 @@ package com.cutting.cuttingsystem.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
-import com.cutting.cuttingsystem.entitys.DTO.TBoardQueryDTO;
+import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TBoard;
-import com.cutting.cuttingsystem.entitys.TBoardVO.TBoardVO;
+import com.cutting.cuttingsystem.entitys.VO.TBoardVO;
 import com.cutting.cuttingsystem.service.TBoardService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/boards")
@@ -24,13 +25,21 @@ public class BoardsController {
      * 分页查询
      */
     @GetMapping
-    public Result pageQuery(TBoardQueryDTO query) {
+    public Result pageQuery(QueryDTO query) {
         // 创建分页参数对象
         IPage<TBoard> page = new Page<>(query.getPageNum(), query.getPageSize());
         // 执行分页查询
         IPage<TBoard> boardPage = tBoardService.page(page);
+        
+        // 使用 MyBatis-Plus 提供的 convert 方法进行转换
+        IPage<TBoardVO> boardVOPage = boardPage.convert(board -> {
+            TBoardVO boardVO = new TBoardVO();
+            BeanUtils.copyProperties(board, boardVO);
+            return boardVO;
+        });
+        
         // 返回分页结果（包含数据列表、总记录数、分页信息）
-        return Result.success(boardPage);
+        return Result.success(boardVOPage);
     }
 
     /**
