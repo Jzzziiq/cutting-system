@@ -18,21 +18,29 @@ public class TokenInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         log.info("preHandle...");
-        // 获取请求头中的token
-        String token = request.getHeader("token");
-        // 对token进行验证
-        if (token == null || token.isEmpty()) {
-            log.info("令牌为空，响应401");
+
+        // 1. 从标准请求头 Authorization 中获取令牌
+        String authHeader = request.getHeader("Authorization");
+
+        // 2. 检查 Authorization 头是否存在且格式正确（以 "Bearer " 开头）
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.info("令牌缺失或格式错误，响应401");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
+
+        // 3. 提取实际的 token（去掉 "Bearer " 前缀）
+        String token = authHeader.substring(7); // "Bearer " 长度为7
+
+        // 4. 验证 token
         try {
             jwtUtil.validateToken(token);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.info("令牌非法，响应401");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
+
         log.info("令牌合法");
         return true;
     }
