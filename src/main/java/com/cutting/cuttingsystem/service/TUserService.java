@@ -1,6 +1,7 @@
 package com.cutting.cuttingsystem.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cutting.cuttingsystem.entitys.LoginInfo;
 import com.cutting.cuttingsystem.entitys.TUser;
 
 /**
@@ -10,5 +11,5 @@ import com.cutting.cuttingsystem.entitys.TUser;
 */
 public interface TUserService extends IService<TUser> {
 
-    boolean login(String username, String password);
+    LoginInfo login(String username, String password);
 }

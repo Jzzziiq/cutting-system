@@ -31,8 +31,8 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(String.valueOf(user.getUserId()))
-                .issuedAt(new Date())
+//                .subject(String.valueOf(user.getUserId()))
+//                .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(jwtSecretKey)
                 .compact();

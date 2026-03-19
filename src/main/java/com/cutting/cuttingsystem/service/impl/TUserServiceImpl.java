@@ -1,9 +1,11 @@
 package com.cutting.cuttingsystem.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cutting.cuttingsystem.entitys.LoginInfo;
 import com.cutting.cuttingsystem.entitys.TUser;
 import com.cutting.cuttingsystem.service.TUserService;
 import com.cutting.cuttingsystem.mapper.TUserMapper;
+import com.cutting.cuttingsystem.util.JwtUtil;
 import com.cutting.cuttingsystem.util.MD5Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,15 +20,16 @@ public class TUserServiceImpl extends ServiceImpl<TUserMapper, TUser>
         implements TUserService {
     @Autowired
     private TUserMapper tUserMapper;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
-    public boolean login(String username, String password) {
+    public LoginInfo login(String username, String password) {
         TUser tUser = tUserMapper.selectByUsername(username);
-        if (tUser != null) {
-            String encryptedPassword = MD5Util.md5(password);
-            return tUser.getPassword().equals(encryptedPassword);
+        if (tUser != null && tUser.getPassword().equals(MD5Util.md5(password))) {
+            return new LoginInfo(tUser.getUserId(), tUser.getUsername(), tUser.getRealName(), jwtUtil.generateToken(tUser));
         }
-        return false;
+        return null;
     }
 }
 
