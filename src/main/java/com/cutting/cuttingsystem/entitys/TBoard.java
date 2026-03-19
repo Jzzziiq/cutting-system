@@ -1,5 +1,7 @@
 package com.cutting.cuttingsystem.entitys;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -24,6 +26,7 @@ public class TBoard implements Serializable {
     /**
      * 用户 ID（数据隔离）
      */
+    @TableField(fill = FieldFill.INSERT)
     private Long userId;
     /**
      * 板材品牌
@@ -78,11 +81,13 @@ public class TBoard implements Serializable {
     /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 
     /**
      * 更新时间
      */
+    @TableField(fill = FieldFill.UPDATE)
     private Date updateTime;
 
 
