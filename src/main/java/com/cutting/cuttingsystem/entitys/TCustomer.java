@@ -23,6 +23,10 @@ public class TCustomer implements Serializable {
     @TableId
     private Long customerId;
     /**
+     * 用户 ID（数据隔离）
+     */
+    private Long userId;
+    /**
      * 客户姓名/公司名
      */
     private String customerName;
@@ -46,6 +50,7 @@ public class TCustomer implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
     /**
      * 备注
      */

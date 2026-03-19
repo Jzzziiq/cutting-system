@@ -9,6 +9,7 @@ import java.util.Date;
 
 /**
  * 板材表
+ *
  * @TableName t_board
  */
 @Data
@@ -20,17 +21,20 @@ public class TBoard implements Serializable {
      */
     @TableId
     private Long boardId;
-    
+    /**
+     * 用户 ID（数据隔离）
+     */
+    private Long userId;
     /**
      * 板材品牌
      */
     private String brand;
-    
+
     /**
      * 板材材质
      */
     private String materialType;
-    
+
     /**
      * 板材颜色
      */
@@ -40,47 +44,48 @@ public class TBoard implements Serializable {
      * 板材尺寸类型
      */
     private String sizeType;
-    
+
     /**
      * 板材宽度 (mm)
      */
     private Integer width;
-    
+
     /**
      * 板材长度 (mm)
      */
     private Integer length;
-    
+
     /**
      * 板材厚度 (mm)
      */
     private Integer thickness;
-    
+
     /**
      * 使用频次
      */
     private Integer useCount;
-    
+
     /**
      * 最后调用时间
      */
     private Date lastUseTime;
-    
+
     /**
      * 是否启用：1=启用，0=禁用
      */
     private Integer isEnabled;
-    
+
     /**
      * 创建时间
      */
     private Date createTime;
-    
+
     /**
      * 更新时间
      */
     private Date updateTime;
-    
+
+
     /**
      * 备注
      */
