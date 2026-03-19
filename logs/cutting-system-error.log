@@ -84,7 +84,7 @@ Caused by: org.apache.ibatis.exceptions.PersistenceException:
 	at org.mybatis.spring.SqlSessionTemplate$SqlSessionInterceptor.invoke(SqlSessionTemplate.java:333)
 	... 65 common frames omitted
 Caused by: java.lang.NullPointerException: Cannot invoke "java.lang.Long.longValue()" because "currentUserId" is null
-	at com.cutting.cuttingsystem.util.UserIdHandler.getTenantId(UserIdHandler.java:16)
+	at com.cutting.cuttingsystem.handler.UserIdHandler.getTenantId(UserIdHandler.java:16)
 	at com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor.buildTableExpression(TenantLineInnerInterceptor.java:262)
 	at com.baomidou.mybatisplus.extension.plugins.inner.BaseMultiTableInnerInterceptor.lambda$builderExpression$3(BaseMultiTableInnerInterceptor.java:392)
 	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)

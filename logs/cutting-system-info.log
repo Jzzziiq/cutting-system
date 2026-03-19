@@ -261,3 +261,34 @@
 2026-03-19 21:16:41.411 [http-nio-8080-exec-9] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - 令牌合法
 2026-03-19 21:16:41.434 [http-nio-8080-exec-9] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - postHandle
 2026-03-19 21:18:57.510 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-19 21:19:02.294 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - Starting CuttingSystemApplication using Java 17.0.10 with PID 48084 (F:\Code\Java\cutting-system\target\classes started by JZQ in F:\Code\Java\cutting-system)
+2026-03-19 21:19:02.296 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-19 21:19:03.051 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-19 21:19:03.057 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-03-19 21:19:03.059 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-19 21:19:03.060 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.52]
+2026-03-19 21:19:03.094 [main] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-03-19 21:19:03.095 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 767 ms
+2026-03-19 21:19:03.842 [main] INFO  c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@47874b25
+2026-03-19 21:19:03.906 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-03-19 21:19:03.921 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-03-19 21:19:03.928 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - Started CuttingSystemApplication in 1.937 seconds (process running for 2.507)
+2026-03-19 21:19:08.935 [http-nio-8080-exec-1] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-19 21:19:08.935 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-03-19 21:19:08.937 [http-nio-8080-exec-1] INFO  org.springframework.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-03-19 21:19:09.010 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-03-19 21:19:09.236 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7e0dd332
+2026-03-19 21:19:09.238 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-03-19 21:19:18.457 [http-nio-8080-exec-3] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - preHandle...
+2026-03-19 21:19:18.493 [http-nio-8080-exec-3] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - 令牌合法，userId: 3
+2026-03-19 21:19:18.580 [http-nio-8080-exec-3] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - postHandle
+2026-03-19 21:19:18.580 [http-nio-8080-exec-3] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - afterCompletion, 已清除用户上下文
+2026-03-19 21:20:12.871 [http-nio-8080-exec-4] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - preHandle...
+2026-03-19 21:20:12.872 [http-nio-8080-exec-4] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - 令牌合法，userId: 2
+2026-03-19 21:20:12.901 [http-nio-8080-exec-4] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - postHandle
+2026-03-19 21:20:12.901 [http-nio-8080-exec-4] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - afterCompletion, 已清除用户上下文
+2026-03-19 21:20:26.709 [http-nio-8080-exec-5] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - preHandle...
+2026-03-19 21:20:26.710 [http-nio-8080-exec-5] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - 令牌合法，userId: 3
+2026-03-19 21:20:26.726 [http-nio-8080-exec-5] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - postHandle
+2026-03-19 21:20:26.726 [http-nio-8080-exec-5] INFO  c.c.cuttingsystem.interceptor.TokenInterceptor - afterCompletion, 已清除用户上下文
+2026-03-19 21:25:04.968 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
