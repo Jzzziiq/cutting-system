@@ -1,0 +1,6 @@
+2026-03-19 15:18:22.993 [main] INFO  o.s.t.c.support.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.cutting.cuttingsystem.JTWTest]: JTWTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-03-19 15:18:23.113 [main] INFO  o.s.b.t.context.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.cutting.cuttingsystem.CuttingSystemApplication for test class com.cutting.cuttingsystem.JTWTest
+2026-03-19 15:18:23.584 [main] INFO  com.cutting.cuttingsystem.JTWTest - Starting JTWTest using Java 17.0.10 with PID 33668 (started by JZQ in F:\Code\Java\cutting-system)
+2026-03-19 15:18:23.586 [main] INFO  com.cutting.cuttingsystem.JTWTest - No active profile set, falling back to 1 default profile: "default"
+2026-03-19 15:18:25.796 [main] INFO  c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.web.context.support.GenericWebApplicationContext@1bc425e7
+2026-03-19 15:18:25.885 [main] INFO  com.cutting.cuttingsystem.JTWTest - Started JTWTest in 2.583 seconds (process running for 3.761)

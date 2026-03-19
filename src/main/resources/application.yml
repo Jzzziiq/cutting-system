@@ -8,12 +8,17 @@ Spring:
     username: root
     password: '0625'
 
-# MyBatis-Plus配置
+# JWT 配置
+jwt:
+  secret: xK7vN9mP2qR8tL5wY3nH6jB4cF1dG0sA9eU8iO7pM2k=  # 将 KeyGenerator 生成的 Base64 密钥复制到这里
+  expiration: 86400000  # 过期时间（毫秒），默认 24 小时
+
+# MyBatis-Plus 配置
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml  # Mapper XML文件位置
+  mapper-locations: classpath:mapper/*.xml  # Mapper XML 文件位置
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL 日志
   global-config:
     db-config:
       id-type: auto  # 主键自增
