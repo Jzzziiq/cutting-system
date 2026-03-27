@@ -53,3 +53,25 @@
 2026-03-27 16:02:36.157 [http-nio-8080-exec-8] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@ea5ca52
 2026-03-27 16:02:36.157 [http-nio-8080-exec-8] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
 2026-03-27 16:03:53.449 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-27 16:03:58.312 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - Starting CuttingSystemApplication using Java 17.0.10 with PID 25504 (F:\Code\Java\cutting-system\target\classes started by JZQ in F:\Code\Java\cutting-system)
+2026-03-27 16:03:58.312 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-27 16:03:58.908 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-27 16:03:58.908 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-03-27 16:03:58.908 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-27 16:03:58.908 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.52]
+2026-03-27 16:03:58.940 [main] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-03-27 16:03:58.940 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 598 ms
+2026-03-27 16:03:59.547 [main] INFO  c.b.m.e.spring.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@47874b25
+2026-03-27 16:03:59.608 [main] INFO  org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-03-27 16:03:59.608 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-03-27 16:03:59.623 [main] INFO  c.cutting.cuttingsystem.CuttingSystemApplication - Started CuttingSystemApplication in 1.576 seconds (process running for 2.104)
+2026-03-27 16:04:02.649 [http-nio-8080-exec-2] INFO  o.a.c.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-27 16:04:02.649 [http-nio-8080-exec-2] INFO  org.springframework.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-03-27 16:04:02.651 [http-nio-8080-exec-2] INFO  org.springframework.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-03-27 16:04:02.755 [http-nio-8080-exec-2] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-03-27 16:04:02.956 [http-nio-8080-exec-2] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@53582ce9
+2026-03-27 16:04:02.956 [http-nio-8080-exec-2] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-03-27 16:04:03.006 [http-nio-8080-exec-2] INFO  c.c.cuttingsystem.service.impl.TUserServiceImpl - 用户名重复
+2026-03-27 16:09:22.529 [http-nio-8080-exec-5] INFO  c.c.cuttingsystem.service.impl.TUserServiceImpl - 用户名重复
+2026-03-27 16:09:26.521 [http-nio-8080-exec-7] INFO  c.c.cuttingsystem.service.impl.TUserServiceImpl - 用户名重复
+2026-03-27 16:10:11.520 [http-nio-8080-exec-8] INFO  c.c.cuttingsystem.service.impl.TUserServiceImpl - 用户名重复

@@ -35,6 +35,13 @@ public class AuthController {
             return Result.fail("用户名已存在");
         return Result.success();
     }
-    // 登出
+    /**
+     * 登出功能
+     * 后续可以增加redis的时候将当前用户token设置进入黑名单
+     */
+    @RequestMapping("logout")
+    public Result logout(){
+        return Result.success();
+    }
 
 }
