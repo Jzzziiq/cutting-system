@@ -17,6 +17,7 @@ public class AuthController {
     private TUserService tUserService;
     @Autowired
     private JwtUtil jwtUtil;
+    // 登录
     @RequestMapping("/login")
     public Result login(String username, String password) {
         LoginInfo info = tUserService.login(username, password);
@@ -25,4 +26,9 @@ public class AuthController {
         }
         return Result.error("用户名或密码错误");
     }
+
+    // 注册
+
+    // 登出
+
 }
