@@ -28,7 +28,13 @@ public class AuthController {
     }
 
     // 注册
-
+    @RequestMapping("register")
+    public Result register(String username, String password){
+        boolean f = tUserService.register(username, password);
+        if (!f)
+            return Result.fail("用户名已存在");
+        return Result.success();
+    }
     // 登出
 
 }
