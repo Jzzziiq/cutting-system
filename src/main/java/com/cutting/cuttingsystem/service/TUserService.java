@@ -12,4 +12,11 @@ import com.cutting.cuttingsystem.entitys.TUser;
 public interface TUserService extends IService<TUser> {
 
     LoginInfo login(String username, String password);
+
+    /**
+     * 查询username是否已经存在，不存在则使用该用户名密码创建账号
+     * 密码需要使用md5进行加密
+     * 一查一增
+     */
+    boolean register(String username, String password);
 }
