@@ -1,6 +1,8 @@
 package com.cutting.cuttingsystem.util;
 
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+
 import javax.crypto.SecretKey;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -8,13 +10,14 @@ import java.util.Base64;
 /**
  * JWT 密钥生成器 - 生成用于 HS256 签名的安全密钥
  */
+@Slf4j
 public class KeyGenerator {
 
     public static void main(String[] args) {
         byte[] keyBytes256 = generateSecureKey(32);
         SecretKey keyForHS256 = Keys.hmacShaKeyFor(keyBytes256);
         String base64KeyHS256 = Base64.getEncoder().encodeToString(keyForHS256.getEncoded());
-        System.out.println("HS256 Key (Base64): " + base64KeyHS256);
+        log.info("HS256 Key (Base64): {}", base64KeyHS256);
     }
 
     /**

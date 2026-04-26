@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="section">
+    <view class="title">{{board.brand || '板材详情'}}</view>
+    <view class="field">
+      <view class="label">材质</view>
+      <view>{{board.materialType || '-'}}</view>
+    </view>
+    <view class="field">
+      <view class="label">颜色</view>
+      <view>{{board.color || '-'}}</view>
+    </view>
+    <view class="field">
+      <view class="label">尺寸类型</view>
+      <view>{{board.sizeType || '-'}}</view>
+    </view>
+    <view class="field">
+      <view class="label">尺寸</view>
+      <view>{{board.length || 0}} x {{board.width || 0}} x {{board.thickness || 0}} mm</view>
+    </view>
+    <view class="field">
+      <view class="label">备注</view>
+      <view>{{board.remark || '-'}}</view>
+    </view>
+    <button class="primary" bindtap="goEdit">编辑</button>
+  </view>
+</view>

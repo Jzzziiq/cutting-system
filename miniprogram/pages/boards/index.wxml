@@ -1,0 +1,27 @@
+<view class="page">
+  <view class="between section">
+    <view>
+      <view class="title">板材列表</view>
+      <view class="muted">共 {{total}} 条</view>
+    </view>
+    <button class="primary" size="mini" bindtap="goCreate">新增</button>
+  </view>
+
+  <view class="section">
+    <block wx:if="{{boards.length}}">
+      <view class="list-item" wx:for="{{boards}}" wx:key="boardId">
+        <view class="between">
+          <view bindtap="goDetail" data-id="{{item.boardId}}">
+            <view class="item-title">{{item.brand || '未命名板材'}}</view>
+            <view class="item-meta">{{item.materialType || '-'}} · {{item.color || '-'}} · {{item.length || 0}} x {{item.width || 0}} x {{item.thickness || 0}} mm</view>
+          </view>
+          <view class="row">
+            <button class="secondary" size="mini" data-id="{{item.boardId}}" bindtap="goEdit">编辑</button>
+            <button class="danger" size="mini" data-id="{{item.boardId}}" bindtap="onDelete">删除</button>
+          </view>
+        </view>
+      </view>
+    </block>
+    <view wx:else class="empty">暂无板材</view>
+  </view>
+</view>

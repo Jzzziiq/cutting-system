@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="section">
+    <view class="title">{{id ? '编辑板材' : '新增板材'}}</view>
+    <view class="field">
+      <view class="label">品牌</view>
+      <input value="{{form.brand}}" data-field="brand" bindinput="onInput" placeholder="请输入品牌" />
+    </view>
+    <view class="field">
+      <view class="label">材质</view>
+      <input value="{{form.materialType}}" data-field="materialType" bindinput="onInput" placeholder="请输入材质" />
+    </view>
+    <view class="field">
+      <view class="label">颜色</view>
+      <input value="{{form.color}}" data-field="color" bindinput="onInput" placeholder="请输入颜色" />
+    </view>
+    <view class="field">
+      <view class="label">尺寸类型</view>
+      <input value="{{form.sizeType}}" data-field="sizeType" bindinput="onInput" placeholder="标准板、长门板、自定义" />
+    </view>
+    <view class="row">
+      <view class="field grow">
+        <view class="label">长度 mm</view>
+        <input type="number" value="{{form.length}}" data-field="length" bindinput="onInput" />
+      </view>
+      <view class="field grow">
+        <view class="label">宽度 mm</view>
+        <input type="number" value="{{form.width}}" data-field="width" bindinput="onInput" />
+      </view>
+    </view>
+    <view class="field">
+      <view class="label">厚度 mm</view>
+      <input type="number" value="{{form.thickness}}" data-field="thickness" bindinput="onInput" />
+    </view>
+    <view class="field">
+      <view class="label">备注</view>
+      <textarea value="{{form.remark}}" data-field="remark" bindinput="onInput" placeholder="请输入备注" />
+    </view>
+    <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存</button>
+  </view>
+</view>

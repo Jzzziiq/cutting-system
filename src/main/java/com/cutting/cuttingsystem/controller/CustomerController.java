@@ -5,16 +5,19 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TCustomerDTO;
 import com.cutting.cuttingsystem.entitys.Result;
-import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TCustomer;
 import com.cutting.cuttingsystem.entitys.VO.TCustomerVO;
 import com.cutting.cuttingsystem.service.TCustomerService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/customers")
+@Validated
 public class CustomerController {
     @Autowired
     TCustomerService customerService;
@@ -23,7 +26,7 @@ public class CustomerController {
      * 分页查询
      */
     @GetMapping
-    public Result pageQuery(QueryDTO query) {
+    public Result pageQuery(@Valid QueryDTO query) {
         IPage<TCustomer> page = new Page<>(query.getPageNum(), query.getPageSize());
         IPage<TCustomer> customerPage = customerService.page(page);
 
@@ -39,7 +42,7 @@ public class CustomerController {
      * 根据ID查询
      */
     @GetMapping("/{id}")
-    public Result getById(@PathVariable Integer id) {
+    public Result getById(@PathVariable @Positive(message = "客户ID必须大于0") Integer id) {
         TCustomer customer = customerService.getById(id);
         TCustomerVO customerVO = new TCustomerVO();
         BeanUtils.copyProperties(customer, customerVO);
@@ -50,7 +53,7 @@ public class CustomerController {
      * 删除
      */
     @DeleteMapping("/{id}")
-    public Result deleteById(@PathVariable Integer id) {
+    public Result deleteById(@PathVariable @Positive(message = "客户ID必须大于0") Integer id) {
         boolean res = customerService.removeById(id);
         return res ? Result.success() : Result.error("删除失败");
     }
@@ -59,7 +62,7 @@ public class CustomerController {
      * 新增
      */
     @PostMapping
-    public Result save(@RequestBody TCustomerDTO customerDTO) {
+    public Result save(@RequestBody @Valid TCustomerDTO customerDTO) {
         TCustomer customer = new TCustomer();
         BeanUtils.copyProperties(customerDTO, customer);
         boolean res = customerService.save(customer);
@@ -69,8 +72,8 @@ public class CustomerController {
      * 修改
      * 前端修改状态时，传递修改后的状态，比如：当前是0禁用要修改为1启用，则传递1
      */
-    @PostMapping("/{id}")
-    public Result update(@PathVariable Long id, @RequestBody TCustomerVO customerVO) {
+    @PutMapping("/{id}")
+    public Result update(@PathVariable @Positive(message = "客户ID必须大于0") Long id, @RequestBody TCustomerVO customerVO) {
         TCustomer customer = new TCustomer();
         BeanUtils.copyProperties(customerVO, customer);
         customer.setCustomerId(id);

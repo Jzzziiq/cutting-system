@@ -1,0 +1,39 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/customers/index",
+    "pages/customers/detail",
+    "pages/customers/edit",
+    "pages/boards/index",
+    "pages/boards/detail",
+    "pages/boards/edit",
+    "pages/algorithm/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "板材切割系统",
+    "navigationBarBackgroundColor": "#1f2937",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f6f7f9"
+  },
+  "tabBar": {
+    "color": "#6b7280",
+    "selectedColor": "#2563eb",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/customers/index",
+        "text": "客户"
+      },
+      {
+        "pagePath": "pages/boards/index",
+        "text": "板材"
+      },
+      {
+        "pagePath": "pages/algorithm/index",
+        "text": "算法"
+      }
+    ]
+  },
+  "style": "v2"
+}

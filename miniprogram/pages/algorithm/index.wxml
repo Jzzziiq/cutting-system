@@ -1,0 +1,70 @@
+<view class="page">
+  <view class="section">
+    <view class="title">算法参数</view>
+    <view class="row">
+      <view class="field grow">
+        <view class="label">容器长度</view>
+        <input type="number" value="{{form.L}}" data-field="L" bindinput="onFormInput" />
+      </view>
+      <view class="field grow">
+        <view class="label">容器宽度</view>
+        <input type="number" value="{{form.W}}" data-field="W" bindinput="onFormInput" />
+      </view>
+    </view>
+    <view class="row">
+      <view class="field grow">
+        <view class="label">间隙距离</view>
+        <input type="number" value="{{form.gapDistance}}" data-field="gapDistance" bindinput="onFormInput" />
+      </view>
+      <view class="field grow">
+        <view class="label">允许旋转</view>
+        <switch checked="{{form.rotateEnable}}" bindchange="onRotateChange" />
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="between">
+      <view class="title">待排矩形</view>
+      <button class="secondary" size="mini" bindtap="addSquare">添加</button>
+    </view>
+
+    <view class="square-row" wx:for="{{squares}}" wx:key="index">
+      <input class="square-input" type="number" value="{{item.l}}" data-index="{{index}}" data-field="l" bindinput="onSquareInput" placeholder="长" />
+      <input class="square-input" type="number" value="{{item.w}}" data-index="{{index}}" data-field="w" bindinput="onSquareInput" placeholder="宽" />
+      <button class="danger" size="mini" data-index="{{index}}" bindtap="removeSquare">删除</button>
+    </view>
+  </view>
+
+  <button class="primary solve-button" loading="{{loading}}" bindtap="onSolve">计算排样</button>
+
+  <view wx:if="{{solutions.length}}" class="section">
+    <view class="title">结果可视化</view>
+    <view class="muted">当前展示第 1 个容器，利用率 {{displayRate}}%</view>
+    <canvas canvas-id="layoutCanvas" class="layout-canvas"></canvas>
+  </view>
+
+  <view wx:if="{{solutions.length}}" class="section">
+    <view class="title">结果明细</view>
+    <view class="result-card" wx:for="{{solutions}}" wx:key="index">
+      <view class="item-title">容器 {{index + 1}}</view>
+      <view class="item-meta">尺寸 {{item.containerLength}} x {{item.containerWidth}}，利用率 {{item.ratePercent}}%，放入 {{item.placeSquareList.length}} 件</view>
+      <view class="table">
+        <view class="table-row table-head">
+          <view>序号</view>
+          <view>X</view>
+          <view>Y</view>
+          <view>长</view>
+          <view>宽</view>
+        </view>
+        <view class="table-row" wx:for="{{item.placeSquareList}}" wx:for-item="square" wx:key="index">
+          <view>{{index + 1}}</view>
+          <view>{{square.x}}</view>
+          <view>{{square.y}}</view>
+          <view>{{square.l}}</view>
+          <view>{{square.w}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

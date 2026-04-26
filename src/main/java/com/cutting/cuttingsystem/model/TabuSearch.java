@@ -2,11 +2,13 @@ package com.cutting.cuttingsystem.model;
 
 import com.cutting.cuttingsystem.entitys.algorithm.*;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.Comparator;
 
 @Data
+@Slf4j
 public class TabuSearch {
     public final int MAX_GEN = 300; // 最大迭代次数（可调）
     public final int N = 500;       // 每次领域搜索数（可调）
@@ -52,7 +54,7 @@ public class TabuSearch {
     public Solution search() throws Exception {
         long start = System.currentTimeMillis();
         getInitSolution(); // 初始化初始解
-        System.out.println("初始利用率：" + bestSolution.getRate());
+        log.info("初始利用率：{}", bestSolution.getRate());
 
         while (t <= MAX_GEN) {
             int n = 0;
@@ -85,9 +87,9 @@ public class TabuSearch {
         }
 
         // 输出结果
-        System.out.println("最佳迭代次数：" + bestT);
-        System.out.println("最佳利用率：" + bestSolution.getRate());
-        System.out.println("耗时：" + (System.currentTimeMillis() - start) + "ms");
+        log.info("最佳迭代次数：{}", bestT);
+        log.info("最佳利用率：{}", bestSolution.getRate());
+        log.info("耗时：{}ms", System.currentTimeMillis() - start);
         return bestSolution;
     }
 

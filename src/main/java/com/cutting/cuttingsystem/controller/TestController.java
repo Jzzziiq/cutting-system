@@ -5,6 +5,7 @@ import com.cutting.cuttingsystem.entitys.algorithm.DTO.SolutionResponseDTO;
 import com.cutting.cuttingsystem.entitys.algorithm.Solution;
 import com.cutting.cuttingsystem.util.ReadDataUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -14,7 +15,7 @@ import java.util.List;
 @RequestMapping("/algorithm")
 public class TestController {
     @PostMapping("/answer")
-    public List<SolutionResponseDTO> answer(@RequestBody InstanceDTO instanceDTO) throws JsonProcessingException {
+    public List<SolutionResponseDTO> answer(@RequestBody @Valid InstanceDTO instanceDTO) throws JsonProcessingException {
         ReadDataUtil readDataUtil = new ReadDataUtil();
         
         // 将 DTO 对象转换为 JSON 字符串
