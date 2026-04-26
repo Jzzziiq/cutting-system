@@ -35,7 +35,11 @@ public class TokenInterceptor implements HandlerInterceptor {
 
         // 4. 验证 token
         try {
-            jwtUtil.validateToken(token);
+            if (!jwtUtil.validateToken(token)) {
+                log.info("令牌非法，响应 401");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return false;
+            }
         } catch (Exception e) {
             log.info("令牌非法，响应 401");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

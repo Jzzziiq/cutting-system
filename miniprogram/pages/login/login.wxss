@@ -1,0 +1,19 @@
+.login-page {
+  align-items: center;
+  display: flex;
+  min-height: 100vh;
+  padding: 32rpx;
+}
+
+.login-card {
+  background: #ffffff;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  box-sizing: border-box;
+  padding: 40rpx 32rpx;
+  width: 100%;
+}
+
+.login-card .muted {
+  margin-bottom: 36rpx;
+}

@@ -1,17 +1,20 @@
 package com.cutting.cuttingsystem.controller;
 
+import com.cutting.cuttingsystem.entitys.DTO.AuthRequestDTO;
 import com.cutting.cuttingsystem.entitys.LoginInfo;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.service.TUserService;
 import com.cutting.cuttingsystem.util.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
 @RequestMapping("/auth")
+@Validated
 public class AuthController {
     @Autowired
     private TUserService tUserService;
@@ -19,8 +22,8 @@ public class AuthController {
     private JwtUtil jwtUtil;
     // 登录
     @RequestMapping("/login")
-    public Result login(String username, String password) {
-        LoginInfo info = tUserService.login(username, password);
+    public Result login(@Valid AuthRequestDTO authRequestDTO) {
+        LoginInfo info = tUserService.login(authRequestDTO.getUsername(), authRequestDTO.getPassword());
         if (info != null) {
             return Result.success(info);
         }
@@ -29,8 +32,8 @@ public class AuthController {
 
     // 注册
     @RequestMapping("register")
-    public Result register(String username, String password){
-        boolean f = tUserService.register(username, password);
+    public Result register(@Valid AuthRequestDTO authRequestDTO){
+        boolean f = tUserService.register(authRequestDTO.getUsername(), authRequestDTO.getPassword());
         if (!f)
             return Result.fail("用户名已存在");
         return Result.success();

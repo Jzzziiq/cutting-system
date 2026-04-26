@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.entitys.algorithm;
 
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,5 +27,9 @@ public class Square {
      * l: 物品的长度
      * w: 物品的宽度
      */
-    private double l, w;
+    @Positive(message = "物品长度必须大于0")
+    private double l;
+
+    @Positive(message = "物品宽度必须大于0")
+    private double w;
 }

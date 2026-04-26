@@ -7,14 +7,16 @@ import com.cutting.cuttingsystem.entitys.algorithm.Square;
 import com.cutting.cuttingsystem.model.TabuSearch;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 public class ReadDataUtil {
-    private static Instance originInstance;
 
     /**
      * 从 JSON 字符串解析 Instance 对象（新增方法，用于接收前端传来的 JSON）
@@ -22,16 +24,11 @@ public class ReadDataUtil {
      * @param jsonStr 前端传来的 JSON 字符串
      * @return Instance 对象
      */
-    public Instance getInstanceFromJson(String jsonStr) {
+    public Instance getInstanceFromJson(String jsonStr) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
 
         // 1. 解析 JSON 为 DTO 对象
-        InstanceDTO dto = null;
-        try {
-            dto = objectMapper.readValue(jsonStr, InstanceDTO.class);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+        InstanceDTO dto = objectMapper.readValue(jsonStr, InstanceDTO.class);
 
         // 2. 将 DTO 转换为 Instance 对象
         Instance instance = new Instance();
@@ -44,7 +41,7 @@ public class ReadDataUtil {
         List<Square> squareList = new ArrayList<>();
         for (com.cutting.cuttingsystem.entitys.algorithm.Square square : dto.getSquareList()) {
             squareList.add(new Square(
-                    UUID.randomUUID().toString(),  // 自动生成唯一 ID
+                    UUID.randomUUID().toString(),
                     square.getL(),
                     square.getW()
             ));
@@ -55,7 +52,7 @@ public class ReadDataUtil {
     }
 
     public List<Solution> getSolution(String jsonStr) throws JsonProcessingException {
-        originInstance = getInstanceFromJson(jsonStr);
+        Instance originInstance = getInstanceFromJson(jsonStr);
         // 初始化剩余矩形列表（深拷贝，避免修改原数据）
         List<Square> remainingSquares = new ArrayList<>();
         for (Square sq : originInstance.getSquareList()) {
@@ -68,9 +65,9 @@ public class ReadDataUtil {
         // 3. 迭代装箱：直到剩余矩形为空
         while (!remainingSquares.isEmpty()) {
             containerCount++;
-            System.out.println("===== 正在装箱第 " + containerCount + " 个容器（剩余矩形数：" + remainingSquares.size() + "） =====");
+            log.info("正在装箱第 {} 个容器（剩余矩形数：{}）", containerCount, remainingSquares.size());
 
-            // 3.1 构建当前容器的 Instance（400*400，禁用旋转）
+            // 3.1 构建当前容器的 Instance
             Instance currentInstance = new Instance();
             currentInstance.setL(originInstance.getL());
             currentInstance.setW(originInstance.getW());
@@ -79,48 +76,94 @@ public class ReadDataUtil {
             currentInstance.setSquareList(new ArrayList<>(remainingSquares));
 
             // 3.2 用 TabuSearch 找当前容器的最优装箱方案
-            TabuSearch tabuSearch = null;
             try {
-                tabuSearch = new TabuSearch(currentInstance);
+                TabuSearch tabuSearch = new TabuSearch(currentInstance);
                 Solution bestSolution = tabuSearch.search();
                 // 3.3 从剩余列表中移除当前容器已装的矩形
-                removePackedSquares(remainingSquares, bestSolution);
+                int removedCount = removePackedSquares(remainingSquares, bestSolution, originInstance.isRotateEnable());
+
+                if (removedCount == 0) {
+                    log.warn("第 {} 个容器未装入任何矩形，尝试单件兜底评估", containerCount);
+                    bestSolution = findBestSingleSquareSolution(originInstance, remainingSquares);
+                    removedCount = removePackedSquares(remainingSquares, bestSolution, originInstance.isRotateEnable());
+                }
+
+                if (removedCount == 0) {
+                    throw new IllegalArgumentException("存在无法装入容器的矩形，请检查矩形尺寸、容器尺寸或间隙距离");
+                }
 
                 // 3.4 保存当前容器的装箱结果
                 allContainerSolutions.add(bestSolution);
                 // 3.5 打印当前容器的装箱信息
-                System.out.println("第 " + containerCount + " 个容器利用率：" + bestSolution.getRate());
-                System.out.println("第 " + containerCount + " 个容器装入矩形数：" + bestSolution.getPlaceSquareList().size());
-                System.out.println("----------------------------------------");
+                log.info("第 {} 个容器利用率：{}", containerCount, bestSolution.getRate());
+                log.info("第 {} 个容器装入矩形数：{}", containerCount, removedCount);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("第 {} 个容器装箱失败", containerCount, e);
+                throw new IllegalStateException("算法装箱失败", e);
             }
         }
         return allContainerSolutions;
     }
 
     /**
-     * 从剩余矩形列表中移除已装入当前容器的矩形
-     * （通过尺寸匹配，因为原 Square 的 ID 是随机生成的，尺寸是唯一标识）
+     * 从剩余矩形列表中移除已装入当前容器的矩形。
      */
-    private static void removePackedSquares(List<Square> remainingSquares, Solution solution) {
-        // 提取当前容器已装矩形的尺寸（l,w）
+    private static int removePackedSquares(List<Square> remainingSquares, Solution solution, boolean rotateEnable) {
         List<Square> packedSquares = new ArrayList<>();
-        solution.getPlaceSquareList().forEach(placeSq -> {
-            packedSquares.add(new Square("", placeSq.getL(), placeSq.getW()));
-        });
+        Set<String> matchedIds = new HashSet<>();
 
-        // 从剩余列表中移除匹配的矩形（注意：尺寸完全一致才移除，且只移除一次）
-        List<Square> toRemove = new ArrayList<>();
-        for (Square packed : packedSquares) {
-            for (Square remain : remainingSquares) {
-                if ((remain.getL() == packed.getL() && remain.getW() == packed.getW())
-                        || (originInstance.isRotateEnable() && remain.getL() == packed.getW() && remain.getW() == packed.getL())) {
-                    toRemove.add(remain);
-                    break; // 每个已装矩形只移除一个匹配项
+        solution.getPlaceSquareList().forEach(placeSq -> {
+            for (Square sourceSquare : solution.getSquareList()) {
+                if (matchedIds.contains(sourceSquare.getId())) {
+                    continue;
+                }
+                if (isSameSize(sourceSquare, placeSq.getL(), placeSq.getW(), rotateEnable)) {
+                    packedSquares.add(sourceSquare);
+                    matchedIds.add(sourceSquare.getId());
+                    break;
                 }
             }
+        });
+
+        Set<String> packedIds = new HashSet<>();
+        packedSquares.forEach(square -> packedIds.add(square.getId()));
+        remainingSquares.removeIf(square -> packedIds.contains(square.getId()));
+        return packedIds.size();
+    }
+
+    private static boolean isSameSize(Square square, double length, double width, boolean rotateEnable) {
+        return (Double.compare(square.getL(), length) == 0 && Double.compare(square.getW(), width) == 0)
+                || (rotateEnable && Double.compare(square.getL(), width) == 0 && Double.compare(square.getW(), length) == 0);
+    }
+
+    private static Solution findBestSingleSquareSolution(Instance originInstance, List<Square> remainingSquares) throws Exception {
+        Solution bestSolution = null;
+        for (Square square : remainingSquares) {
+            Instance singleSquareInstance = new Instance();
+            singleSquareInstance.setL(originInstance.getL());
+            singleSquareInstance.setW(originInstance.getW());
+            singleSquareInstance.setRotateEnable(originInstance.isRotateEnable());
+            singleSquareInstance.setGapDistance(originInstance.getGapDistance());
+            singleSquareInstance.setSquareList(List.of(square));
+
+            Solution solution = new TabuSearch(singleSquareInstance).evaluate(singleSquareInstance.getSquareList());
+            if (solution.getPlaceSquareList().isEmpty()) {
+                continue;
+            }
+            if (bestSolution == null || solution.getRate() > bestSolution.getRate()) {
+                bestSolution = solution;
+            }
         }
-        remainingSquares.removeAll(toRemove);
+
+        if (bestSolution != null) {
+            return bestSolution;
+        }
+
+        Solution emptySolution = new Solution();
+        emptySolution.setInstance(originInstance);
+        emptySolution.setSquareList(new ArrayList<>(remainingSquares));
+        emptySolution.setPlaceSquareList(new ArrayList<>());
+        emptySolution.setRate(0);
+        return emptySolution;
     }
 }

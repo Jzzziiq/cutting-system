@@ -33,6 +33,12 @@ public class Result {
         return result;
     }
 
+    public static Result error(String msg, Object data) {
+        Result result = error(msg);
+        result.setData(data);
+        return result;
+    }
+
     // 失败响应
     public static Result fail(String msg){
         Result result = new Result();
