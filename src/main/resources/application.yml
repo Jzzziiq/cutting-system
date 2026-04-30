@@ -18,7 +18,7 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml  # Mapper XML 文件位置
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL 日志
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: auto  # 主键自增

@@ -18,12 +18,12 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Result handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        return Result.error("请求参数校验失败", getFieldErrors(e));
+        return Result.error("request parameter validation failed", getFieldErrors(e));
     }
 
     @ExceptionHandler(BindException.class)
     public Result handleBindException(BindException e) {
-        return Result.error("请求参数校验失败", getFieldErrors(e));
+        return Result.error("request parameter validation failed", getFieldErrors(e));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -36,13 +36,13 @@ public class GlobalExceptionHandler {
                     : propertyPath;
             errors.put(field, violation.getMessage());
         }
-        return Result.error("请求参数校验失败", errors);
+        return Result.error("request parameter validation failed", errors);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(Exception.class)
     public Result handleException(Exception e) {
-        log.error("服务器异常", e);
-        return Result.error("服务器异常");
+        log.error("server error", e);
+        return Result.error("server error");
     }
 
     private Map<String, String> getFieldErrors(BindException e) {

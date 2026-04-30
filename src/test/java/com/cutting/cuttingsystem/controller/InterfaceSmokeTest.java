@@ -3,9 +3,15 @@ package com.cutting.cuttingsystem.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.LoginInfo;
+import com.cutting.cuttingsystem.entitys.TLayoutResult;
+import com.cutting.cuttingsystem.entitys.TOffcut;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TCustomer;
 import com.cutting.cuttingsystem.entitys.TUser;
+import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
+import com.cutting.cuttingsystem.service.TLayoutResultService;
+import com.cutting.cuttingsystem.service.TOffcutService;
+import com.cutting.cuttingsystem.service.TOrderService;
 import com.cutting.cuttingsystem.service.TBoardService;
 import com.cutting.cuttingsystem.service.TCustomerService;
 import com.cutting.cuttingsystem.service.TUserService;
@@ -18,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +52,15 @@ class InterfaceSmokeTest {
 
     @MockitoBean
     private TCustomerService customerService;
+
+    @MockitoBean
+    private TOffcutService offcutService;
+
+    @MockitoBean
+    private TOrderService orderService;
+
+    @MockitoBean
+    private TLayoutResultService layoutResultService;
 
     @Test
     void loginReturnsSuccessResponse() throws Exception {
@@ -163,6 +179,86 @@ class InterfaceSmokeTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void remnantPageEndpointReturnsPagedResult() throws Exception {
+        Page<TOffcut> page = new Page<>(1, 10);
+        TOffcut offcut = new TOffcut();
+        offcut.setOffcutId(1L);
+        offcut.setBoardId(1L);
+        offcut.setWidth(300);
+        offcut.setLength(500);
+        offcut.setThickness(18);
+        page.setRecords(List.of(offcut));
+        page.setTotal(1);
+        when(offcutService.page(any())).thenReturn(page);
+
+        mockMvc.perform(get("/remnants")
+                        .header("Authorization", "Bearer " + token())
+                        .param("pageNum", "1")
+                        .param("pageSize", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.records[0].offcutId").value(1));
+    }
+
+    @Test
+    void orderCreateEndpointReturnsCreatedOrder() throws Exception {
+        TOrderVO orderVO = new TOrderVO();
+        orderVO.setOrderId(1L);
+        orderVO.setOrderNo("ORD202604300001");
+        orderVO.setCustomerId(1L);
+        orderVO.setProcessName("cabinet-door-cutting");
+        when(orderService.createOrder(any())).thenReturn(orderVO);
+
+        mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "customerId": 1,
+                                  "processName": "cabinet-door-cutting",
+                                  "items": [
+                                    {
+                                      "partName": "left-door",
+                                      "width": 300,
+                                      "length": 500,
+                                      "thickness": 18,
+                                      "quantity": 2
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.orderId").value(1));
+    }
+
+    @Test
+    void layoutResultCreateEndpointReturnsSavedResult() throws Exception {
+        TLayoutResult layoutResult = new TLayoutResult();
+        layoutResult.setResultId(1L);
+        layoutResult.setOrderId(1L);
+        layoutResult.setUsageRate(new BigDecimal("0.8500"));
+        layoutResult.setContainerCount(1);
+        layoutResult.setResultJson("{}");
+        when(layoutResultService.createResult(any())).thenReturn(layoutResult);
+
+        mockMvc.perform(post("/layout-results")
+                        .header("Authorization", "Bearer " + token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "orderId": 1,
+                                  "usageRate": 0.85,
+                                  "containerCount": 1,
+                                  "resultJson": "{}"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.resultId").value(1));
     }
 
     private String token() {
