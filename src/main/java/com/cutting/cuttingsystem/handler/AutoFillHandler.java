@@ -6,23 +6,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Slf4j
 @Component
 public class AutoFillHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
-        log.info("开始插入填充...");
+        log.debug("start insert auto fill");
         this.strictInsertFill(metaObject, "userId", Long.class, UserContext.getCurrentUserId());
-        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictInsertFill(metaObject, "createTime", Date.class, new Date());
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        log.info("开始更新填充...");
-        this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-
-
+        log.debug("start update auto fill");
+        this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());
     }
 }

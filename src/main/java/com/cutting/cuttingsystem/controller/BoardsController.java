@@ -2,8 +2,8 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
+import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.VO.TBoardVO;
@@ -13,78 +13,65 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/boards")
 @Validated
 public class BoardsController {
     @Autowired
-    TBoardService tBoardService;
+    private TBoardService tBoardService;
 
-    /**
-     * 分页查询
-     */
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
-        // 创建分页参数对象
         IPage<TBoard> page = new Page<>(query.getPageNum(), query.getPageSize());
-        // 执行分页查询
-        IPage<TBoard> boardPage = tBoardService.page(page);
-        
-        // 使用 MyBatis-Plus 提供的 convert 方法进行转换
-        IPage<TBoardVO> boardVOPage = boardPage.convert(board -> {
-            TBoardVO boardVO = new TBoardVO();
-            BeanUtils.copyProperties(board, boardVO);
-            return boardVO;
-        });
-        
-        // 返回分页结果（包含数据列表、总记录数、分页信息）
+        IPage<TBoardVO> boardVOPage = tBoardService.page(page).convert(this::toVO);
         return Result.success(boardVOPage);
     }
 
-    /**
-     * 根据ID查询
-     */
     @GetMapping("/{id}")
-    public Result getById(@PathVariable @Positive(message = "板材ID必须大于0") Integer id) {
+    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         TBoard board = tBoardService.getById(id);
-        TBoardVO  boardVO = new TBoardVO();
-        BeanUtils.copyProperties(board, boardVO);
-        return Result.success(boardVO);
+        if (board == null) {
+            return Result.error("board not found");
+        }
+        return Result.success(toVO(board));
     }
 
-    /**
-     * 删除
-     */
     @DeleteMapping("/{id}")
-    public Result deleteById(@PathVariable @Positive(message = "板材ID必须大于0") Integer id) {
-        boolean res = tBoardService.removeById(id);
-        return res ? Result.success() : Result.error("删除失败");
+    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
+        boolean removed = tBoardService.removeById(id);
+        return removed ? Result.success() : Result.error("delete board failed");
     }
 
-    /**
-     * 新增
-     */
     @PostMapping
     public Result save(@RequestBody @Valid TBoardDTO boardDTO) {
         TBoard board = new TBoard();
-        // 将DTO对象转换为实体对象
         BeanUtils.copyProperties(boardDTO, board);
-        boolean res = tBoardService.save(board);
-        return res ? Result.success() : Result.error("添加失败");
+        boolean saved = tBoardService.save(board);
+        return saved ? Result.success() : Result.error("add board failed");
     }
 
-    /**
-     * 修改
-     * 前端修改状态时，传递修改后的状态，比如：当前是0禁用要修改为1启用，则传递1
-     */
     @PutMapping("/{id}")
-    public Result update(@PathVariable @Positive(message = "板材ID必须大于0") Long id, @RequestBody TBoardVO tBoardVO) {
+    public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
+                         @RequestBody @Valid TBoardVO boardVO) {
         TBoard board = new TBoard();
-        BeanUtils.copyProperties(tBoardVO, board);
+        BeanUtils.copyProperties(boardVO, board);
         board.setBoardId(id);
-        boolean res = tBoardService.updateById(board);
-        return res ? Result.success() : Result.error("修改失败");
+        boolean updated = tBoardService.updateById(board);
+        return updated ? Result.success() : Result.error("update board failed");
+    }
+
+    private TBoardVO toVO(TBoard board) {
+        TBoardVO boardVO = new TBoardVO();
+        BeanUtils.copyProperties(board, boardVO);
+        return boardVO;
     }
 }
