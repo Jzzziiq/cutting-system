@@ -13,73 +13,65 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/customers")
 @Validated
 public class CustomerController {
     @Autowired
-    TCustomerService customerService;
+    private TCustomerService customerService;
 
-    /**
-     * 分页查询
-     */
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
         IPage<TCustomer> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<TCustomer> customerPage = customerService.page(page);
-
-        IPage<TCustomerVO> customerVOPage = customerPage.convert(customer -> {
-            TCustomerVO customerVO = new TCustomerVO();
-            BeanUtils.copyProperties(customer, customerVO);
-            return customerVO;
-        });
+        IPage<TCustomerVO> customerVOPage = customerService.page(page).convert(this::toVO);
         return Result.success(customerVOPage);
     }
 
-    /**
-     * 根据ID查询
-     */
     @GetMapping("/{id}")
-    public Result getById(@PathVariable @Positive(message = "客户ID必须大于0") Integer id) {
+    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         TCustomer customer = customerService.getById(id);
-        TCustomerVO customerVO = new TCustomerVO();
-        BeanUtils.copyProperties(customer, customerVO);
-        return Result.success(customerVO);
+        if (customer == null) {
+            return Result.error("customer not found");
+        }
+        return Result.success(toVO(customer));
     }
 
-    /**
-     * 删除
-     */
     @DeleteMapping("/{id}")
-    public Result deleteById(@PathVariable @Positive(message = "客户ID必须大于0") Integer id) {
-        boolean res = customerService.removeById(id);
-        return res ? Result.success() : Result.error("删除失败");
+    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
+        boolean removed = customerService.removeById(id);
+        return removed ? Result.success() : Result.error("delete customer failed");
     }
 
-    /**
-     * 新增
-     */
     @PostMapping
     public Result save(@RequestBody @Valid TCustomerDTO customerDTO) {
         TCustomer customer = new TCustomer();
         BeanUtils.copyProperties(customerDTO, customer);
-        boolean res = customerService.save(customer);
-        return res ? Result.success() : Result.error("添加失败");
+        boolean saved = customerService.save(customer);
+        return saved ? Result.success() : Result.error("add customer failed");
     }
-    /**
-     * 修改
-     * 前端修改状态时，传递修改后的状态，比如：当前是0禁用要修改为1启用，则传递1
-     */
+
     @PutMapping("/{id}")
-    public Result update(@PathVariable @Positive(message = "客户ID必须大于0") Long id, @RequestBody TCustomerVO customerVO) {
+    public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
+                         @RequestBody @Valid TCustomerVO customerVO) {
         TCustomer customer = new TCustomer();
         BeanUtils.copyProperties(customerVO, customer);
         customer.setCustomerId(id);
-        boolean res = customerService.updateById(customer);
-        return res ? Result.success() : Result.error("修改失败");
+        boolean updated = customerService.updateById(customer);
+        return updated ? Result.success() : Result.error("update customer failed");
+    }
+
+    private TCustomerVO toVO(TCustomer customer) {
+        TCustomerVO customerVO = new TCustomerVO();
+        BeanUtils.copyProperties(customer, customerVO);
+        return customerVO;
     }
 }
-
-
