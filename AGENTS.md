@@ -239,5 +239,10 @@ npm run build
 
 当前记录：
 
+- 2026-05-01 | 类型: 测试 | 范围: 排样结果模块 LayoutResultModuleTest | 原因: 补充排样结果分页、按订单查询、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=LayoutResultModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
+- 2026-05-01 | 类型: 测试 | 范围: 余料模块 OffcutModuleTest | 原因: 补充余料分页、详情、增改删、默认状态、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OffcutModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
+- 2026-05-01 | 类型: 测试 | 范围: 订单明细模块 OrderItemModuleTest | 原因: 补充订单明细分页、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OrderItemModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
+- 2026-05-01 | 类型: 测试 | 范围: 订单模块 OrderModuleTest | 原因: 补充订单接口关键路径、参数校验、嵌套明细校验和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OrderModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
+- 2026-05-01 | 类型: API/测试 | 范围: 客户模块 CustomerController、TCustomerDTO、TCustomerVO、CustomerModuleTest | 原因: 补齐客户接口参数校验、404/删除失败响应和模块测试覆盖 | 影响: 客户新增/编辑请求会对必填和长度字段进行校验，接口路径保持不变 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=CustomerModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
 - 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 增加 Codex 启动约定，提示后续任务优先读取本文档 | 影响: 不影响运行时行为 | 验证: 文档结构检查
 - 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 为 Codex 提供项目结构、开发规则和维护约定 | 影响: 不影响运行时行为 | 验证: 文档结构检查
