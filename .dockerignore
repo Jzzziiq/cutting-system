@@ -1,0 +1,10 @@
+node_modules
+target
+.git
+.claude
+logs
+*.log
+.env.local
+.vscode
+.idea
+*.iml

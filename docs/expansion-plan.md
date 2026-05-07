@@ -182,10 +182,12 @@
 
 ### ⑥ 系统集成 & DevOps
 
-**容器化部署**
-- Docker Compose 一键部署（后端 + MySQL + MinIO + Nginx）
-- 多环境配置分离 (dev / test / prod)
-- 技术: Docker, Docker Compose, Nginx 反向代理
+**容器化部署** ✅ 已完成 (2026-05-07)
+- Docker Compose 一键部署：MySQL 8.0 + Spring Boot + Nginx 反向代理
+- 多阶段 Dockerfile（node 前端构建 → maven 后端构建 → jre 运行）
+- docker-entrypoint-initdb.d 自动初始化建表 + 种子数据
+- 多环境配置：application-docker.yml + .env
+- 提交: 待提交
 
 **CAD 文件对接**
 - 导入 DXF/DWG 文件，自动解析切割形状
@@ -218,7 +220,7 @@
 | 异步 | 无 | Spring @Async + 线程池 | 排样任务异步化 |
 | 图表 | 无 | ECharts / AntV | 看板 & 报表 |
 | 3D | 无 | Three.js | 排样 3D 预览 |
-| 容器 | 无 | Docker Compose | 一键部署 |
+| 容器 | 无 | Docker Compose | 一键部署 ✅ |
 | 二维码 | 无 | ZXing | 扫码识别 |
 | PWA | 无 | vite-plugin-pwa | 移动端离线访问 |
 
@@ -230,7 +232,7 @@
 第 1 批 (打地基, 2-3 周)
 ├── ✅ RBAC 权限体系 (2026-05-07 完成)
 ├── ✅ 操作审计日志 (2026-05-07 完成)
-├── Docker Compose 部署
+├── ✅ Docker Compose 部署 (2026-05-07 完成)
 └── EasyExcel 导入导出
 
 第 2 批 (业务闭环, 3-4 周)
@@ -294,3 +296,4 @@ cutting-system/                     cutting-system/
 | --- | --- | --- | --- |
 | 2026-05-07 | RBAC 权限体系 | ① 基础架构加固 | 轻量方案：JWT+Interceptor+注解+四张RBAC表；48文件，+1146/-91行，161测试通过 |
 | 2026-05-07 | 操作审计日志 | ① 基础架构加固 | AOP + @Async异步写入；新增11文件，修改9文件，164测试通过，端到端验证通过 |
+| 2026-05-07 | Docker Compose 部署 | ① 基础架构加固 | 三容器编排(MySQL+Nginx+Backend)；多阶段Dockerfile；initdb自动建表+种子数据 |
