@@ -1,5 +1,7 @@
 package com.cutting.cuttingsystem.controller;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.TBoard;
@@ -72,6 +74,6 @@ class AuthenticationAuthorizationTest {
         TUser user = new TUser();
         user.setUserId(1L);
         user.setUsername("admin");
-        return jwtUtil.generateToken(user);
+        return jwtUtil.generateToken(user, List.of("admin"));
     }
 }

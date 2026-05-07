@@ -19,7 +19,10 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
-    displayName: (state) => state.user?.realName || state.user?.username || '用户'
+    displayName: (state) => state.user?.realName || state.user?.username || '用户',
+    permissions: (state) => state.user?.permissions || [],
+    roles: (state) => state.user?.roles || [],
+    hasPermission: (state) => (code) => (state.user?.permissions || []).includes(code)
   },
   actions: {
     async login(credentials) {

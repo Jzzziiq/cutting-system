@@ -11,9 +11,16 @@ import java.util.List;
 
 @Component
 public class UserIdHandler implements TenantLineHandler {
+    private static final List<String> IGNORE_TABLES = List.of(
+        "t_user", "t_role", "t_permission", "t_user_role", "t_role_permission"
+    );
+
     @Override
     public Expression getTenantId() {
         Long currentUserId = UserContext.getCurrentUserId();
+        if (currentUserId == null) {
+            return new LongValue(0L);
+        }
         return new LongValue(currentUserId);
     }
 
@@ -24,8 +31,7 @@ public class UserIdHandler implements TenantLineHandler {
 
     @Override
     public boolean ignoreTable(String tableName) {
-        // 不需要多租户的表（如系统表、用户表等）
-        return "t_user".equalsIgnoreCase(tableName);
+        return IGNORE_TABLES.contains(tableName.toLowerCase());
     }
 
 //    @Override

@@ -65,7 +65,7 @@ class InterfaceSmokeTest {
     @Test
     void loginReturnsSuccessResponse() throws Exception {
         when(tUserService.login("admin", "123456"))
-                .thenReturn(new LoginInfo(1L, "admin", "管理员", "mock-token"));
+                .thenReturn(new LoginInfo(1L, "admin", "管理员", "mock-token", null, null));
 
         mockMvc.perform(post("/auth/login")
                         .param("username", "admin")
@@ -265,6 +265,6 @@ class InterfaceSmokeTest {
         TUser user = new TUser();
         user.setUserId(1L);
         user.setUsername("admin");
-        return jwtUtil.generateToken(user);
+        return jwtUtil.generateToken(user, List.of("admin"));
     }
 }

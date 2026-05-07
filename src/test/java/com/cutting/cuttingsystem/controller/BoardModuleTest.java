@@ -312,6 +312,6 @@ class BoardModuleTest {
         TUser user = new TUser();
         user.setUserId(1L);
         user.setUsername("admin");
-        return "Bearer " + jwtUtil.generateToken(user);
+        return "Bearer " + jwtUtil.generateToken(user, List.of("admin"));
     }
 }

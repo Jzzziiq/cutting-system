@@ -1,5 +1,8 @@
 package com.cutting.cuttingsystem.interceptor;
 
+import com.cutting.cuttingsystem.annotation.RequirePermission;
+import com.cutting.cuttingsystem.exception.ForbiddenException;
+import com.cutting.cuttingsystem.mapper.TPermissionMapper;
 import com.cutting.cuttingsystem.util.JwtUtil;
 import com.cutting.cuttingsystem.util.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,8 +10,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -16,56 +23,68 @@ public class TokenInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private TPermissionMapper permissionMapper;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        log.info("preHandle...");
-
-        // 1. 从标准请求头 Authorization 中获取令牌
         String authHeader = request.getHeader("Authorization");
-
-        // 2. 检查 Authorization 头是否存在且格式正确（以 "Bearer " 开头）
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.info("令牌缺失或格式错误，响应 401");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
 
-        // 3. 提取实际的 token（去掉 "Bearer " 前缀）
-        String token = authHeader.substring(7); // "Bearer " 长度为 7
-
-        // 4. 验证 token
+        String token = authHeader.substring(7);
         try {
             if (!jwtUtil.validateToken(token)) {
-                log.info("令牌非法，响应 401");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
         } catch (Exception e) {
-            log.info("令牌非法，响应 401");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
 
-        // 5. 从 token 中获取 userId 并设置到线程上下文
         Long userId = jwtUtil.getUserIdFromToken(token);
-        UserContext.setCurrentUserId(userId);
-        
-        log.info("令牌合法，userId: {}", userId);
-        return true;
-    }
+        List<String> roles = jwtUtil.getRolesFromToken(token);
+        List<String> permissions;
+        try {
+            permissions = permissionMapper.selectPermCodesByRoleCodes(roles);
+        } catch (Exception e) {
+            log.warn("权限表查询失败 (RBAC 迁移可能未执行), 回退为全量许可: {}", e.getMessage());
+            permissions = List.of("*");
+        }
 
-    // 请求访问完资源后 处理
-    @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        log.info("postHandle");
-        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
+        UserContext.setCurrentUserId(userId);
+        UserContext.setRoles(roles);
+        UserContext.setPermissions(permissions);
+
+        // 检查 @RequirePermission 注解
+        if (handler instanceof HandlerMethod hm) {
+            RequirePermission annotation = hm.getMethodAnnotation(RequirePermission.class);
+            if (annotation == null) {
+                annotation = hm.getBeanType().getAnnotation(RequirePermission.class);
+            }
+            if (annotation != null) {
+                String[] required = annotation.value();
+                if (required.length == 0) return true;
+                // "*" 通配符表示 RBAC 表未就绪，跳过检查
+                if (!permissions.contains("*")) {
+                    boolean hasAny = Arrays.stream(required).anyMatch(permissions::contains);
+                    if (!hasAny) {
+                        log.info("权限不足, userId={}, required={}, userPerms={}", userId, required, permissions);
+                        throw new ForbiddenException("权限不足");
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        // 6. 清除线程上下文，防止内存泄漏
         UserContext.clear();
-        log.info("afterCompletion, 已清除用户上下文");
         HandlerInterceptor.super.afterCompletion(request, response, handler, ex);
     }
 }

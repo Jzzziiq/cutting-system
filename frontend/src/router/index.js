@@ -6,6 +6,7 @@ import DashboardView from '@/views/DashboardView.vue';
 import CustomersView from '@/views/CustomersView.vue';
 import BoardsView from '@/views/BoardsView.vue';
 import AlgorithmView from '@/views/AlgorithmView.vue';
+import UsersView from '@/views/UsersView.vue';
 
 const routes = [
   {
@@ -42,6 +43,12 @@ const routes = [
         name: 'algorithm',
         component: AlgorithmView,
         meta: { title: '算法排样' }
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: UsersView,
+        meta: { title: '用户管理' }
       }
     ]
   },

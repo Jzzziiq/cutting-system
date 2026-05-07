@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.controller;
 
+import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.algorithm.DTO.InstanceDTO;
 import com.cutting.cuttingsystem.entitys.algorithm.DTO.SolutionResponseDTO;
 import com.cutting.cuttingsystem.entitys.algorithm.Solution;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/algorithm")
+@RequirePermission("algorithm:execute")
 public class TestController {
     @PostMapping("/answer")
     public List<SolutionResponseDTO> answer(@RequestBody @Valid InstanceDTO instanceDTO) throws JsonProcessingException {

@@ -1,5 +1,7 @@
 package com.cutting.cuttingsystem.controller;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.LoginInfo;
 import com.cutting.cuttingsystem.entitys.TBoard;
@@ -39,7 +41,7 @@ class AuthModuleTest {
     @Test
     void loginReturnsTokenWhenCredentialsAreValid() throws Exception {
         when(tUserService.login("admin", "123456"))
-                .thenReturn(new LoginInfo(1L, "admin", "admin", "mock-token"));
+                .thenReturn(new LoginInfo(1L, "admin", "admin", "mock-token", null, null));
 
         mockMvc.perform(post("/auth/login")
                         .param("username", "admin")
@@ -147,6 +149,6 @@ class AuthModuleTest {
         TUser user = new TUser();
         user.setUserId(1L);
         user.setUsername("admin");
-        return jwtUtil.generateToken(user);
+        return jwtUtil.generateToken(user, List.of("admin"));
     }
 }

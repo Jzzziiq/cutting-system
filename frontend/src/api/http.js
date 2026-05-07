@@ -33,6 +33,9 @@ http.interceptors.response.use(
         window.location.assign('/login');
       }
     }
+    if (error.response?.data?.code === 403) {
+      return Promise.reject(new Error(error.response.data.msg || '权限不足'));
+    }
     return Promise.reject(new Error(error.response?.data?.msg || error.message || '网络请求失败'));
   }
 );

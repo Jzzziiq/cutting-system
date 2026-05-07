@@ -3,6 +3,7 @@ package com.cutting.cuttingsystem.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TLayoutResultDTO;
 import com.cutting.cuttingsystem.entitys.Result;
@@ -28,6 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/layout-results")
 @Validated
+@RequirePermission("layout:read")
 public class LayoutResultController {
     @Autowired
     private TLayoutResultService layoutResultService;

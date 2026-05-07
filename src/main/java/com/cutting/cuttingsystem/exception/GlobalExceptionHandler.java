@@ -39,6 +39,14 @@ public class GlobalExceptionHandler {
         return Result.error("request parameter validation failed", errors);
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public Result handleForbiddenException(ForbiddenException e) {
+        Result result = new Result();
+        result.setCode(403);
+        result.setMsg(e.getMessage());
+        return result;
+    }
+
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception e) {
         log.error("server error", e);

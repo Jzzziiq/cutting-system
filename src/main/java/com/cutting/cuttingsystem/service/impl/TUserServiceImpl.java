@@ -5,12 +5,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cutting.cuttingsystem.entitys.LoginInfo;
 import com.cutting.cuttingsystem.entitys.TUser;
 import com.cutting.cuttingsystem.mapper.TUserMapper;
+import com.cutting.cuttingsystem.service.TRoleService;
 import com.cutting.cuttingsystem.service.TUserService;
 import com.cutting.cuttingsystem.util.JwtUtil;
 import com.cutting.cuttingsystem.util.MD5Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -21,11 +24,23 @@ public class TUserServiceImpl extends ServiceImpl<TUserMapper, TUser> implements
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private TRoleService roleService;
+
     @Override
     public LoginInfo login(String username, String password) {
         TUser tUser = tUserMapper.selectByUsername(username);
         if (tUser != null && tUser.getPassword().equals(MD5Util.md5(password))) {
-            return new LoginInfo(tUser.getUserId(), tUser.getUsername(), tUser.getRealName(), jwtUtil.generateToken(tUser));
+            List<String> roles = roleService.listRoleCodesByUserId(tUser.getUserId());
+            List<String> permissions = roleService.listPermissionCodesByUserId(tUser.getUserId());
+            LoginInfo info = new LoginInfo();
+            info.setUserId(tUser.getUserId());
+            info.setUsername(tUser.getUsername());
+            info.setRealName(tUser.getRealName());
+            info.setToken(jwtUtil.generateToken(tUser, roles));
+            info.setRoles(roles);
+            info.setPermissions(permissions);
+            return info;
         }
         return null;
     }

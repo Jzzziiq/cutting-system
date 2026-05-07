@@ -8,11 +8,16 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const navItems = [
-  { name: 'dashboard', label: '工作台' },
-  { name: 'customers', label: '客户管理' },
-  { name: 'boards', label: '板材管理' },
-  { name: 'algorithm', label: '算法排样' }
+  { name: 'dashboard', label: '工作台', perm: null },
+  { name: 'customers', label: '客户管理', perm: 'customer:read' },
+  { name: 'boards', label: '板材管理', perm: 'board:read' },
+  { name: 'algorithm', label: '算法排样', perm: 'algorithm:execute' },
+  { name: 'users', label: '用户管理', perm: 'user:manage' }
 ];
+
+const visibleItems = computed(() =>
+  navItems.filter((item) => !item.perm || auth.hasPermission(item.perm))
+);
 
 const currentTitle = computed(() => route.meta.title || '工作台');
 
@@ -32,7 +37,7 @@ function logout() {
 
       <nav class="nav-list">
         <router-link
-          v-for="item in navItems"
+          v-for="item in visibleItems"
           :key="item.name"
           class="nav-item"
           :to="{ name: item.name }"
