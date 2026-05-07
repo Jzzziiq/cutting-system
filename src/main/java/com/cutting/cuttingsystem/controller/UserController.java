@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.AssignRoleDTO;
 import com.cutting.cuttingsystem.entitys.Result;
@@ -50,6 +51,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
+    @AuditLog(module = "用户管理", action = "启禁")
     public Result updateStatus(@PathVariable Long id, @RequestParam Integer accountStatus) {
         TUser user = userService.getById(id);
         if (user == null) return Result.error("用户不存在");
@@ -59,6 +61,7 @@ public class UserController {
     }
 
     @PutMapping("/roles")
+    @AuditLog(module = "用户管理", action = "分配角色")
     public Result assignRoles(@Valid @RequestBody AssignRoleDTO dto) {
         if (!userService.exists(new QueryWrapper<TUser>().eq("user_id", dto.getUserId()))) {
             return Result.error("用户不存在");

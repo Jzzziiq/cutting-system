@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
@@ -48,12 +49,14 @@ public class BoardsController {
     }
 
     @DeleteMapping("/{id}")
+    @AuditLog(module = "板材管理", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         boolean removed = tBoardService.removeById(id);
         return removed ? Result.success() : Result.error("delete board failed");
     }
 
     @PostMapping
+    @AuditLog(module = "板材管理", action = "新增")
     public Result save(@RequestBody @Valid TBoardDTO boardDTO) {
         TBoard board = new TBoard();
         BeanUtils.copyProperties(boardDTO, board);
@@ -62,6 +65,7 @@ public class BoardsController {
     }
 
     @PutMapping("/{id}")
+    @AuditLog(module = "板材管理", action = "编辑")
     public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
                          @RequestBody @Valid TBoardVO boardVO) {
         TBoard board = new TBoard();

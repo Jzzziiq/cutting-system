@@ -7,6 +7,7 @@ import CustomersView from '@/views/CustomersView.vue';
 import BoardsView from '@/views/BoardsView.vue';
 import AlgorithmView from '@/views/AlgorithmView.vue';
 import UsersView from '@/views/UsersView.vue';
+import AuditLogView from '@/views/AuditLogView.vue';
 
 const routes = [
   {
@@ -49,6 +50,12 @@ const routes = [
         name: 'users',
         component: UsersView,
         meta: { title: '用户管理' }
+      },
+      {
+        path: 'audit-logs',
+        name: 'audit-logs',
+        component: AuditLogView,
+        meta: { title: '审计日志' }
       }
     ]
   },

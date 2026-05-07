@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOffcutDTO;
@@ -48,6 +49,7 @@ public class OffcutController {
     }
 
     @PostMapping
+    @AuditLog(module = "余料管理", action = "新增")
     public Result save(@RequestBody @Valid TOffcutDTO offcutDTO) {
         TOffcut offcut = new TOffcut();
         BeanUtils.copyProperties(offcutDTO, offcut);
@@ -62,6 +64,7 @@ public class OffcutController {
     }
 
     @PutMapping("/{id}")
+    @AuditLog(module = "余料管理", action = "编辑")
     public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
                          @RequestBody @Valid TOffcutDTO offcutDTO) {
         TOffcut offcut = new TOffcut();
@@ -72,6 +75,7 @@ public class OffcutController {
     }
 
     @DeleteMapping("/{id}")
+    @AuditLog(module = "余料管理", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         boolean removed = offcutService.removeById(id);
         return removed ? Result.success() : Result.error("delete remnant failed");

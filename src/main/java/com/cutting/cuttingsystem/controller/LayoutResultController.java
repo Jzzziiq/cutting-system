@@ -3,6 +3,7 @@ package com.cutting.cuttingsystem.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TLayoutResultDTO;
@@ -61,6 +62,7 @@ public class LayoutResultController {
     }
 
     @PostMapping
+    @AuditLog(module = "排样结果", action = "新增")
     public Result save(@RequestBody @Valid TLayoutResultDTO layoutResultDTO) {
         TLayoutResult layoutResult = layoutResultService.createResult(layoutResultDTO);
         return Result.success(toVO(layoutResult));
@@ -74,6 +76,7 @@ public class LayoutResultController {
     }
 
     @DeleteMapping("/{id}")
+    @AuditLog(module = "排样结果", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         boolean removed = layoutResultService.removeById(id);
         return removed ? Result.success() : Result.error("delete layout result failed");

@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderItemDTO;
@@ -48,6 +49,7 @@ public class OrderItemController {
     }
 
     @PostMapping
+    @AuditLog(module = "订单明细", action = "新增")
     public Result save(@RequestBody @Valid TOrderItemDTO orderItemDTO) {
         if (orderItemDTO.getOrderId() == null) {
             return Result.error("orderId is required");
@@ -59,6 +61,7 @@ public class OrderItemController {
     }
 
     @PutMapping("/{id}")
+    @AuditLog(module = "订单明细", action = "编辑")
     public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
                          @RequestBody @Valid TOrderItemDTO orderItemDTO) {
         TOrderItem orderItem = new TOrderItem();
@@ -69,6 +72,7 @@ public class OrderItemController {
     }
 
     @DeleteMapping("/{id}")
+    @AuditLog(module = "订单明细", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         boolean removed = orderItemService.removeById(id);
         return removed ? Result.success() : Result.error("delete order item failed");

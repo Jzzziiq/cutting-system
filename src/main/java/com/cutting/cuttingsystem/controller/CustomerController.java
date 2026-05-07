@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TCustomerDTO;
@@ -48,12 +49,14 @@ public class CustomerController {
     }
 
     @DeleteMapping("/{id}")
+    @AuditLog(module = "客户管理", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         boolean removed = customerService.removeById(id);
         return removed ? Result.success() : Result.error("delete customer failed");
     }
 
     @PostMapping
+    @AuditLog(module = "客户管理", action = "新增")
     public Result save(@RequestBody @Valid TCustomerDTO customerDTO) {
         TCustomer customer = new TCustomer();
         BeanUtils.copyProperties(customerDTO, customer);
@@ -62,6 +65,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
+    @AuditLog(module = "客户管理", action = "编辑")
     public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
                          @RequestBody @Valid TCustomerVO customerVO) {
         TCustomer customer = new TCustomer();
