@@ -1,0 +1,10 @@
+# 本地开发配置
+# 复制此文件为 application-local.yml，填入本地实际值
+# 此文件不会被 git 跟踪
+
+spring:
+  datasource:
+    password: your_local_mysql_password
+
+jwt:
+  secret: your_jwt_secret_key

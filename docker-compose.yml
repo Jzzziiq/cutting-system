@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     container_name: cutting-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0625}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-board_cutting_db}
     ports:
       - "3307:3306"
@@ -22,8 +22,8 @@ services:
     container_name: cutting-backend
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0625}
-      JWT_SECRET: ${JWT_SECRET:-ROTATED_JWT_SECRET}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
