@@ -11,4 +11,6 @@ public interface TOrderService extends IService<TOrder> {
     boolean updateOrder(Long orderId, TOrderDTO orderDTO);
 
     TOrderVO getOrderDetail(Long orderId);
+
+    TOrderVO transitionStatus(Long orderId, int targetStatus, String remark);
 }

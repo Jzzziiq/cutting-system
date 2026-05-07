@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
+import com.cutting.cuttingsystem.entitys.DTO.OrderStatusTransitionDTO;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
+import com.cutting.cuttingsystem.entitys.OrderStatus;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
@@ -67,6 +69,22 @@ public class OrderController {
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         boolean removed = orderService.removeById(id);
         return removed ? Result.success() : Result.error("delete order failed");
+    }
+
+    @PutMapping("/{id}/status")
+    @AuditLog(module = "订单管理", action = "状态变更")
+    public Result transitionStatus(@PathVariable Long id, @RequestBody OrderStatusTransitionDTO dto) {
+        try {
+            TOrderVO vo = orderService.transitionStatus(id, dto.getTargetStatus(), dto.getRemark());
+            return Result.success(vo);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/status-labels")
+    public Result statusLabels() {
+        return Result.success(OrderStatus.allLabels());
     }
 
     private TOrderVO toVO(TOrder order) {

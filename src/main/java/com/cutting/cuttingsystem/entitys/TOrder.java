@@ -30,6 +30,8 @@ public class TOrder implements Serializable {
 
     private Integer orderStatus;
 
+    private String statusHistory;
+
     private String rawMaterialJson;
 
     private String remnantJson;

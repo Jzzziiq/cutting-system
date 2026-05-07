@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderItemDTO;
+import com.cutting.cuttingsystem.entitys.OrderStatus;
 import com.cutting.cuttingsystem.entitys.TCustomer;
 import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.TOrderItem;
@@ -22,7 +23,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> implements TOrderService {
@@ -82,6 +86,51 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
         return orderVO;
     }
 
+    @Override
+    @Transactional
+    public TOrderVO transitionStatus(Long orderId, int targetStatus, String remark) {
+        TOrder order = getById(orderId);
+        if (order == null) throw new RuntimeException("订单不存在");
+
+        int currentCode = order.getOrderStatus() != null ? order.getOrderStatus() : 0;
+        OrderStatus current = OrderStatus.fromCode(currentCode);
+        if (!current.canTransitionTo(targetStatus)) {
+            throw new RuntimeException(
+                String.format("不允许从 [%s] 转换到 [%s]", current.getLabel(), OrderStatus.fromCode(targetStatus).getLabel()));
+        }
+
+        List<Map<String, Object>> history = parseHistory(order.getStatusHistory());
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("from", currentCode);
+        entry.put("to", targetStatus);
+        entry.put("time", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        if (remark != null && !remark.isBlank()) entry.put("remark", remark);
+        history.add(entry);
+
+        order.setOrderStatus(targetStatus);
+        order.setStatusHistory(toJson(history));
+        if (targetStatus == 5) { // 已完工
+            order.setFinishTime(java.util.Date.from(java.time.Instant.now()));
+        }
+        updateById(order);
+        return getOrderDetail(orderId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> parseHistory(String json) {
+        if (json == null || json.isBlank()) return new ArrayList<>();
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(json, List.class);
+        } catch (Exception e) { return new ArrayList<>(); }
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) { return "[]"; }
+    }
+
     private void fillCustomerSnapshot(TOrder order) {
         if (order.getCustomerId() == null) {
             return;
@@ -122,6 +171,9 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
     private TOrderVO toOrderVO(TOrder order) {
         TOrderVO orderVO = new TOrderVO();
         BeanUtils.copyProperties(order, orderVO);
+        if (order.getOrderStatus() != null) {
+            orderVO.setStatusLabel(OrderStatus.fromCode(order.getOrderStatus()).getLabel());
+        }
         return orderVO;
     }
 

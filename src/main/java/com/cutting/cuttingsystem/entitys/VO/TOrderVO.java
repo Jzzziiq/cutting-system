@@ -14,6 +14,8 @@ public class TOrderVO {
     private String customerAddress;
     private String processName;
     private Integer orderStatus;
+    private String statusLabel;
+    private String statusHistory;
     private String rawMaterialJson;
     private String remnantJson;
     private String configJson;
