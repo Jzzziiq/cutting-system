@@ -22,4 +22,16 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean("algorithmExecutor")
+    public Executor algorithmExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(3);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("algorithm-");
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

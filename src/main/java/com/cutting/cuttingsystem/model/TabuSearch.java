@@ -9,7 +9,7 @@ import java.util.Comparator;
 
 @Data
 @Slf4j
-public class TabuSearch {
+public class TabuSearch implements CuttingAlgorithm {
     public final int MAX_GEN = 300; // 最大迭代次数（可调）
     public final int N = 500;       // 每次领域搜索数（可调）
     public int sqNum;               // 矩形数量
@@ -50,7 +50,14 @@ public class TabuSearch {
         sqNum = initGhh.size();
     }
 
+    @Override
+    public String name() { return "tabu_search"; }
+
+    @Override
+    public String displayName() { return "禁忌搜索"; }
+
     // 禁忌搜索主逻辑（迭代寻优）
+    @Override
     public Solution search() throws Exception {
         long start = System.currentTimeMillis();
         getInitSolution(); // 初始化初始解
