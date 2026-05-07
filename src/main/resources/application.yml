@@ -1,24 +1,35 @@
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
 
-Spring:
+spring:
+  output:
+    ansi:
+      enabled: never
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/board_cutting_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: root
     password: '0625'
 
+logging:
+  charset:
+    console: UTF-8
+
 # JWT 配置
 jwt:
-  secret: ROTATED_JWT_SECRET  # 将 KeyGenerator 生成的 Base64 密钥复制到这里
-  expiration: 86400000  # 过期时间（毫秒），默认 24 小时
+  secret: ROTATED_JWT_SECRET
+  expiration: 86400000
 
 # MyBatis-Plus 配置
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml  # Mapper XML 文件位置
+  mapper-locations: classpath:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
-      id-type: auto  # 主键自增
+      id-type: auto

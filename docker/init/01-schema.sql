@@ -1,4 +1,3 @@
-mysqldump: [Warning] Using a password on the command line interface can be insecure.
 CREATE TABLE `t_audit_log` (
   `log_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `user_id` bigint NOT NULL COMMENT 'operator user id',
@@ -18,7 +17,7 @@ CREATE TABLE `t_audit_log` (
   KEY `idx_audit_log_module` (`module`),
   KEY `idx_audit_log_time` (`create_time`),
   CONSTRAINT `fk_audit_log_user` FOREIGN KEY (`user_id`) REFERENCES `t_user` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='operation audit log';
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='operation audit log';
 CREATE TABLE `t_board` (
   `board_id` bigint NOT NULL AUTO_INCREMENT COMMENT '板材唯一ID（原材序号）',
   `user_id` bigint NOT NULL DEFAULT '0' COMMENT '用户 ID',
@@ -221,6 +220,7 @@ CREATE TABLE `t_user_role` (
   CONSTRAINT `fk_user_role_user` FOREIGN KEY (`user_id`) REFERENCES `t_user` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='user-role mapping';
 
+-- Seed data
 INSERT INTO t_role (role_code, role_name, description) VALUES
 ('admin', '超级管理员', '系统全部权限'),
 ('operator', '操作员', '业务操作与排样执行'),
