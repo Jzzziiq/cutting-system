@@ -19,3 +19,19 @@ export function updateCustomer(id, data) {
 export function deleteCustomer(id) {
   return http.delete(`/customers/${id}`);
 }
+
+export function exportCustomers() {
+  return http.get('/customers/export', { responseType: 'blob' });
+}
+
+export function importCustomers(file) {
+  const form = new FormData();
+  form.append('file', file);
+  return http.post('/customers/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+}
+
+export function downloadCustomerTemplate() {
+  return http.get('/customers/template', { responseType: 'blob' });
+}

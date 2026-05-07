@@ -19,3 +19,19 @@ export function updateBoard(id, data) {
 export function deleteBoard(id) {
   return http.delete(`/boards/${id}`);
 }
+
+export function exportBoards() {
+  return http.get('/boards/export', { responseType: 'blob' });
+}
+
+export function importBoards(file) {
+  const form = new FormData();
+  form.append('file', file);
+  return http.post('/boards/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+}
+
+export function downloadBoardTemplate() {
+  return http.get('/boards/template', { responseType: 'blob' });
+}

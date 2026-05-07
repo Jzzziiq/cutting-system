@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { createBoard, deleteBoard, getBoard, listBoards, updateBoard } from '@/api/boards';
+import { createBoard, deleteBoard, downloadBoardTemplate, exportBoards, getBoard, importBoards, listBoards, updateBoard } from '@/api/boards';
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -121,6 +121,41 @@ function prevPage() {
   }
 }
 
+function downloadBlob(data, filename) {
+  const url = window.URL.createObjectURL(new Blob([data]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+async function handleExport() {
+  try {
+    const data = await exportBoards();
+    downloadBlob(data, 'boards.xlsx');
+  } catch (e) { errorMessage.value = e.message; }
+}
+
+async function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  errorMessage.value = '';
+  try {
+    const result = await importBoards(file);
+    alert(`导入完成：共 ${result.total} 条，成功 ${result.success}，失败 ${result.fail}`);
+    await loadData();
+  } catch (e) { errorMessage.value = e.message; }
+  e.target.value = '';
+}
+
+async function handleDownloadTemplate() {
+  try {
+    const data = await downloadBoardTemplate();
+    downloadBlob(data, '板材导入模板.xlsx');
+  } catch (e) { errorMessage.value = e.message; }
+}
+
 onMounted(loadData);
 </script>
 
@@ -131,7 +166,15 @@ onMounted(loadData);
         <h2>板材列表</h2>
         <p>维护品牌、材质、颜色、规格和尺寸信息</p>
       </div>
-      <button class="btn primary" type="button" @click="openCreate">新增板材</button>
+      <div class="action-group">
+        <button class="btn primary" type="button" @click="openCreate">新增板材</button>
+        <button class="btn secondary" type="button" @click="handleExport">导出</button>
+        <label class="btn secondary" style="cursor:pointer">
+          导入
+          <input type="file" accept=".xlsx" hidden @change="handleImport" />
+        </label>
+        <button class="btn ghost" type="button" @click="handleDownloadTemplate">下载模板</button>
+      </div>
     </div>
 
     <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>

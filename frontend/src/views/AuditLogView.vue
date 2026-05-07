@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
-import { listAuditLogs } from '@/api/audit-logs';
+import { exportAuditLogs, listAuditLogs } from '@/api/audit-logs';
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -57,6 +57,22 @@ function statusLabel(s) {
   return s === 1 ? '失败' : '成功';
 }
 
+function downloadBlob(data, filename) {
+  const url = window.URL.createObjectURL(new Blob([data]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+async function handleExport() {
+  try {
+    const data = await exportAuditLogs();
+    downloadBlob(data, 'audit-logs.xlsx');
+  } catch (e) { errorMessage.value = e.message; }
+}
+
 onMounted(loadData);
 </script>
 
@@ -67,6 +83,7 @@ onMounted(loadData);
         <h2>操作审计日志</h2>
         <p>追溯用户的增/删/改操作记录</p>
       </div>
+      <button class="btn secondary" type="button" @click="handleExport">导出</button>
     </div>
 
     <div class="filter-row">
