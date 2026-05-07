@@ -67,7 +67,7 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmTaskMapper, Algor
 
     @Override
     public void executeTask(String taskId) {
-        // delegate to TaskRunner for async execution
+        doExecuteTask(taskId);
     }
 
     public void doExecuteTask(String taskId) {

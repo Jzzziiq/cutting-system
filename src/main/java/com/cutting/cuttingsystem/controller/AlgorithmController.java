@@ -5,7 +5,6 @@ import com.cutting.cuttingsystem.entitys.AlgorithmTask;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.algorithm.DTO.InstanceDTO;
 import com.cutting.cuttingsystem.service.AlgorithmService;
-import com.cutting.cuttingsystem.service.impl.TaskRunner;
 import com.cutting.cuttingsystem.util.UserContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -23,9 +22,6 @@ public class AlgorithmController {
     @Autowired
     private AlgorithmService algorithmService;
 
-    @Autowired
-    private TaskRunner taskRunner;
-
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @PostMapping("/submit")
@@ -33,8 +29,11 @@ public class AlgorithmController {
         try {
             String json = MAPPER.writeValueAsString(input);
             AlgorithmTask task = algorithmService.submit(algorithm, json, UserContext.getCurrentUserId());
-            taskRunner.run(task.getTaskId());
-            return Result.success(Map.of("taskId", task.getTaskId(), "status", task.getStatus()));
+            algorithmService.executeTask(task.getTaskId());
+            task = algorithmService.getTask(task.getTaskId());
+            return Result.success(Map.of("taskId", task.getTaskId(), "status", task.getStatus(),
+                    "bestRate", task.getBestRate(), "containerCount", task.getContainerCount(),
+                    "durationMs", task.getDurationMs()));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
