@@ -17,7 +17,7 @@ const router = useRouter();
 
 const canvasRef = ref(null);
 
-const { submitting, result, submit } = useAlgorithmSubmit();
+const { submitting, submit } = useAlgorithmSubmit();
 
 const solutions = ref([]);
 const loadingCanvas = ref(false);
@@ -47,6 +47,8 @@ async function loadFromTask() {
         utilizationRate: res.bestRate,
         containerCount: res.containerCount
       };
+    } else {
+      ElMessage.warning('该任务没有排版结果数据');
     }
     activeResultId.value = null;
   } catch (e) {
@@ -71,6 +73,9 @@ async function onSelectRecord(record) {
         utilizationRate: detail.usageRate,
         containerCount: detail.containerCount
       };
+    } else {
+      solutions.value = [];
+      ElMessage.warning('该排版记录没有结果数据（resultJson 为空）');
     }
   } catch (e) {
     ElMessage.error('加载排版详情失败');
@@ -113,11 +118,9 @@ async function onStartLayout() {
       squareList
     });
 
+    // submit() now always returns parsed resultJson
     if (res?.resultJson) {
-      const data = typeof res.resultJson === 'string' ? JSON.parse(res.resultJson) : res.resultJson;
-      solutions.value = data;
-    } else if (result.value) {
-      solutions.value = result.value;
+      solutions.value = Array.isArray(res.resultJson) ? res.resultJson : [res.resultJson];
     }
 
     orderInfo.value = {

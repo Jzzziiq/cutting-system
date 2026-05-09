@@ -70,6 +70,7 @@ public class AlgorithmServiceImpl extends ServiceImpl<AlgorithmTaskMapper, Algor
         doExecuteTask(taskId);
     }
 
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void doExecuteTask(String taskId) {
         AlgorithmTask task = getById(taskId);
         if (task == null) return;

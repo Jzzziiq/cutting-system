@@ -46,6 +46,7 @@ public class TUserServiceImpl extends ServiceImpl<TUserMapper, TUser> implements
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public boolean register(String username, String password) {
         QueryWrapper<TUser> qw = new QueryWrapper<>();
         qw.eq("username", username);

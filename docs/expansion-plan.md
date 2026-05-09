@@ -1,7 +1,7 @@
 # 柜门板材切割排版系统 — 拓展路线图
 
-> 编写日期: 2026-05-07 | 最后更新: 2026-05-07
-> 当前版本基线: 单体 CRUD + 禁忌搜索排样 + RBAC + 审计 + Docker + Excel
+> 编写日期: 2026-05-07 | 最后更新: 2026-05-09
+> 当前版本基线: 单体 CRUD + 多算法排样 + 订单状态机 + RBAC + 审计 + Docker + Excel
 > 目标: 从"工具"演进为"平台"
 
 ---
@@ -48,24 +48,25 @@
 
 > **目标**: 让系统从"CRUD 台账"变成"切割生产引擎"
 
-### 1.1 订单生命周期状态机 ⬜
+### 1.1 订单生命周期状态机 ✅
 
 ```
-待审核 → 已审核 → 排样中 → 已排样 → 生产中 → 已完工 → 已交付
-  ↓        ↓        ↓        ↓        ↓         ↓
- 驳回     取消     排样失败   重新排样  暂停      返工
+待审核(0) → 已审核(1) → 排样中(2) → 已排样(3) → 生产中(4) → 已完工(5) → 已交付(6)
+  ↓           ↓           ↓           ↓           ↓           ↓
+ 驳回(-1)    取消(-2)    排样失败(-3)  重新排样     暂停        返工
 ```
 
-- 状态流转 + 操作人/时间戳记录
-- 技术: 枚举状态守卫 + 服务层校验（Spring State Machine 按需引入）
+- 10 状态枚举 `OrderStatus` + `allowedNext` 集合声明式守卫
+- `TOrderServiceImpl.transitionStatus()` 转换校验 + `statusHistory` JSON 列记录历史
+- `PUT /orders/{id}/status` + `GET /orders/status-labels` REST API
 - **价值**: 订单不再是一行死数据，而是可追踪的活流程
 
-### 1.2 算法升级：多算法 + 异步 ⬜
+### 1.2 算法升级：多算法 + 异步 ✅
 
-- 新增遗传算法 (GA)、贪心+局部搜索
-- 策略模式 `CuttingAlgorithm` 接口，前端可选算法并对比利用率
-- 异步求解: `提交任务 → taskId → 轮询/WebSocket 推送结果`
-- **价值**: 核心竞争壁垒。多算法可选 + 不阻塞 HTTP 超时
+- 策略模式 `CuttingAlgorithm` 接口，`TabuSearch` + `GeneticAlgorithm` 双算法
+- `AlgorithmRegistry` 工厂注册表，前端可选算法并对比利用率 (`POST /algorithm/compare`)
+- 异步求解: `AlgorithmTask` 持久化任务，`AlgorithmServiceImpl.submit()` 提交 → 轮询结果 ⚠️ TaskRunner 因 MyBatis-Plus/CGLIB 代理冲突已删除，当前同步执行
+- **价值**: 核心竞争壁垒。多算法可选对比，准确率提升
 
 ### 1.3 生产任务模块 ⬜
 
@@ -161,9 +162,9 @@
 
 ```
 🔥 当前批次 — 核心业务闭环 (最优先)
-├── 1.1 订单生命周期状态机
-├── 1.2 算法升级（多算法 + 异步）
-├── 1.3 生产任务模块 (Kanban)
+├── 1.1 订单生命周期状态机 ✅
+├── 1.2 算法升级（多算法 + 异步）✅ (异步部分回退)
+├── 1.3 生产任务模块 (Kanban)   ← 下一步
 └── 1.4 数据分析看板 (ECharts)
 
 第 2 批 — 业务增强
@@ -211,3 +212,6 @@
 | 2026-05-07 | 操作审计日志 | AOP+@Async；7控制器全覆盖；164测试 |
 | 2026-05-07 | Docker Compose | MySQL+Nginx+Backend三容器；多阶段Dockerfile |
 | 2026-05-07 | EasyExcel 导入导出 | 客户/板材批量导入导出+模板；164测试 |
+| 2026-05-07 | 订单生命周期状态机 | 10状态枚举+allowedNext守卫+statusHistory JSON+转换API；OrderModuleTest |
+| 2026-05-07 | 多算法策略模式 | CuttingAlgorithm接口+TabuSearch+GeneticAlgorithm+AlgorithmRegistry+compare端点 |
+| 2026-05-07 | 异步算法回退 | TaskRunner 因 MyBatis-Plus@ServiceImpl CGLIB 代理冲突删除，改为同步执行 |

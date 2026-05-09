@@ -2,7 +2,6 @@ package com.cutting.cuttingsystem.aop;
 
 import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.entitys.TAuditLog;
-import com.cutting.cuttingsystem.service.TAuditLogService;
 import com.cutting.cuttingsystem.util.UserContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +26,7 @@ import java.util.List;
 public class AuditLogAspect {
 
     @Autowired
-    private TAuditLogService auditLogService;
+    private AuditLogWriter auditLogWriter;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -69,7 +68,7 @@ public class AuditLogAspect {
             throw e;
         } finally {
             logEntry.setDurationMs(System.currentTimeMillis() - start);
-            auditLogService.asyncSave(logEntry);
+            auditLogWriter.asyncSave(logEntry);
         }
 
         return result;

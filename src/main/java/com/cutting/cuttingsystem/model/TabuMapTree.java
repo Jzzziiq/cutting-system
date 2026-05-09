@@ -47,6 +47,9 @@ public class TabuMapTree {
             nodeSquare = squareList.get(index);
             index++;
         }
+        if (index >= squareList.size()) {
+            return;
+        }
         Square square = squareList.get(index);
         String id = square.getId();
         if (sonTreeMap.containsKey(id)) {

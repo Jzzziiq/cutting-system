@@ -73,7 +73,7 @@ public class OrderController {
 
     @PutMapping("/{id}/status")
     @AuditLog(module = "订单管理", action = "状态变更")
-    public Result transitionStatus(@PathVariable Long id, @RequestBody OrderStatusTransitionDTO dto) {
+    public Result transitionStatus(@PathVariable Long id, @RequestBody @Valid OrderStatusTransitionDTO dto) {
         try {
             TOrderVO vo = orderService.transitionStatus(id, dto.getTargetStatus(), dto.getRemark());
             return Result.success(vo);

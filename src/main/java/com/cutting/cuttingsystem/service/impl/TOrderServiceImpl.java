@@ -8,12 +8,15 @@ import com.cutting.cuttingsystem.entitys.OrderStatus;
 import com.cutting.cuttingsystem.entitys.TCustomer;
 import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.TOrderItem;
+import com.cutting.cuttingsystem.entitys.TProductionTask;
+import com.cutting.cuttingsystem.entitys.TaskStatus;
 import com.cutting.cuttingsystem.entitys.VO.TOrderItemVO;
 import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
 import com.cutting.cuttingsystem.mapper.TOrderMapper;
 import com.cutting.cuttingsystem.service.TCustomerService;
 import com.cutting.cuttingsystem.service.TOrderItemService;
 import com.cutting.cuttingsystem.service.TOrderService;
+import com.cutting.cuttingsystem.service.TProductionTaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,9 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
 
     @Autowired
     private TCustomerService customerService;
+
+    @Autowired
+    private TProductionTaskService productionTaskService;
 
     @Override
     @Transactional
@@ -113,6 +119,16 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
             order.setFinishTime(java.util.Date.from(java.time.Instant.now()));
         }
         updateById(order);
+
+        if (targetStatus == OrderStatus.LAYOUT_DONE.getCode()) {
+            TProductionTask task = new TProductionTask();
+            task.setOrderId(orderId);
+            task.setTaskName(order.getProcessName() != null ? order.getProcessName() : "切割任务");
+            task.setLayoutResultId(order.getLayoutResultId());
+            task.setStatus(TaskStatus.PENDING.getCode());
+            productionTaskService.save(task);
+        }
+
         return getOrderDetail(orderId);
     }
 
