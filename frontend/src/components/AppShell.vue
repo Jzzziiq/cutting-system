@@ -12,6 +12,9 @@ const navItems = [
   { name: 'customers', label: '客户管理', perm: 'customer:read' },
   { name: 'boards', label: '板材管理', perm: 'board:read' },
   { name: 'algorithm', label: '算法排样', perm: 'algorithm:execute' },
+  { name: 'production-board', label: '生产看板', perm: 'order:read' },
+  { name: 'data-input', label: '加工数据输入', perm: 'order:write' },
+  { name: 'layout-workbench', label: '排版工作台', perm: 'layout:read' },
   { name: 'users', label: '用户管理', perm: 'user:manage' },
   { name: 'audit-logs', label: '审计日志', perm: 'user:manage' }
 ];
@@ -61,7 +64,11 @@ function logout() {
       </header>
 
       <section class="content-panel">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive :max="10">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </section>
     </main>
   </div>

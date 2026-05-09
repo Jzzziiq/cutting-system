@@ -8,6 +8,7 @@ import BoardsView from '@/views/BoardsView.vue';
 import AlgorithmView from '@/views/AlgorithmView.vue';
 import UsersView from '@/views/UsersView.vue';
 import AuditLogView from '@/views/AuditLogView.vue';
+import ProductionKanbanView from '@/views/ProductionKanbanView.vue';
 
 const routes = [
   {
@@ -56,6 +57,24 @@ const routes = [
         name: 'audit-logs',
         component: AuditLogView,
         meta: { title: '审计日志' }
+      },
+      {
+        path: 'production-board',
+        name: 'production-board',
+        component: ProductionKanbanView,
+        meta: { title: '生产看板' }
+      },
+      {
+        path: 'cutting/data-input',
+        name: 'data-input',
+        component: () => import('@/views/cutting/DataInputView.vue'),
+        meta: { title: '加工数据输入' }
+      },
+      {
+        path: 'cutting/layout-workbench',
+        name: 'layout-workbench',
+        component: () => import('@/views/cutting/LayoutWorkbenchView.vue'),
+        meta: { title: '排版工作台' }
       }
     ]
   },

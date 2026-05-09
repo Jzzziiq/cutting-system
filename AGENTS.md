@@ -1,15 +1,11 @@
 # 项目说明
 
-agent_instruction: true  
-read_before_work: true  
-scope: entire_repository  
+## AI 工具约定
 
-## Codex 启动约定
-
-- 每次 Codex 在本仓库开始分析、修改、测试或文档维护前，应先读取本文件。
+- AI 工具在本仓库开始分析、修改、测试或文档维护前，应先读取本文件。
 - 本文件是项目级上下文入口；当用户请求与代码、接口、数据模型、算法、依赖或文档有关时，应优先遵循本文档中的约定。
 - 如果本文件与用户当前明确指令冲突，以用户当前指令为准；如果本文件与局部代码事实冲突，应先读取代码并在回复中说明差异。
-- 修改项目后，如涉及新增 API、修改数据模型、调整算法逻辑或引入新依赖，应同步更新本文档的相关章节和“变更记录”。
+- 修改项目后，如涉及新增 API、修改数据模型、调整算法逻辑或引入新依赖，应同步更新本文档的相关章节和”变更记录”。
 
 project_name: cutting-system  
 project_type: 柜门板材切割排版系统  
@@ -20,11 +16,11 @@ java_version: 17
 database: MySQL 8.0+  
 orm: MyBatis-Plus 3.5.x  
 auth: JWT + Spring MVC Interceptor  
-frontend_web: Vue 3 + Vite + Pinia + Vue Router + Axios  
+frontend_web: Vue 3 + Vite + Pinia + Vue Router + Axios + Element Plus + Canvas 2D  
 frontend_miniprogram: 微信小程序原生框架  
 algorithm_entry: `POST /algorithm/answer`  
 algorithm_strategy: 禁忌搜索 + 天际线放置算法  
-last_updated: 2026-04-30  
+last_updated: 2026-05-08  
 
 本项目是基于 Spring Boot 的柜门板材切割排版系统。后端负责用户认证、客户管理、板材管理、订单/余料/排样结果管理、算法接口与静态资源托管。网页端用于后台操作和排样结果可视化，小程序端用于现场录入、客户管理、板材管理、算法输入和排样结果展示。
 
@@ -58,13 +54,24 @@ mvn "-Dmaven.repo.local=target\.m2" test
 后端启动：
 
 ```powershell
-mvn spring-boot:run
+mvn "-Dmaven.repo.local=target\.m2" spring-boot:run
 ```
 
 本地同时启动后端和网页端：
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\start-dev.ps1
+```
+
+或直接分别在两个终端启动（适用于 PowerShell 脚本不可用的场景，如 Git Bash）：
+
+```bash
+# 终端 1：后端
+mvn "-Dmaven.repo.local=target/.m2" spring-boot:run
+
+# 终端 2：前端
+cd frontend
+npm run dev
 ```
 
 停止本地开发服务：
@@ -129,11 +136,13 @@ npm run build
 | 认证 | `/auth/login`、`/auth/register`、`/auth/logout` | 不需要 JWT | `Result` |
 | 客户 | `/customers`、`/customers/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 板材 | `/boards`、`/boards/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 订单 | `/orders`、`/orders/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
+| 订单 | `/orders`、`/orders/{id}`、`/orders/{id}/status` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 订单明细 | `/order-items`、`/order-items/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 余料 | `/remnants`、`/remnants/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 排样结果 | `/layout-results`、`/layout-results/{id}`、`/layout-results/order/{orderId}` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 算法求解 | `POST /algorithm/answer` | 需要 `Authorization: Bearer <token>` | `List<SolutionResponseDTO>` |
+| 算法异步 | `POST /algorithm/submit`、`GET /algorithm/result/{taskId}`、`POST /algorithm/compare`、`GET /algorithm/algorithms` | 需要 `Authorization: Bearer <token>` | `Result` |
+| 生产任务 | `/production-tasks`、`/production-tasks/{id}`、`/production-tasks/kanban`、`/production-tasks/order/{orderId}` | 需要 `Authorization: Bearer <token>` | `Result` |
 
 认证规则：
 
@@ -198,11 +207,17 @@ npm run build
 网页端：
 
 - 源码目录：`frontend/`
-- API 封装：`frontend/src/api/`
+- UI 组件库：Element Plus（主题色 `#0f766e` teal，通过 `:root` CSS 变量覆盖；中文语言包）
+- API 封装：`frontend/src/api/`（按后端模块拆分：`orders.js`、`boards.js`、`remnants.js`、`layout-results.js`、`algorithm.js` 等）
+- 组合式函数：`frontend/src/composables/`（`useCuttingTable`、`useLayoutCanvas`、`useAlgorithmSubmit`）
 - 路由：`frontend/src/router/index.js`
 - 认证状态：`frontend/src/stores/auth.js`
 - 开发代理：`/api` -> `http://localhost:8080`
-- 页面范围：登录、工作台、客户、板材、算法输入与结果可视化。
+- 页面范围：
+  - 系统管理：登录、工作台、客户管理、板材管理、用户管理、审计日志
+  - 生产加工：**加工数据输入** (`/cutting/data-input`)、**排版工作台** (`/cutting/layout-workbench`)、算法排样、生产看板
+- 加工数据输入页：顶栏（订单信息）+ 左侧（板材搜索/选择 + 余料联动选择）+ 右侧（excel 风格可编辑下料表格，支持键盘导航和 TSV 粘贴）+ 底栏（统计 + 确认排版）
+- 排版工作台页：工具栏（导入/排版/参数/缩放/导出/保存/返回）+ 左侧（历史排版记录列表）+ 中央 Canvas（板材矩形 + 工件色块布局 + 缩放平移 + 悬停 tooltip + 板材切换标签）+ 摘要栏
 
 小程序端：
 
@@ -246,3 +261,4 @@ npm run build
 - 2026-05-01 | 类型: API/测试 | 范围: 客户模块 CustomerController、TCustomerDTO、TCustomerVO、CustomerModuleTest | 原因: 补齐客户接口参数校验、404/删除失败响应和模块测试覆盖 | 影响: 客户新增/编辑请求会对必填和长度字段进行校验，接口路径保持不变 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=CustomerModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
 - 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 增加 Codex 启动约定，提示后续任务优先读取本文档 | 影响: 不影响运行时行为 | 验证: 文档结构检查
 - 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 为 Codex 提供项目结构、开发规则和维护约定 | 影响: 不影响运行时行为 | 验证: 文档结构检查
+- 2026-05-08 | 类型: 前端架构 | 范围: frontend/（新增 17 个文件，修改 6 个文件） | 原因: 重构前端为生产加工型界面，引入 Element Plus，新增"加工数据输入页"和"排版工作台页"两个核心生产页面 | 影响: 新增 `/cutting/data-input` 和 `/cutting/layout-workbench` 路由；新增 4 个 API 模块（orders, order-items, remnants, layout-results）；新增 3 个组合式函数（useCuttingTable, useLayoutCanvas, useAlgorithmSubmit）；新增 8 个切割专用子组件；algorithm.js 扩展 submit/getResult/getAlgorithms/compare；package.json 新增 element-plus 依赖；main.css 追加 Element Plus teal 主题变量和切割页面布局样式 | 验证: `cd frontend && npm run build` 通过，DataInputView 17.46 kB / LayoutWorkbenchView 22.00 kB 均代码分割 |
