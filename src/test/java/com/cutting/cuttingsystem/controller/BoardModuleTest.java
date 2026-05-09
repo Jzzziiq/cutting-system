@@ -271,6 +271,73 @@ class BoardModuleTest {
     }
 
     @Test
+    void batchDeleteBoardsReturnsSuccessWhenRemoveSucceeds() throws Exception {
+        when(tBoardService.removeByIds(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/boards/batch")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchUpdateBoardStatusReturnsSuccessWhenUpdateSucceeds() throws Exception {
+        when(tBoardService.update(any(TBoard.class), any())).thenReturn(true);
+
+        mockMvc.perform(put("/boards/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2],
+                                  "isEnabled": 0
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchUpdateBoardStatusRejectsEmptyIds() throws Exception {
+        mockMvc.perform(put("/boards/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [],
+                                  "isEnabled": 1
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.ids").exists());
+    }
+
+    @Test
+    void batchUpdateBoardStatusRejectsInvalidEnabledFlag() throws Exception {
+        mockMvc.perform(put("/boards/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1],
+                                  "isEnabled": 2
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.isEnabled").exists());
+    }
+
+    @Test
     void protectedBoardEndpointRejectsMissingToken() throws Exception {
         mockMvc.perform(get("/boards")
                         .param("pageNum", "1")

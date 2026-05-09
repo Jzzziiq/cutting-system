@@ -1,0 +1,1 @@
+import{n as r}from"./index-GMs0Qcn7.js";function a(t,s="tabu_search"){return r.post("/algorithm/submit",t,{params:{algorithm:s}})}function i(t){return r.get(`/algorithm/result/${t}`)}export{i as g,a as s};

@@ -98,13 +98,14 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     if (!solution) return;
     const { L, W } = getContainerDim(solution);
     const padding = 60;
-    const availW = canvasSize.value.w - padding * 2;
-    const availH = canvasSize.value.h - padding * 2;
+    const availW = Math.max(1, canvasSize.value.w - padding * 2);
+    const availH = Math.max(1, canvasSize.value.h - padding * 2);
     const s = Math.min(availW / L, availH / W);
+    if (!Number.isFinite(s) || s <= 0) return;
     zoom.value = s;
     panOffset.value = {
       x: (canvasSize.value.w - L * s) / 2,
-      y: (canvasSize.value.h - W * s) / 2 + W * s
+      y: (canvasSize.value.h - W * s) / 2
     };
   }
 
@@ -145,16 +146,16 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     const tl = worldToScreen(0, W, W);
     const br = worldToScreen(L, 0, W);
     const boardScreenW = br.x - tl.x;
-    const boardScreenH = tl.y - br.y;
-    ctx.fillRect(tl.x, br.y, boardScreenW, boardScreenH);
-    ctx.strokeRect(tl.x, br.y, boardScreenW, boardScreenH);
+    const boardScreenH = br.y - tl.y;
+    ctx.fillRect(tl.x, tl.y, boardScreenW, boardScreenH);
+    ctx.strokeRect(tl.x, tl.y, boardScreenW, boardScreenH);
 
     // Board info label
     ctx.fillStyle = '#172033';
     ctx.font = 'bold 13px "Microsoft YaHei", sans-serif';
     ctx.textAlign = 'left';
     const infoText = `板材 #${activeBoardIndex.value + 1}  ${L}×${W}mm  利用率 ${(rate * 100).toFixed(1)}%  工件 ${pieces.length} 个`;
-    ctx.fillText(infoText, tl.x + 8, br.y - 8);
+    ctx.fillText(infoText, tl.x + 8, Math.max(16, tl.y - 8));
 
     // Pieces
     pieces.forEach((piece, i) => {
@@ -168,16 +169,16 @@ export function useLayoutCanvas(canvasRef, options = {}) {
       const pTl = worldToScreen(px, py + pw, W);
       const pBr = worldToScreen(px + pl, py, W);
       const pScreenW = pBr.x - pTl.x;
-      const pScreenH = pTl.y - pBr.y;
+      const pScreenH = pBr.y - pTl.y;
 
       // Fill
       ctx.fillStyle = PIECE_COLORS[i % PIECE_COLORS.length];
-      ctx.fillRect(pTl.x, pBr.y, pScreenW, pScreenH);
+      ctx.fillRect(pTl.x, pTl.y, pScreenW, pScreenH);
 
       // Border
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = Math.max(0.5, 1 / zoom.value);
-      ctx.strokeRect(pTl.x, pBr.y, pScreenW, pScreenH);
+      ctx.strokeRect(pTl.x, pTl.y, pScreenW, pScreenH);
 
       // Label
       const fontSize = Math.min(12 / zoom.value, Math.min(pScreenW, pScreenH) * 0.45);
@@ -188,7 +189,7 @@ export function useLayoutCanvas(canvasRef, options = {}) {
         ctx.textBaseline = 'middle';
         const label = `${pl.toFixed(0)}×${pw.toFixed(0)}`;
         const cx = pTl.x + pScreenW / 2;
-        const cy = pBr.y + pScreenH / 2;
+        const cy = pTl.y + pScreenH / 2;
         if (pScreenW > ctx.measureText(label).width + 6) {
           ctx.fillText(label, cx, cy);
         }
@@ -208,7 +209,7 @@ export function useLayoutCanvas(canvasRef, options = {}) {
 
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = Math.max(2, 3 / zoom.value);
-      ctx.strokeRect(pTl.x - 2, pBr.y - 2, pBr.x - pTl.x + 4, pTl.y - pBr.y + 4);
+      ctx.strokeRect(pTl.x - 2, pTl.y - 2, pBr.x - pTl.x + 4, pBr.y - pTl.y + 4);
     }
 
     ctx.restore();
@@ -224,6 +225,9 @@ export function useLayoutCanvas(canvasRef, options = {}) {
 
   function onResize() {
     initCanvas();
+    if (currentSolution.value) {
+      fitToScreen();
+    }
     requestDraw();
   }
 

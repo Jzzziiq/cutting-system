@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import {
+  batchDeleteCustomers,
+  batchUpdateCustomerStatus,
   createCustomer,
   deleteCustomer,
   downloadCustomerTemplate,
@@ -16,6 +18,7 @@ const errorMessage = ref('');
 const records = ref([]);
 const total = ref(0);
 const page = reactive({ pageNum: 1, pageSize: 10 });
+const selectedIds = ref([]);
 const modalMode = ref('');
 const currentId = ref(null);
 const form = reactive({
@@ -27,6 +30,11 @@ const form = reactive({
 });
 
 const readonly = computed(() => modalMode.value === 'detail');
+const visibleIds = computed(() => records.value.map(item => item.customerId));
+const selectedCount = computed(() => selectedIds.value.length);
+const allVisibleSelected = computed(() =>
+  visibleIds.value.length > 0 && visibleIds.value.every(id => selectedIds.value.includes(id))
+);
 const modalTitle = computed(() => {
   if (modalMode.value === 'create') return '新增客户';
   if (modalMode.value === 'edit') return '编辑客户';
@@ -48,6 +56,7 @@ async function loadData() {
     const data = await listCustomers(page);
     records.value = data?.records || [];
     total.value = data?.total ?? records.value.length;
+    selectedIds.value = selectedIds.value.filter(id => visibleIds.value.includes(id));
   } catch (error) {
     errorMessage.value = error.message;
   } finally {
@@ -96,6 +105,49 @@ async function remove(id) {
   if (!window.confirm('确认删除该客户？')) return;
   await deleteCustomer(id);
   await loadData();
+}
+
+function toggleSelect(id) {
+  if (selectedIds.value.includes(id)) {
+    selectedIds.value = selectedIds.value.filter(item => item !== id);
+  } else {
+    selectedIds.value = [...selectedIds.value, id];
+  }
+}
+
+function toggleVisibleSelection() {
+  if (allVisibleSelected.value) {
+    selectedIds.value = selectedIds.value.filter(id => !visibleIds.value.includes(id));
+    return;
+  }
+  selectedIds.value = [...new Set([...selectedIds.value, ...visibleIds.value])];
+}
+
+async function batchSetEnabled(isEnabled) {
+  if (!selectedCount.value) return;
+  const label = isEnabled === 1 ? '启用' : '禁用';
+  if (!window.confirm(`确认${label}已选 ${selectedCount.value} 个客户？`)) return;
+  errorMessage.value = '';
+  try {
+    await batchUpdateCustomerStatus([...selectedIds.value], isEnabled);
+    selectedIds.value = [];
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
+}
+
+async function batchRemove() {
+  if (!selectedCount.value) return;
+  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个客户？`)) return;
+  errorMessage.value = '';
+  try {
+    await batchDeleteCustomers([...selectedIds.value]);
+    selectedIds.value = [];
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
 }
 
 function nextPage() {
@@ -170,10 +222,28 @@ onMounted(loadData);
 
     <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
 
+    <div class="batch-toolbar">
+      <label class="batch-selection">
+        <input
+          type="checkbox"
+          :checked="allVisibleSelected"
+          :disabled="!records.length"
+          @change="toggleVisibleSelection"
+        />
+        <span>已选 {{ selectedCount }} 条</span>
+      </label>
+      <div class="batch-actions">
+        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
+        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
+        <button class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
+      </div>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
+            <th class="select-col"></th>
             <th>ID</th>
             <th>客户名称</th>
             <th>电话</th>
@@ -184,12 +254,20 @@ onMounted(loadData);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6">加载中...</td>
+            <td colspan="7">加载中...</td>
           </tr>
           <tr v-else-if="!records.length">
-            <td colspan="6">暂无客户数据</td>
+            <td colspan="7">暂无客户数据</td>
           </tr>
           <tr v-for="item in records" v-else :key="item.customerId">
+            <td class="select-col">
+              <input
+                class="row-check"
+                type="checkbox"
+                :checked="selectedIds.includes(item.customerId)"
+                @change="toggleSelect(item.customerId)"
+              />
+            </td>
             <td>{{ item.customerId }}</td>
             <td>{{ item.customerName }}</td>
             <td>{{ item.phone }}</td>

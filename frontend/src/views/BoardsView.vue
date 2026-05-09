@@ -1,12 +1,24 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { createBoard, deleteBoard, downloadBoardTemplate, exportBoards, getBoard, importBoards, listBoards, updateBoard } from '@/api/boards';
+import {
+  batchDeleteBoards,
+  batchUpdateBoardStatus,
+  createBoard,
+  deleteBoard,
+  downloadBoardTemplate,
+  exportBoards,
+  getBoard,
+  importBoards,
+  listBoards,
+  updateBoard
+} from '@/api/boards';
 
 const loading = ref(false);
 const errorMessage = ref('');
 const records = ref([]);
 const total = ref(0);
 const page = reactive({ pageNum: 1, pageSize: 10 });
+const selectedIds = ref([]);
 const modalMode = ref('');
 const currentId = ref(null);
 const form = reactive({
@@ -22,6 +34,11 @@ const form = reactive({
 });
 
 const readonly = computed(() => modalMode.value === 'detail');
+const visibleIds = computed(() => records.value.map(item => item.boardId));
+const selectedCount = computed(() => selectedIds.value.length);
+const allVisibleSelected = computed(() =>
+  visibleIds.value.length > 0 && visibleIds.value.every(id => selectedIds.value.includes(id))
+);
 const modalTitle = computed(() => {
   if (modalMode.value === 'create') return '新增板材';
   if (modalMode.value === 'edit') return '编辑板材';
@@ -47,6 +64,7 @@ async function loadData() {
     const data = await listBoards(page);
     records.value = data?.records || [];
     total.value = data?.total ?? records.value.length;
+    selectedIds.value = selectedIds.value.filter(id => visibleIds.value.includes(id));
   } catch (error) {
     errorMessage.value = error.message;
   } finally {
@@ -105,6 +123,49 @@ async function remove(id) {
   if (!window.confirm('确认删除该板材？')) return;
   await deleteBoard(id);
   await loadData();
+}
+
+function toggleSelect(id) {
+  if (selectedIds.value.includes(id)) {
+    selectedIds.value = selectedIds.value.filter(item => item !== id);
+  } else {
+    selectedIds.value = [...selectedIds.value, id];
+  }
+}
+
+function toggleVisibleSelection() {
+  if (allVisibleSelected.value) {
+    selectedIds.value = selectedIds.value.filter(id => !visibleIds.value.includes(id));
+    return;
+  }
+  selectedIds.value = [...new Set([...selectedIds.value, ...visibleIds.value])];
+}
+
+async function batchSetEnabled(isEnabled) {
+  if (!selectedCount.value) return;
+  const label = isEnabled === 1 ? '启用' : '禁用';
+  if (!window.confirm(`确认${label}已选 ${selectedCount.value} 个板材？`)) return;
+  errorMessage.value = '';
+  try {
+    await batchUpdateBoardStatus([...selectedIds.value], isEnabled);
+    selectedIds.value = [];
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
+}
+
+async function batchRemove() {
+  if (!selectedCount.value) return;
+  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个板材？`)) return;
+  errorMessage.value = '';
+  try {
+    await batchDeleteBoards([...selectedIds.value]);
+    selectedIds.value = [];
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
 }
 
 function nextPage() {
@@ -179,10 +240,28 @@ onMounted(loadData);
 
     <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
 
+    <div class="batch-toolbar">
+      <label class="batch-selection">
+        <input
+          type="checkbox"
+          :checked="allVisibleSelected"
+          :disabled="!records.length"
+          @change="toggleVisibleSelection"
+        />
+        <span>已选 {{ selectedCount }} 条</span>
+      </label>
+      <div class="batch-actions">
+        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
+        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
+        <button class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
+      </div>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
+            <th class="select-col"></th>
             <th>ID</th>
             <th>品牌</th>
             <th>材质</th>
@@ -195,12 +274,20 @@ onMounted(loadData);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8">加载中...</td>
+            <td colspan="9">加载中...</td>
           </tr>
           <tr v-else-if="!records.length">
-            <td colspan="8">暂无板材数据</td>
+            <td colspan="9">暂无板材数据</td>
           </tr>
           <tr v-for="item in records" v-else :key="item.boardId">
+            <td class="select-col">
+              <input
+                class="row-check"
+                type="checkbox"
+                :checked="selectedIds.includes(item.boardId)"
+                @change="toggleSelect(item.boardId)"
+              />
+            </td>
             <td>{{ item.boardId }}</td>
             <td>{{ item.brand }}</td>
             <td>{{ item.materialType }}</td>

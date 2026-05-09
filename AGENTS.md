@@ -20,7 +20,7 @@ frontend_web: Vue 3 + Vite + Pinia + Vue Router + Axios + Element Plus + Canvas 
 frontend_miniprogram: 微信小程序原生框架  
 algorithm_entry: `POST /algorithm/answer`  
 algorithm_strategy: 禁忌搜索 + 天际线放置算法  
-last_updated: 2026-05-08  
+last_updated: 2026-05-09
 
 本项目是基于 Spring Boot 的柜门板材切割排版系统。后端负责用户认证、客户管理、板材管理、订单/余料/排样结果管理、算法接口与静态资源托管。网页端用于后台操作和排样结果可视化，小程序端用于现场录入、客户管理、板材管理、算法输入和排样结果展示。
 
@@ -134,8 +134,8 @@ npm run build
 | 模块 | 接口 | 认证 | 返回约定 |
 | --- | --- | --- | --- |
 | 认证 | `/auth/login`、`/auth/register`、`/auth/logout` | 不需要 JWT | `Result` |
-| 客户 | `/customers`、`/customers/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 板材 | `/boards`、`/boards/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
+| 客户 | `/customers`、`/customers/{id}`、`/customers/batch`、`/customers/batch/status` | 需要 `Authorization: Bearer <token>` | `Result` |
+| 板材 | `/boards`、`/boards/{id}`、`/boards/batch`、`/boards/batch/status` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 订单 | `/orders`、`/orders/{id}`、`/orders/{id}/status` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 订单明细 | `/order-items`、`/order-items/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
 | 余料 | `/remnants`、`/remnants/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
@@ -215,7 +215,7 @@ npm run build
 - 开发代理：`/api` -> `http://localhost:8080`
 - 页面范围：
   - 系统管理：登录、工作台、客户管理、板材管理、用户管理、审计日志
-  - 生产加工：**加工数据输入** (`/cutting/data-input`)、**排版工作台** (`/cutting/layout-workbench`)、算法排样、生产看板
+  - 生产加工：**加工数据输入** (`/cutting/data-input`)、**排版工作台** (`/cutting/layout-workbench`)、生产看板
 - 加工数据输入页：顶栏（订单信息）+ 左侧（板材搜索/选择 + 余料联动选择）+ 右侧（excel 风格可编辑下料表格，支持键盘导航和 TSV 粘贴）+ 底栏（统计 + 确认排版）
 - 排版工作台页：工具栏（导入/排版/参数/缩放/导出/保存/返回）+ 左侧（历史排版记录列表）+ 中央 Canvas（板材矩形 + 工件色块布局 + 缩放平移 + 悬停 tooltip + 板材切换标签）+ 摘要栏
 
@@ -254,6 +254,8 @@ npm run build
 
 当前记录：
 
+- 2026-05-09 | 类型: 前端/文档 | 范围: frontend/src/router、frontend/src/components/AppShell.vue、frontend/src/views、frontend/src/styles/main.css、docs/需求文档.md | 原因: 完成需求文档 F-002，旧算法排样界面已由加工数据输入页和排版工作台替代 | 影响: 网页端不再提供 `/algorithm` 旧页面和侧边栏入口，后端算法接口和小程序算法页保持不变 | 验证: `cd frontend && npm run build`、`git diff --check`
+- 2026-05-09 | 类型: API/前端/测试 | 范围: 客户模块、板材模块、frontend 客户/板材页面 | 原因: 完成需求文档 F-001，支持客户和板材批量启用、禁用和删除 | 影响: 新增 `/customers/batch`、`/customers/batch/status`、`/boards/batch`、`/boards/batch/status` 接口；网页端客户/板材列表新增页内多选和批量操作条 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=CustomerModuleTest,BoardModuleTest test`、`cd frontend && npm run build`
 - 2026-05-01 | 类型: 测试 | 范围: 排样结果模块 LayoutResultModuleTest | 原因: 补充排样结果分页、按订单查询、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=LayoutResultModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
 - 2026-05-01 | 类型: 测试 | 范围: 余料模块 OffcutModuleTest | 原因: 补充余料分页、详情、增改删、默认状态、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OffcutModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
 - 2026-05-01 | 类型: 测试 | 范围: 订单明细模块 OrderItemModuleTest | 原因: 补充订单明细分页、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OrderItemModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`

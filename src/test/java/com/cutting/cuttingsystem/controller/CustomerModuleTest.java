@@ -267,6 +267,73 @@ class CustomerModuleTest {
     }
 
     @Test
+    void batchDeleteCustomersReturnsSuccessWhenRemoveSucceeds() throws Exception {
+        when(customerService.removeByIds(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/customers/batch")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchUpdateCustomerStatusReturnsSuccessWhenUpdateSucceeds() throws Exception {
+        when(customerService.update(any(TCustomer.class), any())).thenReturn(true);
+
+        mockMvc.perform(put("/customers/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2],
+                                  "isEnabled": 0
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchUpdateCustomerStatusRejectsEmptyIds() throws Exception {
+        mockMvc.perform(put("/customers/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [],
+                                  "isEnabled": 1
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.ids").exists());
+    }
+
+    @Test
+    void batchUpdateCustomerStatusRejectsInvalidEnabledFlag() throws Exception {
+        mockMvc.perform(put("/customers/batch/status")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1],
+                                  "isEnabled": 2
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.isEnabled").exists());
+    }
+
+    @Test
     void protectedCustomerEndpointRejectsMissingToken() throws Exception {
         mockMvc.perform(get("/customers")
                         .param("pageNum", "1")

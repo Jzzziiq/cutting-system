@@ -16,8 +16,16 @@ export function updateCustomer(id, data) {
   return http.put(`/customers/${id}`, data);
 }
 
+export function batchUpdateCustomerStatus(ids, isEnabled) {
+  return http.put('/customers/batch/status', { ids, isEnabled });
+}
+
 export function deleteCustomer(id) {
   return http.delete(`/customers/${id}`);
+}
+
+export function batchDeleteCustomers(ids) {
+  return http.delete('/customers/batch', { data: { ids } });
 }
 
 export function exportCustomers() {

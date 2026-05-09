@@ -1,9 +1,12 @@
 package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
+import com.cutting.cuttingsystem.entitys.DTO.BatchEnabledDTO;
+import com.cutting.cuttingsystem.entitys.DTO.BatchIdsDTO;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
 import com.cutting.cuttingsystem.entitys.Result;
@@ -23,6 +26,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/boards")
@@ -53,6 +58,23 @@ public class BoardsController {
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         boolean removed = tBoardService.removeById(id);
         return removed ? Result.success() : Result.error("delete board failed");
+    }
+
+    @DeleteMapping("/batch")
+    @AuditLog(module = "板材管理", action = "批量删除")
+    public Result batchDelete(@RequestBody @Valid BatchIdsDTO batchIdsDTO) {
+        boolean removed = tBoardService.removeByIds(batchIdsDTO.getIds());
+        return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete board failed");
+    }
+
+    @PutMapping("/batch/status")
+    @AuditLog(module = "板材管理", action = "批量启禁用")
+    public Result batchUpdateStatus(@RequestBody @Valid BatchEnabledDTO batchEnabledDTO) {
+        TBoard board = new TBoard();
+        board.setIsEnabled(batchEnabledDTO.getIsEnabled());
+        boolean updated = tBoardService.update(board,
+                new UpdateWrapper<TBoard>().in("board_id", batchEnabledDTO.getIds()));
+        return updated ? Result.success(Map.of("affected", batchEnabledDTO.getIds().size())) : Result.error("batch update board status failed");
     }
 
     @PostMapping

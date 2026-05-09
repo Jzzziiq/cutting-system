@@ -5,7 +5,6 @@ import LoginView from '@/views/LoginView.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import CustomersView from '@/views/CustomersView.vue';
 import BoardsView from '@/views/BoardsView.vue';
-import AlgorithmView from '@/views/AlgorithmView.vue';
 import UsersView from '@/views/UsersView.vue';
 import AuditLogView from '@/views/AuditLogView.vue';
 import ProductionKanbanView from '@/views/ProductionKanbanView.vue';
@@ -39,12 +38,6 @@ const routes = [
         name: 'boards',
         component: BoardsView,
         meta: { title: '板材管理' }
-      },
-      {
-        path: 'algorithm',
-        name: 'algorithm',
-        component: AlgorithmView,
-        meta: { title: '算法排样' }
       },
       {
         path: 'users',

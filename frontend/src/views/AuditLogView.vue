@@ -39,6 +39,13 @@ function search() {
   loadData();
 }
 
+function resetFilters() {
+  filters.module = '';
+  filters.username = '';
+  filters.status = '';
+  search();
+}
+
 function nextPage() {
   if (page.pageNum * page.pageSize < total.value) {
     page.pageNum += 1;
@@ -83,19 +90,31 @@ onMounted(loadData);
         <h2>操作审计日志</h2>
         <p>追溯用户的增/删/改操作记录</p>
       </div>
-      <button class="btn secondary" type="button" @click="handleExport">导出</button>
     </div>
 
-    <div class="filter-row">
-      <select v-model="filters.module" class="input" @change="search">
-        <option v-for="m in moduleOptions" :key="m" :value="m">{{ m || '全部模块' }}</option>
-      </select>
-      <input v-model="filters.username" class="input" placeholder="操作人" @keyup.enter="search" />
-      <select v-model="filters.status" class="input" @change="search">
-        <option v-for="o in statusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-      </select>
-      <button class="btn secondary" type="button" @click="search">查询</button>
-    </div>
+    <form class="audit-filter-bar" @submit.prevent="search">
+      <label class="filter-field">
+        <span>模块</span>
+        <select v-model="filters.module" class="input" @change="search">
+          <option v-for="m in moduleOptions" :key="m" :value="m">{{ m || '全部模块' }}</option>
+        </select>
+      </label>
+      <label class="filter-field">
+        <span>操作人</span>
+        <input v-model.trim="filters.username" class="input" placeholder="输入用户名" />
+      </label>
+      <label class="filter-field compact">
+        <span>状态</span>
+        <select v-model="filters.status" class="input" @change="search">
+          <option v-for="o in statusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+      </label>
+      <div class="filter-actions">
+        <button class="btn primary" type="submit">查询</button>
+        <button class="btn ghost" type="button" @click="resetFilters">重置</button>
+        <button class="btn secondary" type="button" @click="handleExport">导出</button>
+      </div>
+    </form>
 
     <p v-if="errorMessage" class="form-error">{{ errorMessage }}</p>
 
@@ -145,3 +164,58 @@ onMounted(loadData);
     </div>
   </div>
 </template>
+
+<style scoped>
+.audit-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(130px, 0.7fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.filter-field {
+  min-width: 0;
+}
+
+.filter-field span {
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.filter-field .input {
+  width: 100%;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .audit-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .audit-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    flex-wrap: wrap;
+  }
+}
+</style>

@@ -1,20 +1,19 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
-import { getSummary, getOrderTrend, getOrderStatusDist, getUtilizationTrend } from '@/api/dashboard';
+import { getSummary, getOrderTrend, getOrderStatusDist } from '@/api/dashboard';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart, PieChart, BarChart } from 'echarts/charts';
+import { LineChart, PieChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components';
 
-use([CanvasRenderer, LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent]);
+use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent]);
 
 const loading = ref(true);
 const summary = ref({});
 const trendDays = ref(7);
 const orderTrend = ref({ labels: [], data: [] });
 const orderStatusDist = ref({ labels: [], data: [] });
-const utilizationTrend = ref({ labels: [], data: [] });
 
 async function loadData() {
   loading.value = true;
@@ -32,19 +31,12 @@ async function loadData() {
   }
 }
 
-async function loadUtilization() {
-  try {
-    utilizationTrend.value = await getUtilizationTrend(trendDays.value);
-  } catch { /* ignore */ }
-}
-
 function fmtRate(v) { return v != null ? (Number(v) * 100).toFixed(1) + '%' : '-'; }
 
 const orderTrendOption = ref({});
 const orderStatusOption = ref({});
-const utilizationOption = ref({});
 
-watch([orderTrend, orderStatusDist, utilizationTrend], () => {
+watch([orderTrend, orderStatusDist], () => {
   orderTrendOption.value = {
     tooltip: { trigger: 'axis' },
     grid: { left: 40, right: 16, top: 12, bottom: 24 },
@@ -61,25 +53,16 @@ watch([orderTrend, orderStatusDist, utilizationTrend], () => {
       data: orderStatusDist.value.labels.map((name, i) => ({ name, value: orderStatusDist.value.data[i] }))
     }]
   };
-  utilizationOption.value = {
-    tooltip: { trigger: 'axis', valueFormatter: v => (v * 100).toFixed(1) + '%' },
-    grid: { left: 46, right: 16, top: 12, bottom: 24 },
-    xAxis: { type: 'category', data: utilizationTrend.value.labels, axisLabel: { fontSize: 11 } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 11, formatter: v => (v * 100).toFixed(0) + '%' } },
-    series: [{ data: utilizationTrend.value.data, type: 'bar', barWidth: 16, itemStyle: { color: '#10b981', borderRadius: [4,4,0,0] } }]
-  };
 }, { deep: true });
 
 async function switchTrend(days) {
   trendDays.value = days;
-  const [ot, ut] = await Promise.all([getOrderTrend(days), getUtilizationTrend(days)]);
+  const ot = await getOrderTrend(days);
   orderTrend.value = ot;
-  utilizationTrend.value = ut;
 }
 
 onMounted(async () => {
   await loadData();
-  await loadUtilization();
 });
 </script>
 
@@ -140,22 +123,6 @@ onMounted(async () => {
       <section class="chart-block">
         <h3>订单状态分布</h3>
         <v-chart :option="orderStatusOption" style="height:260px" autoresize />
-      </section>
-    </div>
-
-    <div class="charts-grid" style="margin-top:16px">
-      <section class="chart-block">
-        <h3>利用率趋势</h3>
-        <v-chart :option="utilizationOption" style="height:220px" autoresize />
-      </section>
-      <section class="section-block">
-        <div class="section-title"><h2>常用入口</h2></div>
-        <div class="quick-actions">
-          <router-link class="btn secondary" to="/customers">客户管理</router-link>
-          <router-link class="btn secondary" to="/boards">板材管理</router-link>
-          <router-link class="btn secondary" to="/production-board">生产看板</router-link>
-          <router-link class="btn primary" to="/algorithm">算法排样</router-link>
-        </div>
       </section>
     </div>
   </div>

@@ -1,9 +1,12 @@
 package com.cutting.cuttingsystem.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
+import com.cutting.cuttingsystem.entitys.DTO.BatchEnabledDTO;
+import com.cutting.cuttingsystem.entitys.DTO.BatchIdsDTO;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TCustomerDTO;
 import com.cutting.cuttingsystem.entitys.Result;
@@ -23,6 +26,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/customers")
@@ -53,6 +58,23 @@ public class CustomerController {
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
         boolean removed = customerService.removeById(id);
         return removed ? Result.success() : Result.error("delete customer failed");
+    }
+
+    @DeleteMapping("/batch")
+    @AuditLog(module = "客户管理", action = "批量删除")
+    public Result batchDelete(@RequestBody @Valid BatchIdsDTO batchIdsDTO) {
+        boolean removed = customerService.removeByIds(batchIdsDTO.getIds());
+        return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete customer failed");
+    }
+
+    @PutMapping("/batch/status")
+    @AuditLog(module = "客户管理", action = "批量启禁用")
+    public Result batchUpdateStatus(@RequestBody @Valid BatchEnabledDTO batchEnabledDTO) {
+        TCustomer customer = new TCustomer();
+        customer.setIsEnabled(batchEnabledDTO.getIsEnabled());
+        boolean updated = customerService.update(customer,
+                new UpdateWrapper<TCustomer>().in("customer_id", batchEnabledDTO.getIds()));
+        return updated ? Result.success(Map.of("affected", batchEnabledDTO.getIds().size())) : Result.error("batch update customer status failed");
     }
 
     @PostMapping

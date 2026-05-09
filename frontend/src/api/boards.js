@@ -16,8 +16,16 @@ export function updateBoard(id, data) {
   return http.put(`/boards/${id}`, data);
 }
 
+export function batchUpdateBoardStatus(ids, isEnabled) {
+  return http.put('/boards/batch/status', { ids, isEnabled });
+}
+
 export function deleteBoard(id) {
   return http.delete(`/boards/${id}`);
+}
+
+export function batchDeleteBoards(ids) {
+  return http.delete('/boards/batch', { data: { ids } });
 }
 
 export function exportBoards() {

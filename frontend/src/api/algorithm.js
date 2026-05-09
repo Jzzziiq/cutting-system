@@ -1,9 +1,5 @@
 import http from './http';
 
-export function solveAlgorithm(data) {
-  return http.post('/algorithm/answer', data);
-}
-
 export function submitAlgorithm(data, algorithm = 'tabu_search') {
   return http.post('/algorithm/submit', data, { params: { algorithm } });
 }
