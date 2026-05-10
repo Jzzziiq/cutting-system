@@ -99,7 +99,7 @@ onMounted(loadRecords);
 <style scoped>
 .search-row { margin-bottom: 10px; }
 .empty-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   padding: 12px 0;
   text-align: center;
@@ -126,15 +126,15 @@ onMounted(loadRecords);
   align-items: center;
   margin-bottom: 4px;
 }
-.hi-order { font-size: 13px; font-weight: 600; color: #172033; }
+.hi-order { font-size: 14px; font-weight: 600; color: #172033; }
 .hi-body {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
   display: flex;
   gap: 12px;
 }
 .hi-foot {
-  font-size: 11px;
+  font-size: 12px;
   color: #94a3b8;
   margin-top: 4px;
   display: flex;

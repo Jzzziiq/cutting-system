@@ -67,15 +67,17 @@ const remarkModel = computed({
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 16px;
-  margin-bottom: 12px;
 }
 .order-info-bar :deep(.el-form-item) {
   margin-bottom: 0;
   margin-right: 16px;
 }
 .order-info-bar :deep(.el-form-item__label) {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
   font-weight: 700;
+}
+.order-info-bar :deep(.el-input__inner) {
+  font-size: 14px;
 }
 </style>

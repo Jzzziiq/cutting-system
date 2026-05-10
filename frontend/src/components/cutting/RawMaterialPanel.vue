@@ -121,7 +121,7 @@ function dimLabel(board) {
 <style scoped>
 .search-row { margin-bottom: 10px; }
 .section-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #64748b;
   margin-bottom: 6px;
@@ -132,7 +132,7 @@ function dimLabel(board) {
 .result-section { margin-bottom: 12px; }
 .selected-section { margin-top: 4px; }
 .empty-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   padding: 8px 0;
 }
@@ -146,6 +146,6 @@ function dimLabel(board) {
   margin-bottom: 6px;
   background: #f8fafc;
 }
-.board-name { font-size: 13px; font-weight: 600; color: #172033; }
-.board-dims { font-size: 12px; color: #64748b; margin-top: 2px; }
+.board-name { font-size: 14px; font-weight: 600; color: #172033; }
+.board-dims { font-size: 13px; color: #64748b; margin-top: 2px; }
 </style>

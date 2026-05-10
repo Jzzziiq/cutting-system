@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import OrderInfoBar from '@/components/cutting/OrderInfoBar.vue';
 import RawMaterialPanel from '@/components/cutting/RawMaterialPanel.vue';
 import OffcutPanel from '@/components/cutting/OffcutPanel.vue';
@@ -142,9 +142,11 @@ function onFocusCell({ row, col }) {
 <style scoped>
 .data-input-layout {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 2.05fr);
   gap: 12px;
   min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .left-panel {
@@ -157,6 +159,7 @@ function onFocusCell({ row, col }) {
 
 .right-panel {
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   display: flex;
 }

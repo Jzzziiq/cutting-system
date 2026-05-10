@@ -1,9 +1,8 @@
 <script setup>
 import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
-const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
@@ -21,8 +20,6 @@ const navItems = [
 const visibleItems = computed(() =>
   navItems.filter((item) => !item.perm || auth.hasPermission(item.perm))
 );
-
-const currentTitle = computed(() => route.meta.title || '工作台');
 
 function logout() {
   auth.logout();
@@ -48,20 +45,17 @@ function logout() {
           {{ item.label }}
         </router-link>
       </nav>
+
+      <div class="sidebar-user">
+        <div>
+          <span>当前用户</span>
+          <strong>{{ auth.displayName }}</strong>
+        </div>
+        <button class="sidebar-logout" type="button" @click="logout">退出</button>
+      </div>
     </aside>
 
     <main class="main-panel">
-      <header class="topbar">
-        <div>
-          <h1>{{ currentTitle }}</h1>
-          <p>前后端分离管理端</p>
-        </div>
-        <div class="user-area">
-          <span>{{ auth.displayName }}</span>
-          <button class="btn ghost" type="button" @click="logout">退出</button>
-        </div>
-      </header>
-
       <section class="content-panel">
         <router-view v-slot="{ Component }">
           <keep-alive :max="10">

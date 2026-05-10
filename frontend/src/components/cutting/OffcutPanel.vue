@@ -99,7 +99,7 @@ function dimLabel(r) {
 
 <style scoped>
 .empty-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   padding: 12px 0;
 }

@@ -188,7 +188,7 @@ function formatDim(solution) {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -209,7 +209,7 @@ function formatDim(solution) {
   border-radius: 4px;
   background: #fff;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
   transition: all 0.15s;
   display: flex;
@@ -218,7 +218,7 @@ function formatDim(solution) {
 }
 .board-tab:hover { border-color: #0f766e; }
 .board-tab.active { background: #0f766e; color: #fff; border-color: #0f766e; }
-.tab-rate { font-size: 11px; opacity: 0.7; }
+.tab-rate { font-size: 12px; opacity: 0.7; }
 
 .canvas-container {
   flex: 1;
@@ -254,7 +254,7 @@ function formatDim(solution) {
   background: #1e293b;
   color: #f1f5f9;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   pointer-events: none;
   z-index: 100;
   line-height: 1.6;

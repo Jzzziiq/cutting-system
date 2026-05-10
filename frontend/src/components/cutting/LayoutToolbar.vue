@@ -77,7 +77,7 @@ defineEmits([
 .toolbar-group:last-child { border-right: none; padding-right: 0; }
 .toolbar-spacer { flex: 1; }
 .zoom-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
   min-width: 40px;
   text-align: center;

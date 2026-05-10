@@ -35,12 +35,11 @@ defineEmits(['confirm']);
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-top: 12px;
 }
 .stats {
   display: flex;
   gap: 20px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .stat-item {
   color: #475569;

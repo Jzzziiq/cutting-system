@@ -23,15 +23,15 @@ export function useCuttingTable(boardOptionsRef) {
   const focusedCell = ref({ row: 0, col: 0 });
 
   const columns = [
-    { key: 'orderNo', label: '订单号', width: 110, type: 'text' },
-    { key: 'customer', label: '客户', width: 100, type: 'text' },
-    { key: 'boardType', label: '板材类型', width: 150, type: 'select' },
-    { key: 'length', label: '长(L)', width: 90, type: 'number' },
-    { key: 'width', label: '宽(W)', width: 90, type: 'number' },
-    { key: 'materialName', label: '材质', width: 90, type: 'text' },
-    { key: 'color', label: '颜色', width: 80, type: 'text' },
-    { key: 'quantity', label: '数量', width: 80, type: 'number' },
-    { key: 'notes', label: '备注', width: 120, type: 'text' }
+    { key: 'orderNo', label: '订单号', width: 120, type: 'text' },
+    { key: 'customer', label: '客户', width: 110, type: 'text' },
+    { key: 'boardType', label: '板材类型', width: 160, type: 'select' },
+    { key: 'length', label: '长(L)', width: 100, type: 'number' },
+    { key: 'width', label: '宽(W)', width: 100, type: 'number' },
+    { key: 'materialName', label: '材质', width: 100, type: 'text' },
+    { key: 'color', label: '颜色', width: 90, type: 'text' },
+    { key: 'quantity', label: '数量', width: 90, type: 'number' },
+    { key: 'notes', label: '备注', width: 150, type: 'text' }
   ];
 
   const errorCount = computed(() => {
@@ -256,4 +256,3 @@ export function useCuttingTable(boardOptionsRef) {
     buildAlgorithmInput
   };
 }
-

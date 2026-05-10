@@ -11,7 +11,3 @@ export function getOrderTrend(days = 7) {
 export function getOrderStatusDist() {
   return http.get('/dashboard/order-status-dist');
 }
-
-export function getUtilizationTrend(days = 7) {
-  return http.get('/dashboard/utilization-trend', { params: { days } });
-}

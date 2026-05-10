@@ -68,8 +68,7 @@ a {
 }
 
 .login-heading p,
-.section-title p,
-.topbar p {
+.section-title p {
   margin: 0;
   color: #64748b;
 }
@@ -190,6 +189,8 @@ label span {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   padding: 24px 18px;
   background: #111827;
   color: #e5e7eb;
@@ -227,6 +228,45 @@ label span {
   color: #ffffff;
 }
 
+.sidebar-user {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding: 16px 10px 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.sidebar-user span {
+  display: block;
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sidebar-user strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-logout {
+  min-height: 36px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.42);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sidebar-logout:hover {
+  border-color: #5eead4;
+  color: #ffffff;
+}
+
 .main-panel {
   display: flex;
   flex-direction: column;
@@ -234,22 +274,6 @@ label span {
   overflow: hidden;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 22px 28px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
-}
-
-.topbar h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
-}
-
-.user-area,
 .row-actions,
 .action-group,
 .quick-actions,
@@ -361,7 +385,7 @@ label span {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 th,
@@ -502,6 +526,13 @@ th {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .sidebar-user {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    margin-top: 12px;
+    padding: 12px 10px 0;
+  }
+
   .nav-item {
     text-align: center;
   }
@@ -537,7 +568,7 @@ th {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15px;
+  font-size: 16px;
   padding-bottom: 6px;
   border-bottom: 2px solid #e5e7eb;
 }
@@ -547,13 +578,13 @@ th {
   color: #374151;
   border-radius: 12px;
   padding: 2px 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .kanban-empty {
   color: #9ca3af;
-  font-size: 13px;
+  font-size: 14px;
   text-align: center;
   padding: 24px 0;
 }
@@ -577,13 +608,13 @@ th {
 
 .kanban-card-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   margin-bottom: 6px;
   color: #111827;
 }
 
 .kanban-card-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
   display: flex;
   justify-content: space-between;
@@ -601,13 +632,13 @@ th {
 /* === 切割页面样式 === */
 
 .cutting-view {
-  margin: -24px -28px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px;
+  gap: 12px;
   min-height: 500px;
   overflow: hidden;
+  font-size: 14px;
 }
 
 .cutting-view .data-input-layout,
@@ -630,10 +661,10 @@ th {
 }
 
 .panel-header {
-  padding: 10px 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid #e2e8f0;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -658,7 +689,6 @@ th {
 }
 
 @media (max-width: 700px) {
-  .topbar,
   .section-title {
     align-items: stretch;
     flex-direction: column;

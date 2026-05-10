@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import AppShell from '@/components/AppShell.vue';
-import LoginView from '@/views/LoginView.vue';
-import DashboardView from '@/views/DashboardView.vue';
-import CustomersView from '@/views/CustomersView.vue';
-import BoardsView from '@/views/BoardsView.vue';
-import UsersView from '@/views/UsersView.vue';
-import AuditLogView from '@/views/AuditLogView.vue';
-import ProductionKanbanView from '@/views/ProductionKanbanView.vue';
+
+const LoginView = () => import('@/views/LoginView.vue');
+const DashboardView = () => import('@/views/DashboardView.vue');
+const CustomersView = () => import('@/views/CustomersView.vue');
+const BoardsView = () => import('@/views/BoardsView.vue');
+const UsersView = () => import('@/views/UsersView.vue');
+const AuditLogView = () => import('@/views/AuditLogView.vue');
+const ProductionKanbanView = () => import('@/views/ProductionKanbanView.vue');
 
 const routes = [
   {

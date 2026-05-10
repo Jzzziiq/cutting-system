@@ -2,7 +2,8 @@
 import { ref, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onActivated } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus/es/components/message/index.mjs';
+import { ElMessageBox } from 'element-plus/es/components/message-box/index.mjs';
 import LayoutToolbar from '@/components/cutting/LayoutToolbar.vue';
 import LayoutHistoryPanel from '@/components/cutting/LayoutHistoryPanel.vue';
 import LayoutCanvas from '@/components/cutting/LayoutCanvas.vue';
@@ -320,6 +321,8 @@ watch(() => route.query.taskId, () => { if (route.query.taskId) loadFromTask(); 
   grid-template-columns: 260px 1fr;
   gap: 12px;
   min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 @media (max-width: 1024px) {
   .workbench-layout {

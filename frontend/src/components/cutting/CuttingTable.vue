@@ -46,7 +46,7 @@ function getCellClass(row, colKey) {
       <span>下料尺寸输入</span>
       <el-button size="small" :icon="Plus" @click="$emit('add-row', rows.length - 1)">添加行</el-button>
     </div>
-    <div class="panel-body" style="padding:0; overflow:auto; flex:1">
+    <div class="panel-body cutting-table-body">
       <el-table
         :data="rows"
         size="small"
@@ -138,21 +138,34 @@ function getCellClass(row, colKey) {
 .cutting-table .el-table__body-wrapper {
   overflow-y: auto;
 }
+.cutting-table-wrap {
+  min-width: 0;
+}
+.cutting-table-body {
+  padding: 0;
+  overflow: auto;
+  flex: 1;
+  min-width: 0;
+}
+.cutting-table {
+  min-width: 1040px;
+}
 .cutting-table .cell {
   padding: 0 !important;
 }
 .cell-inner {
   width: 100%;
   height: 100%;
+  min-width: 0;
 }
 .cell-input {
   width: 100%;
-  min-height: 30px;
-  padding: 4px 8px;
+  min-height: 34px;
+  padding: 5px 9px;
   border: 2px solid transparent;
   border-radius: 2px;
   background: transparent;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   box-sizing: border-box;
 }
@@ -166,6 +179,9 @@ function getCellClass(row, colKey) {
 }
 .cell-inner .el-select {
   width: 100%;
+}
+.cell-inner .el-select .el-input__inner {
+  font-size: 14px;
 }
 .cell-inner .el-select .el-input__wrapper {
   border-radius: 0;
