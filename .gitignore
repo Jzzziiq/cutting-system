@@ -53,6 +53,7 @@ build/
 .cursor/
 .continue/
 .windsurf/
+.agents/skills/
 
 ### Secrets ###
 .env
@@ -81,6 +82,9 @@ frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
 *.tsbuildinfo
+
+### Backend-served frontend build output ###
+src/main/resources/static/
 
 ### Mini Program local state ###
 miniprogram/node_modules/
