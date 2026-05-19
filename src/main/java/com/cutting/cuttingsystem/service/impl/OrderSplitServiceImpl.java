@@ -166,7 +166,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         JsonNode hingeHoles = board.get("hingeHoles");
         if (hingeHoles != null && hingeHoles.isArray()) {
             for (JsonNode hole : hingeHoles) {
-                if ("even".equals(hole.has("spacing") ? hole.get("spacing").asText() : null)) {
+                if (hole.has("spacing") && "even".equals(hole.get("spacing").asText())) {
                     int count = hole.get("count").asInt();
                     int diameter = hole.has("diameter") ? hole.get("diameter").asInt() : 35;
                     int depth = hole.has("depth") ? hole.get("depth").asInt() : 12;

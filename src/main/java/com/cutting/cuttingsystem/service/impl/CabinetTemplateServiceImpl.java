@@ -33,6 +33,7 @@ public class CabinetTemplateServiceImpl extends ServiceImpl<CabinetTemplateMappe
         CabinetTemplate template = getById(id);
         if (template == null) return null;
         Long currentUserId = UserContext.getCurrentUserId();
+        if (currentUserId == null) currentUserId = 0L;
         if (template.getIsOfficial() != 1 && !currentUserId.equals(template.getCreatedBy())) {
             return null;
         }

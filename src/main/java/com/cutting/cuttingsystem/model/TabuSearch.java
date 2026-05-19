@@ -70,7 +70,7 @@ public class TabuSearch implements CuttingAlgorithm {
 
             // 遍历领域，寻找当前最优解
             while (n <= N) {
-                tempGh = generateNewGh(new ArrayList<>(initGhh), new ArrayList<>(tempGh));
+                tempGh = generateNewGh(new ArrayList<>(initGhh));
                 if (!judge(tempGh)) { // 不在禁忌表中
                     enterTabooList(tempGh);
                     tempSolution = evaluate(new ArrayList<>(tempGh));
@@ -243,9 +243,9 @@ public class TabuSearch implements CuttingAlgorithm {
     }
 
     // 生成新解（随机交换6次）
-    public List<Square> generateNewGh(List<Square> localGh, List<Square> tempGh) {
+    public List<Square> generateNewGh(List<Square> localGh) {
         if (localGh.size() <= 1) return new ArrayList<>(localGh);
-        tempGh = new ArrayList<>(localGh);
+        List<Square> tempGh = new ArrayList<>(localGh);
         Square temp;
         for (int i = 0; i < 6; i++) {
             int r1 = random.nextInt(tempGh.size());
