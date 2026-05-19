@@ -6,6 +6,7 @@ import { useThreeScene } from '@/composables/useThreeScene';
 import { useCabinetDesignStore } from '@/stores/cabinetDesign';
 import { getOrder } from '@/api/orders';
 import { listBoards } from '@/api/boards';
+import { createCabinetTemplate, updateCabinetTemplate, deleteCabinetTemplate } from '@/api/cabinet-templates';
 
 const route = useRoute();
 const router = useRouter();
@@ -422,6 +423,61 @@ async function onConfirmSplit() {
   }
 }
 
+async function onSaveTemplate() {
+  const json = store.cabinetJson;
+  if (!json) { ElMessage.warning('请先生成柜体模型'); return; }
+  try {
+    const { value: name } = await ElMessageBox.prompt('请输入模板名称', '保存为模板', {
+      confirmButtonText: '保存', cancelButtonText: '取消',
+      inputValue: store.selectedPreset?.name || ''
+    });
+    if (!name?.trim()) return;
+    const category = getPresetCategory(store.selectedPreset);
+    await createCabinetTemplate({
+      name: name.trim(), category,
+      cabinetJson: JSON.stringify(json)
+    });
+    ElMessage.success('模板已保存');
+    await store.loadPresets();
+  } catch (e) {
+    if (e !== 'cancel' && e?.message !== 'cancel') {
+      ElMessage.error(e?.message || '保存模板失败');
+    }
+  }
+}
+
+async function onEditTemplate(preset) {
+  try {
+    const { value: name } = await ElMessageBox.prompt('修改模板名称', '编辑模板', {
+      confirmButtonText: '保存', cancelButtonText: '取消',
+      inputValue: preset.name
+    });
+    if (!name?.trim()) return;
+    await updateCabinetTemplate(preset.id, { name: name.trim() });
+    ElMessage.success('模板已更新');
+    await store.loadPresets();
+  } catch (e) {
+    if (e !== 'cancel' && e?.message !== 'cancel') {
+      ElMessage.error(e?.message || '编辑模板失败');
+    }
+  }
+}
+
+async function onDeleteTemplate(preset) {
+  try {
+    await ElMessageBox.confirm(`确认删除模板「${preset.name}」？`, '删除确认', {
+      confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning'
+    });
+    await deleteCabinetTemplate(preset.id);
+    ElMessage.success('模板已删除');
+    await store.loadPresets();
+  } catch (e) {
+    if (e !== 'cancel' && e?.message !== 'cancel') {
+      ElMessage.error(e?.message || '删除模板失败');
+    }
+  }
+}
+
 function onCanvasClick(event) {
   onClick(event, (data) => {
     selectedBoard.value = data;
@@ -448,6 +504,7 @@ const splitColumns = [
         订单 #{{ orderInfo.orderId }} | {{ orderInfo.customerName }} | {{ orderInfo.processName }}
       </span>
       <div class="cd-actions">
+        <el-button size="small" :disabled="!hasCabinet" @click="onSaveTemplate">保存为模板</el-button>
         <el-button size="small" :disabled="!hasCabinet" @click="onOpenSlotMap">板材映射</el-button>
         <el-button
           size="small"
@@ -475,6 +532,15 @@ const splitColumns = [
             <span class="preset-icon">{{ preset.category === 'wardrobe' ? '衣' : '柜' }}</span>
             <span class="preset-name">{{ preset.name }}</span>
             <span class="preset-cat">{{ categoryLabels[preset.category] || preset.category }}</span>
+            <span v-if="preset.isOfficial !== 1" class="preset-tag">我的</span>
+            <span
+              v-if="preset.isOfficial !== 1"
+              class="preset-actions"
+              @click.stop
+            >
+              <el-button size="small" :icon="'Edit'" text @click="onEditTemplate(preset)" />
+              <el-button size="small" :icon="'Delete'" text type="danger" @click="onDeleteTemplate(preset)" />
+            </span>
           </button>
           <div v-if="!loading && store.presets.length === 0" class="preset-hint">
             暂无预设模板，请先执行种子数据脚本
@@ -660,6 +726,23 @@ const splitColumns = [
 .preset-cat {
   font-size: 11px;
   color: #94a3b8;
+}
+
+.preset-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  margin-top: 2px;
+}
+
+.preset-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+  justify-content: center;
 }
 
 .preset-hint {
