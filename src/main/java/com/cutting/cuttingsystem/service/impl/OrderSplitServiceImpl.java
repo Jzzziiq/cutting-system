@@ -17,6 +17,8 @@ import com.cutting.cuttingsystem.service.TOrderService;
 import com.cutting.cuttingsystem.util.UserContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ import java.util.*;
 @Service
 public class OrderSplitServiceImpl implements OrderSplitService {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderSplitServiceImpl.class);
     private static final int EDGE_THICKNESS = 1;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -49,11 +52,12 @@ public class OrderSplitServiceImpl implements OrderSplitService {
             throw new IllegalArgumentException("柜体JSON中缺少boards数组");
         }
 
+        Map<Long, TBoard> boardCache = resolveBoardCache(boards, slotMap);
         String prefix = workpiecePrefix(inferCategory(cabinet, boards));
         int nextSequence = nextWorkpieceSequence(extractOrderId(cabinet), prefix);
         List<SplitItemVO> result = new ArrayList<>();
         for (JsonNode boardNode : boards) {
-            result.add(processBoard(boardNode, slotMap, cabinet, formatWorkpieceCode(prefix, nextSequence++)));
+            result.add(processBoard(boardNode, slotMap, cabinet, boardCache, formatWorkpieceCode(prefix, nextSequence++)));
         }
         return result;
     }
@@ -80,12 +84,15 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         String workpiecePrefix = workpiecePrefix(cabinetCategory);
         String splitBatchCode = generateSplitBatchCode(cabinetCategory);
         int nextSequence = nextWorkpieceSequence(orderId, workpiecePrefix);
+        // Pre-load all referenced boards to avoid N+1
+        Map<Long, TBoard> boardCache = resolveBoardCache(boards, slotMap);
+
         List<Long> createdItemIds = new ArrayList<>();
 
         for (JsonNode boardNode : boards) {
-            SplitItemVO vo = processBoard(boardNode, slotMap, cabinet,
+            SplitItemVO vo = processBoard(boardNode, slotMap, cabinet, boardCache,
                     formatWorkpieceCode(workpiecePrefix, nextSequence++));
-            TOrderItem item = toOrderItem(vo, orderId, currentUserId);
+            TOrderItem item = toOrderItem(vo, orderId);
             orderItemService.save(item);
 
             CabinetOrderItem coi = toCabinetOrderItem(vo, item.getItemId(), orderId, currentUserId,
@@ -104,7 +111,8 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         return result;
     }
 
-    private SplitItemVO processBoard(JsonNode board, Map<String, Long> slotMap, JsonNode cabinet, String partCode) {
+    private SplitItemVO processBoard(JsonNode board, Map<String, Long> slotMap, JsonNode cabinet,
+                                      Map<Long, TBoard> boardCache, String partCode) {
         String boardType = board.has("type") ? board.get("type").asText() : null;
         String displayName = board.has("displayName") ? board.get("displayName").asText() : boardType;
         int designLength = board.get("designLength").asInt();
@@ -123,13 +131,13 @@ public class OrderSplitServiceImpl implements OrderSplitService {
             throw new RuntimeException("板件" + displayName + "未指定板材");
         }
 
-        // Validate board
-        TBoard tBoard = boardService.getById(boardId);
+        // Validate board (from cache)
+        TBoard tBoard = boardCache.get(boardId);
         if (tBoard == null) throw new RuntimeException("板材" + boardId + "不存在");
         if (tBoard.getIsEnabled() != null && tBoard.getIsEnabled() != 1) {
             throw new RuntimeException("板材" + boardId + "已禁用");
         }
-        if (!Integer.valueOf(thickness).equals(tBoard.getThickness())) {
+        if (thickness != tBoard.getThickness().intValue()) {
             throw new RuntimeException("板件" + displayName + "厚度(" + thickness + ")与板材厚度(" + tBoard.getThickness() + ")不一致");
         }
         boolean fitsRotated = (designLength <= tBoard.getLength() && designWidth <= tBoard.getWidth())
@@ -219,7 +227,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         return vo;
     }
 
-    private TOrderItem toOrderItem(SplitItemVO vo, Long orderId, Long currentUserId) {
+    private TOrderItem toOrderItem(SplitItemVO vo, Long orderId) {
         TOrderItem item = new TOrderItem();
         item.setOrderId(orderId);
         item.setPartName(vo.getPartName());
@@ -269,12 +277,17 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         try {
             JsonNode eb = boardNode.get("edgeBanding");
             coi.setEdgeBanding(eb != null ? objectMapper.writeValueAsString(eb) : null);
+        } catch (Exception e) { log.warn("封边JSON序列化失败 board={}", boardNode.has("id") ? boardNode.get("id").asText() : "?", e); }
+        try {
             JsonNode er = boardNode.get("edgeRole");
             coi.setEdgeRole(er != null ? objectMapper.writeValueAsString(er) : null);
+        } catch (Exception e) { log.warn("edge_role序列化失败", e); }
+        try {
             coi.setHoleOperations(vo.getHoleOperations() != null ? objectMapper.writeValueAsString(vo.getHoleOperations()) : null);
+        } catch (Exception e) { log.warn("hole_operations序列化失败", e); }
+        try {
             coi.setSourceBoardJson(objectMapper.writeValueAsString(boardNode));
-        } catch (Exception ignored) {
-        }
+        } catch (Exception e) { log.warn("source_board_json序列化失败", e); }
         return coi;
     }
 
@@ -282,9 +295,12 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         String prefix = "wardrobe".equals(category) ? "ZG" : "DG";
         String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
         QueryWrapper<CabinetOrderItem> qw = new QueryWrapper<>();
-        qw.likeRight("split_batch_code", prefix + "-" + date);
-        Long count = cabinetOrderItemMapper.selectCount(qw);
-        return prefix + "-" + date + "-" + String.format("%03d", (count != null ? count : 0) + 1);
+        qw.select("split_batch_code")
+                .likeRight("split_batch_code", prefix + "-" + date)
+                .groupBy("split_batch_code");
+        List<CabinetOrderItem> distinctBatches = cabinetOrderItemMapper.selectList(qw);
+        int batchCount = distinctBatches != null ? distinctBatches.size() : 0;
+        return prefix + "-" + date + "-" + String.format("%03d", batchCount + 1);
     }
 
     private String inferCategory(JsonNode cabinet, JsonNode boards) {
@@ -328,18 +344,32 @@ public class OrderSplitServiceImpl implements OrderSplitService {
             return 1;
         }
         QueryWrapper<TOrderItem> qw = new QueryWrapper<>();
-        qw.select("part_code")
+        qw.select("MAX(part_code) as part_code")
                 .eq("order_id", orderId)
                 .likeRight("part_code", prefix + "-");
-        List<TOrderItem> existingItems = orderItemService.list(qw);
-        if (existingItems == null) {
+        TOrderItem maxItem = orderItemService.getOne(qw, false);
+        if (maxItem == null || maxItem.getPartCode() == null) {
             return 1;
         }
-        int maxSequence = 0;
-        for (TOrderItem item : existingItems) {
-            maxSequence = Math.max(maxSequence, parseWorkpieceSequence(item.getPartCode(), prefix));
+        return parseWorkpieceSequence(maxItem.getPartCode(), prefix) + 1;
+    }
+
+    private Map<Long, TBoard> resolveBoardCache(JsonNode boards, Map<String, Long> slotMap) {
+        Map<Long, TBoard> cache = new HashMap<>();
+        if (boards == null || !boards.isArray()) return cache;
+        for (JsonNode board : boards) {
+            Long boardId = null;
+            if (board.has("boardId") && !board.get("boardId").isNull()) {
+                boardId = board.get("boardId").asLong();
+            } else if (slotMap != null && board.has("materialSlot") && !board.get("materialSlot").isNull()) {
+                boardId = slotMap.get(board.get("materialSlot").asText());
+            }
+            if (boardId != null && !cache.containsKey(boardId)) {
+                TBoard tBoard = boardService.getById(boardId);
+                if (tBoard != null) cache.put(boardId, tBoard);
+            }
         }
-        return maxSequence + 1;
+        return cache;
     }
 
     private int parseWorkpieceSequence(String partCode, String prefix) {

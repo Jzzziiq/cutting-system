@@ -1,4 +1,4 @@
-import { ref, shallowRef, onBeforeUnmount } from 'vue';
+import { ref, shallowRef } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -9,11 +9,12 @@ export function useThreeScene() {
   let camera = null;
   let controls = null;
   let animationId = null;
+  let highlightLine = null;
   const boardMeshes = shallowRef(new Map());
   const edgeLines = shallowRef(new Map());
-  let highlightLine = null;
 
   function init(canvas) {
+    dispose();
     const width = canvas.clientWidth || 800;
     const height = canvas.clientHeight || 600;
 
@@ -36,7 +37,6 @@ export function useThreeScene() {
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
 
-    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(2000, 4000, 3000);
@@ -48,7 +48,6 @@ export function useThreeScene() {
     fillLight.position.set(-1000, 500, -500);
     scene.add(fillLight);
 
-    // Grid
     const grid = new THREE.GridHelper(3000, 20, 0x94a3b8, 0xe2e8f0);
     scene.add(grid);
 
@@ -57,7 +56,7 @@ export function useThreeScene() {
 
   function animate() {
     animationId = requestAnimationFrame(animate);
-    controls.update();
+    if (controls) controls.update();
     if (renderer && scene && camera) {
       renderer.render(scene, camera);
     }
@@ -94,7 +93,6 @@ export function useThreeScene() {
     boards.forEach(board => {
       const pos = board.position || { x: 0, y: 0, z: 0 };
       const rot = board.rotation || { x: 0, y: 0, z: 0 };
-
       const geo = new THREE.BoxGeometry(...getBoardGeometryArgs(board));
       const mat = new THREE.MeshStandardMaterial({
         color: typeColors[board.type] || 0x94a3b8,
@@ -110,7 +108,6 @@ export function useThreeScene() {
       boardMeshes.value.set(board.id, mesh);
     });
 
-    // Fit camera
     const box = new THREE.Box3().setFromObjects(scene.children.filter(c => c.isMesh));
     if (box.isEmpty()) return;
     const center = new THREE.Vector3();
@@ -126,14 +123,14 @@ export function useThreeScene() {
 
   function clearScene() {
     if (!scene) return;
-    boardMeshes.value.forEach(m => scene.remove(m));
     boardMeshes.value.forEach(m => {
+      scene.remove(m);
       m.geometry?.dispose();
       m.material?.dispose();
     });
     boardMeshes.value.clear();
-    edgeLines.value.forEach(l => scene.remove(l));
     edgeLines.value.forEach(l => {
+      scene.remove(l);
       l.geometry?.dispose();
       l.material?.dispose();
     });
@@ -194,9 +191,12 @@ export function useThreeScene() {
 
   function dispose() {
     if (animationId) cancelAnimationFrame(animationId);
+    animationId = null;
     clearScene();
-    if (controls) controls.dispose();
-    if (renderer) renderer.dispose();
+    if (controls) { controls.dispose(); controls = null; }
+    if (renderer) { renderer.dispose(); renderer = null; }
+    scene = null;
+    camera = null;
   }
 
   return { canvasRef, init, buildCabinet, clearScene, highlight, removeHighlight, onClick, resize, dispose };

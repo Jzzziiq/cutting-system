@@ -40,7 +40,7 @@ public class CabinetTemplateController {
     @PostMapping
     @RequirePermission("order:write")
     @AuditLog(module = "柜体模板", action = "保存模板")
-    public Result save(@RequestBody CabinetTemplate template) {
+    public Result save(@RequestBody @Valid CabinetTemplate template) {
         return Result.success(cabinetTemplateService.createTemplate(template));
     }
 
@@ -48,7 +48,7 @@ public class CabinetTemplateController {
     @RequirePermission("order:write")
     @AuditLog(module = "柜体模板", action = "编辑模板")
     public Result update(@PathVariable @Positive(message = "id must be greater than 0") Long id,
-                         @RequestBody CabinetTemplate template) {
+                         @RequestBody @Valid CabinetTemplate template) {
         try {
             return Result.success(cabinetTemplateService.updateTemplate(id, template));
         } catch (RuntimeException e) {

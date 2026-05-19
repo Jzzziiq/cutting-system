@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS t_cabinet_order_item (
     hole_operations     JSON           DEFAULT NULL COMMENT '孔加工信息',
     source_board_json   JSON           DEFAULT NULL COMMENT '当前板件原始JSON快照',
     create_time         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time         DATETIME       DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
     UNIQUE INDEX idx_coi_order_item (order_item_id) COMMENT '关联TOrderItem唯一索引',
     INDEX idx_coi_order (order_id) COMMENT '按订单查询索引',

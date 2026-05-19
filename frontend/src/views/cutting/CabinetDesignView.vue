@@ -290,7 +290,7 @@ function generateCabinetJson(params) {
     const hingeEdge = isLeftDoor ? 'left' : 'right';
     const opening = isLeftDoor ? 'left' : 'right';
     boards.push(createBoard({
-      id: `b-${String(10 + index).padStart(3, '0')}`,
+      id: `b-${String(20 + index).padStart(3, '0')}`,
       type: 'door',
       displayName: `${index + 1}号门板`,
       materialSlot: 'door',
@@ -394,7 +394,7 @@ async function onSplit() {
   }
 
   try {
-    store.splitItems = await store.executeSplit(store.cabinetJson, slotMap.value);
+    await store.executeSplit(store.cabinetJson, slotMap.value);
     showSplitPreview.value = true;
   } catch (e) {
     ElMessage.error(e?.message || '拆单计算失败');
@@ -415,9 +415,7 @@ async function onConfirmSplit() {
       `拆单成功，批次号：${result.splitBatchCode}，共生成 ${result.createdItemIds?.length || 0} 条订单明细`
     );
     if (result.nextAction === 'layout-workbench') {
-      setTimeout(() => {
-        router.push({ name: 'layout-workbench', query: { orderId: store.orderId, source: 'cabinet' } });
-      }, 1200);
+      router.push({ name: 'layout-workbench', query: { orderId: store.orderId, source: 'cabinet' } });
     }
   } catch (e) {
     ElMessage.error(e?.message || '确认拆单失败');
