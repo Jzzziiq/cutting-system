@@ -7,12 +7,15 @@ import com.cutting.cuttingsystem.entitys.DTO.TOrderItemDTO;
 import com.cutting.cuttingsystem.entitys.OrderStatus;
 import com.cutting.cuttingsystem.entitys.TCustomer;
 import com.cutting.cuttingsystem.entitys.TOrder;
+import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TOrderItem;
 import com.cutting.cuttingsystem.entitys.TProductionTask;
 import com.cutting.cuttingsystem.entitys.TaskStatus;
+import com.cutting.cuttingsystem.entitys.VO.LayoutInputVO;
 import com.cutting.cuttingsystem.entitys.VO.TOrderItemVO;
 import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
 import com.cutting.cuttingsystem.mapper.TOrderMapper;
+import com.cutting.cuttingsystem.service.TBoardService;
 import com.cutting.cuttingsystem.service.TCustomerService;
 import com.cutting.cuttingsystem.service.TOrderItemService;
 import com.cutting.cuttingsystem.service.TOrderService;
@@ -40,6 +43,8 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
 
     @Autowired
     private TCustomerService customerService;
+    @Autowired
+    private TBoardService boardService;
 
     @Autowired
     private TProductionTaskService productionTaskService;
@@ -191,6 +196,66 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
             orderVO.setStatusLabel(OrderStatus.fromCode(order.getOrderStatus()).getLabel());
         }
         return orderVO;
+    }
+
+    @Override
+    public Object getLayoutInput(Long orderId) {
+        TOrder order = getById(orderId);
+        if (order == null) return null;
+
+        QueryWrapper<TOrderItem> qw = new QueryWrapper<>();
+        qw.eq("order_id", orderId).orderByAsc("item_id");
+        List<TOrderItem> items = orderItemService.list(qw);
+        if (items.isEmpty()) return null;
+
+        Map<Long, List<TOrderItem>> grouped = new LinkedHashMap<>();
+        for (TOrderItem item : items) {
+            grouped.computeIfAbsent(item.getBoardId(), k -> new ArrayList<>()).add(item);
+        }
+
+        LayoutInputVO vo = new LayoutInputVO();
+        List<LayoutInputVO.GroupVO> groups = new ArrayList<>();
+        boolean hasTextureItems = false;
+
+        for (Map.Entry<Long, List<TOrderItem>> entry : grouped.entrySet()) {
+            TBoard board = boardService.getById(entry.getKey());
+            if (board == null) continue;
+
+            LayoutInputVO.BoardVO boardVO = new LayoutInputVO.BoardVO();
+            boardVO.setBoardId(board.getBoardId());
+            boardVO.setLength(board.getLength());
+            boardVO.setWidth(board.getWidth());
+            boardVO.setThickness(board.getThickness());
+            boardVO.setBrand(board.getBrand());
+            boardVO.setMaterialType(board.getMaterialType());
+            boardVO.setColor(board.getColor());
+            boardVO.setSizeType(board.getSizeType());
+
+            List<LayoutInputVO.ItemVO> itemVOs = new ArrayList<>();
+            for (TOrderItem item : entry.getValue()) {
+                LayoutInputVO.ItemVO itemVO = new LayoutInputVO.ItemVO();
+                itemVO.setOrderItemId(item.getItemId());
+                itemVO.setPartCode(item.getPartCode());
+                itemVO.setPartName(item.getPartName());
+                itemVO.setLength(item.getLength());
+                itemVO.setWidth(item.getWidth());
+                itemVO.setQuantity(item.getQuantity());
+                itemVOs.add(itemVO);
+                if (item.getIsTexture() != null && item.getIsTexture() == 1) hasTextureItems = true;
+            }
+
+            LayoutInputVO.GroupVO groupVO = new LayoutInputVO.GroupVO();
+            groupVO.setBoard(boardVO);
+            groupVO.setItems(itemVOs);
+            groups.add(groupVO);
+        }
+
+        vo.setGroups(groups);
+        LayoutInputVO.AlgorithmConfigVO algoConfig = new LayoutInputVO.AlgorithmConfigVO();
+        algoConfig.setGapDistance(3);
+        algoConfig.setAllowRotation(!hasTextureItems);
+        vo.setAlgorithmConfig(algoConfig);
+        return vo;
     }
 
     private TOrderItemVO toItemVO(TOrderItem item) {

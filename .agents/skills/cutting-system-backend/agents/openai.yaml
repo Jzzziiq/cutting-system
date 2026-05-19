@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cutting System Backend"
+  short_description: "Spring Boot backend workflow"
+  default_prompt: "Use $cutting-system-backend to modify backend APIs or tests while preserving cutting-system conventions."

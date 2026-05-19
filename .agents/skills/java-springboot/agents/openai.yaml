@@ -1,0 +1,5 @@
+interface:
+  display_name: "Java Spring Boot"
+  short_description: "Spring Boot guidance adapted for cutting-system"
+  default_prompt: "Use $java-springboot to work on cutting-system Spring Boot backend code while preserving MyBatis-Plus, JWT interceptor, Result, and project package conventions."
+

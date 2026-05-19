@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cutting System API Contract"
+  short_description: "Backend, web, and mini program contract sync"
+  default_prompt: "Use $cutting-system-api-contract to change API paths or fields across backend, Vue, mini program, tests, and docs."

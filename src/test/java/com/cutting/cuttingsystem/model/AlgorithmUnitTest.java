@@ -24,6 +24,7 @@ class AlgorithmUnitTest {
         assertEquals(0.25, solution.getRate(), 0.000001);
         assertEquals(0, solution.getPlaceSquareList().get(0).getX(), 0.000001);
         assertEquals(0, solution.getPlaceSquareList().get(0).getY(), 0.000001);
+        assertEquals("square-1", solution.getPlaceSquareList().get(0).getId());
     }
 
     @Test
@@ -37,6 +38,7 @@ class AlgorithmUnitTest {
         assertEquals(5, solution.getPlaceSquareList().get(0).getL(), 0.000001);
         assertEquals(10, solution.getPlaceSquareList().get(0).getW(), 0.000001);
         assertEquals(1.0, solution.getRate(), 0.000001);
+        assertEquals("square-1", solution.getPlaceSquareList().get(0).getId());
     }
 
     @Test
@@ -69,6 +71,7 @@ class AlgorithmUnitTest {
 
         assertEquals(1, solution.getPlaceSquareList().size());
         assertEquals(0.25, solution.getRate(), 0.000001);
+        assertEquals("square-1", solution.getPlaceSquareList().get(0).getId());
     }
 
     @Test

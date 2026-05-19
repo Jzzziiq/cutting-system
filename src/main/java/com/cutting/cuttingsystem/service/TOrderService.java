@@ -13,4 +13,6 @@ public interface TOrderService extends IService<TOrder> {
     TOrderVO getOrderDetail(Long orderId);
 
     TOrderVO transitionStatus(Long orderId, int targetStatus, String remark);
+
+    Object getLayoutInput(Long orderId);
 }

@@ -160,7 +160,7 @@ public class TabuSearch implements CuttingAlgorithm {
             if (bestX != -1 && bestY != -1) {
                 double finalW = rotated ? square.getW() : square.getL();
                 double finalH = rotated ? square.getL() : square.getW();
-                placeSquareList.add(new PlaceSquare(bestX, bestY, finalW, finalH));
+                placeSquareList.add(new PlaceSquare(square.getId(), bestX, bestY, finalW, finalH));
                 updateSkyline(skyline, bestX, bestY, finalW, finalH, gap);
             }
         }

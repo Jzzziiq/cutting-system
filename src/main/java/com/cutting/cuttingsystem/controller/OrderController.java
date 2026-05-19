@@ -50,6 +50,14 @@ public class OrderController {
         return Result.success(orderVO);
     }
 
+    @GetMapping("/{id}/layout-input")
+    @RequirePermission("order:read")
+    public Result getLayoutInput(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
+        Object layoutInput = orderService.getLayoutInput(id);
+        if (layoutInput == null) return Result.error("order not found or has no items");
+        return Result.success(layoutInput);
+    }
+
     @PostMapping
     @AuditLog(module = "订单管理", action = "新增")
     public Result save(@RequestBody @Valid TOrderDTO orderDTO) {

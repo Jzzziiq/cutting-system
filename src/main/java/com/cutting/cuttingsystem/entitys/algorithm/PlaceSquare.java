@@ -12,15 +12,13 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class PlaceSquare {
-    /**
-     * 方块的位置和尺寸属性
-     * x: X 轴坐标（水平位置）
-     * y: Y 轴坐标（垂直位置）
-     * l: 方块的长度
-     * w: 方块的宽度
-     */
+    private String id;
     private double x, y, l, w;
+
+    public PlaceSquare(double x, double y, double l, double w) {
+        this(null, x, y, l, w);
+    }
 }

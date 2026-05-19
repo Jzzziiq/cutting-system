@@ -69,6 +69,12 @@ const routes = [
         name: 'layout-workbench',
         component: () => import('@/views/cutting/LayoutWorkbenchView.vue'),
         meta: { title: '排版工作台' }
+      },
+      {
+        path: 'cutting/cabinet-design',
+        name: 'cabinet-design',
+        component: () => import('@/views/cutting/CabinetDesignView.vue'),
+        meta: { title: '3D柜体设计' }
       }
     ]
   },

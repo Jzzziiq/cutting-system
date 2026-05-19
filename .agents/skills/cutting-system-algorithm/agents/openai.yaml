@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cutting System Algorithm"
+  short_description: "Cutting layout algorithm workflow"
+  default_prompt: "Use $cutting-system-algorithm to adjust TabuSearch, skyline placement, or algorithm tests safely."

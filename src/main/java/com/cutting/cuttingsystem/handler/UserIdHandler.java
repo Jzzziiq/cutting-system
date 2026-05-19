@@ -12,7 +12,8 @@ import java.util.List;
 @Component
 public class UserIdHandler implements TenantLineHandler {
     private static final List<String> IGNORE_TABLES = List.of(
-        "t_user", "t_role", "t_permission", "t_user_role", "t_role_permission"
+        "t_user", "t_role", "t_permission", "t_user_role", "t_role_permission",
+        "t_cabinet_template"
     );
 
     @Override
