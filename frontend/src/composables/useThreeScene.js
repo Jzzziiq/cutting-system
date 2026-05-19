@@ -68,17 +68,34 @@ export function useThreeScene() {
     back: 0x94a3b8, top: 0x8b5cf6, bottom: 0x8b5cf6
   };
 
+  function getBoardGeometryArgs(board) {
+    const thickness = board.thickness || 18;
+    const designLength = board.designLength || 2200;
+    const designWidth = board.designWidth || 600;
+
+    switch (board.type) {
+      case 'side':
+        return [thickness, designLength, designWidth];
+      case 'back':
+      case 'door':
+        return [designWidth, designLength, thickness];
+      case 'top':
+      case 'bottom':
+      case 'layer':
+      default:
+        return [designLength, thickness, designWidth];
+    }
+  }
+
   function buildCabinet(boards) {
+    if (!scene || !camera || !controls) return;
     clearScene();
 
     boards.forEach(board => {
-      const t = board.thickness || 18;
-      const w = board.designWidth || 600;
-      const h = board.designLength || 2200;
       const pos = board.position || { x: 0, y: 0, z: 0 };
       const rot = board.rotation || { x: 0, y: 0, z: 0 };
 
-      const geo = new THREE.BoxGeometry(w, t, h);
+      const geo = new THREE.BoxGeometry(...getBoardGeometryArgs(board));
       const mat = new THREE.MeshStandardMaterial({
         color: typeColors[board.type] || 0x94a3b8,
         roughness: 0.6, metalness: 0.1
@@ -95,6 +112,7 @@ export function useThreeScene() {
 
     // Fit camera
     const box = new THREE.Box3().setFromObjects(scene.children.filter(c => c.isMesh));
+    if (box.isEmpty()) return;
     const center = new THREE.Vector3();
     box.getCenter(center);
     controls.target.copy(center);
@@ -107,11 +125,25 @@ export function useThreeScene() {
   }
 
   function clearScene() {
+    if (!scene) return;
     boardMeshes.value.forEach(m => scene.remove(m));
+    boardMeshes.value.forEach(m => {
+      m.geometry?.dispose();
+      m.material?.dispose();
+    });
     boardMeshes.value.clear();
     edgeLines.value.forEach(l => scene.remove(l));
+    edgeLines.value.forEach(l => {
+      l.geometry?.dispose();
+      l.material?.dispose();
+    });
     edgeLines.value.clear();
-    if (highlightLine) { scene.remove(highlightLine); highlightLine = null; }
+    if (highlightLine) {
+      scene.remove(highlightLine);
+      highlightLine.geometry?.dispose();
+      highlightLine.material?.dispose();
+      highlightLine = null;
+    }
   }
 
   function highlight(boardId) {

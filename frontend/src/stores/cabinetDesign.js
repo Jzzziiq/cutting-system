@@ -15,7 +15,12 @@ export const useCabinetDesignStore = defineStore('cabinetDesign', {
     splitResult: null
   }),
   actions: {
-    setOrderId(id) { this.orderId = id; },
+    setOrderId(id) {
+      if (this.orderId !== id) {
+        this.reset();
+      }
+      this.orderId = id;
+    },
     setSelectedPreset(p) { this.selectedPreset = p; },
     setCabinetJson(json) { this.cabinetJson = json; },
     setWizardParams(p) { Object.assign(this.wizardParams, p); },
@@ -43,7 +48,10 @@ export const useCabinetDesignStore = defineStore('cabinetDesign', {
       } finally { this.confirming = false; }
     },
     reset() {
-      this.cabinetJson = null; this.splitItems = []; this.splitResult = null;
+      this.selectedPreset = null;
+      this.cabinetJson = null;
+      this.splitItems = [];
+      this.splitResult = null;
     }
   }
 });

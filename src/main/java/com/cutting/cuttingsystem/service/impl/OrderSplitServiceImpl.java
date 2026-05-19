@@ -48,9 +48,12 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         if (boards == null || !boards.isArray()) {
             throw new IllegalArgumentException("柜体JSON中缺少boards数组");
         }
+
+        String prefix = workpiecePrefix(inferCategory(cabinet, boards));
+        int nextSequence = nextWorkpieceSequence(extractOrderId(cabinet), prefix);
         List<SplitItemVO> result = new ArrayList<>();
         for (JsonNode boardNode : boards) {
-            result.add(processBoard(boardNode, slotMap, cabinet));
+            result.add(processBoard(boardNode, slotMap, cabinet, formatWorkpieceCode(prefix, nextSequence++)));
         }
         return result;
     }
@@ -73,12 +76,15 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         }
 
         String cabinetName = cabinet.has("name") ? cabinet.get("name").asText() : "未命名柜体";
-        String cabinetCategory = inferCategory(boards);
+        String cabinetCategory = inferCategory(cabinet, boards);
+        String workpiecePrefix = workpiecePrefix(cabinetCategory);
         String splitBatchCode = generateSplitBatchCode(cabinetCategory);
+        int nextSequence = nextWorkpieceSequence(orderId, workpiecePrefix);
         List<Long> createdItemIds = new ArrayList<>();
 
         for (JsonNode boardNode : boards) {
-            SplitItemVO vo = processBoard(boardNode, slotMap, cabinet);
+            SplitItemVO vo = processBoard(boardNode, slotMap, cabinet,
+                    formatWorkpieceCode(workpiecePrefix, nextSequence++));
             TOrderItem item = toOrderItem(vo, orderId, currentUserId);
             orderItemService.save(item);
 
@@ -98,7 +104,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         return result;
     }
 
-    private SplitItemVO processBoard(JsonNode board, Map<String, Long> slotMap, JsonNode cabinet) {
+    private SplitItemVO processBoard(JsonNode board, Map<String, Long> slotMap, JsonNode cabinet, String partCode) {
         String boardType = board.has("type") ? board.get("type").asText() : null;
         String displayName = board.has("displayName") ? board.get("displayName").asText() : boardType;
         int designLength = board.get("designLength").asInt();
@@ -169,6 +175,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
                         int pos = header + (count == 1 ? effectiveRange / 2 : effectiveRange * i / (count - 1));
                         Map<String, Object> op = new LinkedHashMap<>();
                         op.put("sourceBoardId", board.has("id") ? board.get("id").asText() : "");
+                        op.put("workpieceCode", partCode);
                         op.put("type", "hinge_cup");
                         op.put("face", "inner");
                         int holeX = "width".equals(direction) ? pos : edgeDistance;
@@ -192,6 +199,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         }
 
         SplitItemVO vo = new SplitItemVO();
+        vo.setPartCode(partCode);
         vo.setPartName(displayName);
         vo.setBoardType(boardType);
         vo.setBoardId(boardId);
@@ -215,6 +223,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         TOrderItem item = new TOrderItem();
         item.setOrderId(orderId);
         item.setPartName(vo.getPartName());
+        item.setPartCode(vo.getPartCode());
         item.setBoardId(vo.getBoardId());
         item.setLength(vo.getLength());
         item.setWidth(vo.getWidth());
@@ -278,12 +287,70 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         return prefix + "-" + date + "-" + String.format("%03d", (count != null ? count : 0) + 1);
     }
 
-    private String inferCategory(JsonNode boards) {
+    private String inferCategory(JsonNode cabinet, JsonNode boards) {
+        if (cabinet != null && cabinet.has("category")) {
+            String category = cabinet.get("category").asText();
+            if ("base-cabinet".equals(category) || "wardrobe".equals(category)) {
+                return category;
+            }
+        }
+        if (cabinet != null && cabinet.has("name")) {
+            String name = cabinet.get("name").asText();
+            if (name.contains("地柜")) return "base-cabinet";
+            if (name.contains("衣柜")) return "wardrobe";
+        }
         if (boards != null && boards.isArray()) {
             for (JsonNode b : boards) {
                 if ("door".equals(b.has("type") ? b.get("type").asText() : "")) return "wardrobe";
             }
         }
         return "base-cabinet";
+    }
+
+    private Long extractOrderId(JsonNode cabinet) {
+        if (cabinet == null || !cabinet.has("orderId") || cabinet.get("orderId").isNull()) {
+            return null;
+        }
+        long orderId = cabinet.get("orderId").asLong();
+        return orderId > 0 ? orderId : null;
+    }
+
+    private String workpiecePrefix(String category) {
+        return "wardrobe".equals(category) ? "ZG" : "DG";
+    }
+
+    private String formatWorkpieceCode(String prefix, int sequence) {
+        return prefix + "-" + String.format("%03d", sequence);
+    }
+
+    private int nextWorkpieceSequence(Long orderId, String prefix) {
+        if (orderId == null) {
+            return 1;
+        }
+        QueryWrapper<TOrderItem> qw = new QueryWrapper<>();
+        qw.select("part_code")
+                .eq("order_id", orderId)
+                .likeRight("part_code", prefix + "-");
+        List<TOrderItem> existingItems = orderItemService.list(qw);
+        if (existingItems == null) {
+            return 1;
+        }
+        int maxSequence = 0;
+        for (TOrderItem item : existingItems) {
+            maxSequence = Math.max(maxSequence, parseWorkpieceSequence(item.getPartCode(), prefix));
+        }
+        return maxSequence + 1;
+    }
+
+    private int parseWorkpieceSequence(String partCode, String prefix) {
+        String codePrefix = prefix + "-";
+        if (partCode == null || !partCode.startsWith(codePrefix)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(partCode.substring(codePrefix.length()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }
