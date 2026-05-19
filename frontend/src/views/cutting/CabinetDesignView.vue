@@ -414,6 +414,11 @@ async function onConfirmSplit() {
     ElMessage.success(
       `拆单成功，批次号：${result.splitBatchCode}，共生成 ${result.createdItemIds?.length || 0} 条订单明细`
     );
+    if (result.nextAction === 'layout-workbench') {
+      setTimeout(() => {
+        router.push({ name: 'layout-workbench', query: { orderId: store.orderId, source: 'cabinet' } });
+      }, 1200);
+    }
   } catch (e) {
     ElMessage.error(e?.message || '确认拆单失败');
   }

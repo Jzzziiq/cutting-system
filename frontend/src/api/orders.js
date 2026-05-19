@@ -27,3 +27,7 @@ export function transitionOrderStatus(id, targetStatus, remark) {
 export function getOrderStatusLabels() {
   return http.get('/orders/status-labels');
 }
+
+export function getLayoutInput(orderId) {
+  return http.get(`/orders/${orderId}/layout-input`);
+}
