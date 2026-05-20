@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onActivated } from 'vue';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
@@ -10,7 +10,7 @@ import LayoutCanvas from '@/components/cutting/LayoutCanvas.vue';
 import { useAlgorithmSubmit } from '@/composables/useAlgorithmSubmit';
 import { getAlgorithmResult } from '@/api/algorithm';
 import { getLayoutResult, createLayoutResult, deleteLayoutResult } from '@/api/layout-results';
-import { listOrders, getLayoutInput } from '@/api/orders';
+import { getLayoutInput, getOrder, listOrders } from '@/api/orders';
 
 const route = useRoute();
 const router = useRouter();
@@ -27,6 +27,8 @@ const layoutZoom = ref(1);
 const orderInfo = ref({});
 const draftData = ref(null);
 const boardResults = ref([]);
+const currentLayoutInput = ref(null);
+const lastRouteLoadKey = ref('');
 
 const showSettings = ref(false);
 const settings = reactive({
@@ -37,49 +39,163 @@ const settings = reactive({
   units: 'mm'
 });
 
-async function loadFromOrder() {
-  const orderId = Number(route.query.orderId);
-  if (!orderId || route.query.source !== 'cabinet') return false;
+const activeOrderId = computed(() => Number(orderInfo.value.orderId || route.query.orderId || 0));
+
+function parseResultJson(raw) {
+  if (!raw) return [];
+  const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  return Array.isArray(parsed) ? parsed : [parsed];
+}
+
+function boardLabel(board) {
+  return [board?.brand, board?.materialType, board?.color].filter(Boolean).join(' ') || '未知板材';
+}
+
+function buildSquareList(items = []) {
+  const squareList = [];
+  for (const item of items) {
+    const quantity = Math.max(1, Number(item.quantity) || 1);
+    for (let index = 0; index < quantity; index += 1) {
+      const id = item.partCode
+        ? `${item.partCode}-${index + 1}`
+        : `${item.orderItemId || 'item'}-${index + 1}`;
+      squareList.push({
+        id,
+        l: item.length,
+        w: item.width,
+        partCode: item.partCode,
+        partName: item.partName,
+        orderItemId: item.orderItemId
+      });
+    }
+  }
+  return squareList;
+}
+
+function decorateSolutions(rawSolutions, board, items = []) {
+  const itemByCode = new Map();
+  const itemById = new Map();
+  for (const item of items) {
+    if (item.partCode) itemByCode.set(String(item.partCode), item);
+    if (item.orderItemId) itemById.set(String(item.orderItemId), item);
+  }
+
+  return parseResultJson(rawSolutions).map(solution => ({
+    ...solution,
+    _boardGroup: board,
+    placeSquareList: (solution.placeSquareList || []).map(piece => {
+      const pieceId = String(piece.id || '');
+      const code = pieceId.split('-').slice(0, -1).join('-');
+      const orderItemId = pieceId.split('-')[0];
+      const sourceItem = itemByCode.get(code) || itemById.get(orderItemId);
+      return {
+        ...piece,
+        partCode: sourceItem?.partCode || piece.partCode,
+        partName: sourceItem?.partName || piece.partName
+      };
+    })
+  }));
+}
+
+function summarizeBoardResults(results) {
+  let weightedSum = 0;
+  let totalArea = 0;
+  let solutionCount = 0;
+  for (const result of results) {
+    const board = result.board || {};
+    const area = (board.length || 0) * (board.width || 0);
+    weightedSum += (result.bestRate || 0) * area;
+    totalArea += area;
+    solutionCount += result.solutions.length;
+  }
+  const totalRate = totalArea > 0 ? weightedSum / totalArea : 0;
+  return { totalRate, solutionCount };
+}
+
+async function runLayoutForGroups(groups, algorithmConfig = {}) {
+  const allSolutions = [];
+  const nextBoardResults = [];
+
+  for (const group of groups) {
+    const board = group.board;
+    const squareList = buildSquareList(group.items);
+    if (!squareList.length) continue;
+
+    const result = await submit({
+      L: board.length,
+      W: board.width,
+      isRotateEnable: algorithmConfig.allowRotation ?? settings.allowRotation,
+      gapDistance: algorithmConfig.gapDistance ?? settings.gapDistance,
+      squareList
+    });
+
+    if (result?.status === -1) {
+      throw new Error(result.errorMsg || '算法任务失败');
+    }
+
+    const groupSolutions = decorateSolutions(result?.resultJson, board, group.items);
+    if (!groupSolutions.length) {
+      throw new Error(`板材"${boardLabel(board)}"未返回排版结果`);
+    }
+    allSolutions.push(...groupSolutions);
+    nextBoardResults.push({
+      board,
+      solutions: groupSolutions,
+      bestRate: result?.bestRate,
+      containerCount: result?.containerCount
+    });
+  }
+
+  return {
+    solutions: allSolutions,
+    boardResults: nextBoardResults,
+    ...summarizeBoardResults(nextBoardResults)
+  };
+}
+
+async function buildOrderInfo(orderId) {
+  try {
+    const order = await getOrder(orderId);
+    return {
+      orderId,
+      orderNo: order?.orderNo || '',
+      orderName: order?.orderNo || `订单 #${orderId}`,
+      customer: order?.customerName || '',
+      processName: order?.processName || ''
+    };
+  } catch {
+    return {
+      orderId,
+      orderName: `订单 #${orderId}`
+    };
+  }
+}
+
+async function loadFromOrder(orderId = Number(route.query.orderId)) {
+  const numericOrderId = Number(orderId);
+  if (!Number.isFinite(numericOrderId) || numericOrderId <= 0) return false;
   loadingCanvas.value = true;
   try {
-    const input = await getLayoutInput(orderId);
+    const input = await getLayoutInput(numericOrderId);
     if (!input?.groups?.length) {
       ElMessage.warning('该订单没有待排样明细');
+      orderInfo.value = await buildOrderInfo(numericOrderId);
       return false;
     }
-    const allSolutions = [];
-    const localBoardResults = [];
-    for (const group of input.groups) {
-      const board = group.board;
-      const squareList = [];
-      for (const item of group.items) {
-        for (let i = 0; i < (item.quantity || 1); i++) {
-          squareList.push({ id: `${item.orderItemId}-${i + 1}`, l: item.length, w: item.width });
-        }
-      }
-      const payload = {
-        L: board.length, W: board.width,
-        isRotateEnable: input.algorithmConfig?.allowRotation ?? false,
-        gapDistance: input.algorithmConfig?.gapDistance ?? 3,
-        squareList
-      };
-      const res = await submit(payload);
-      const solutions = Array.isArray(res) ? res : (res?.resultJson ? (typeof res.resultJson === 'string' ? JSON.parse(res.resultJson) : res.resultJson) : [res]);
-      const flatSolutions = solutions.flatMap(s => ({ ...s, _boardGroup: board }));
-      allSolutions.push(...flatSolutions);
-      localBoardResults.push({ board, solutions: flatSolutions, bestRate: res?.bestRate, containerCount: res?.containerCount });
-    }
+    currentLayoutInput.value = input;
+    draftData.value = null;
+    activeResultId.value = null;
     settings.gapDistance = input.algorithmConfig?.gapDistance ?? 3;
     settings.allowRotation = input.algorithmConfig?.allowRotation ?? false;
-    solutions.value = allSolutions;
-    boardResults.value = localBoardResults;
-    const totalRate = localBoardResults.length
-      ? localBoardResults.reduce((s, r) => s + (r.bestRate || 0), 0) / localBoardResults.length : 0;
+    const baseOrderInfo = await buildOrderInfo(numericOrderId);
+    const result = await runLayoutForGroups(input.groups, input.algorithmConfig);
+    solutions.value = result.solutions;
+    boardResults.value = result.boardResults;
     orderInfo.value = {
-      orderId,
-      orderName: `订单 #${orderId}`,
-      utilizationRate: totalRate,
-      containerCount: allSolutions.length
+      ...baseOrderInfo,
+      utilizationRate: result.totalRate,
+      containerCount: result.solutionCount,
+      boardGroupLabels: input.groups.map(group => boardLabel(group.board))
     };
     return true;
   } catch (e) {
@@ -97,8 +213,7 @@ async function loadFromTask() {
   try {
     const res = await getAlgorithmResult(tid);
     if (res?.resultJson) {
-      const data = typeof res.resultJson === 'string' ? JSON.parse(res.resultJson) : res.resultJson;
-      solutions.value = data;
+      solutions.value = parseResultJson(res.resultJson);
       orderInfo.value = {
         orderName: `任务 #${tid}`,
         orderId: res.orderId || null,
@@ -108,6 +223,8 @@ async function loadFromTask() {
     } else {
       ElMessage.warning('该任务没有排版结果数据');
     }
+    currentLayoutInput.value = null;
+    draftData.value = null;
     activeResultId.value = null;
   } catch (e) {
     ElMessage.error('加载排版结果失败');
@@ -127,6 +244,7 @@ function loadFromDraft() {
   try {
     const draft = JSON.parse(raw);
     draftData.value = draft;
+    currentLayoutInput.value = null;
     boardResults.value = draft.boardResults || [];
     solutions.value = draft.mergedSolutions || [];
     const totalRate = boardResults.value.length
@@ -137,6 +255,7 @@ function loadFromDraft() {
     );
     orderInfo.value = {
       ...draft.orderInfo,
+      orderId: draft.orderInfo?.orderId || Number(route.query.orderId) || null,
       orderName: draft.orderInfo?.orderNo || `草稿 ${draftId}`,
       utilizationRate: totalRate,
       containerCount: solutions.value.length,
@@ -156,7 +275,7 @@ async function onSelectRecord(record) {
     const detail = await getLayoutResult(record.resultId);
     if (detail?.resultJson) {
       const data = typeof detail.resultJson === 'string' ? JSON.parse(detail.resultJson) : detail.resultJson;
-      solutions.value = data;
+      solutions.value = parseResultJson(data);
       orderInfo.value = {
         orderId: detail.orderId || record.orderId || null,
         orderNo: detail.orderNo || record.orderNo || '',
@@ -165,6 +284,8 @@ async function onSelectRecord(record) {
         utilizationRate: detail.usageRate,
         containerCount: detail.containerCount
       };
+      currentLayoutInput.value = null;
+      draftData.value = null;
     } else {
       solutions.value = [];
       ElMessage.warning('该排版记录没有结果数据（resultJson 为空）');
@@ -205,10 +326,21 @@ async function onDeleteRecord(record) {
 }
 
 async function onStartLayout() {
+  const orderId = activeOrderId.value;
+  if (currentLayoutInput.value?.groups?.length) {
+    await loadFromOrder(orderId);
+    ElMessage.success('排版计算完成');
+    return;
+  }
+  if (orderId > 0) {
+    await loadFromOrder(orderId);
+    return;
+  }
+
   if (!solutions.value.length) {
     try {
       await ElMessageBox.confirm(
-        '尚未导入排单信息或加载排版数据。是否使用演示数据进行排版？',
+        '尚未选择订单或加载排版数据。是否使用演示数据进行排版？',
         '提示',
         { confirmButtonText: '使用演示数据', cancelButtonText: '取消', type: 'info' }
       );
@@ -219,9 +351,7 @@ async function onStartLayout() {
 
   loadingCanvas.value = true;
   try {
-    const squareList = solutions.value.length
-      ? solutions.value.flatMap(s => (s.placeSquareList || []).map(p => ({ id: `${p.x}-${p.y}`, l: p.l, w: p.w })))
-      : [
+    const squareList = [
           { id: 'demo-1', l: 600, w: 400 },
           { id: 'demo-2', l: 500, w: 350 },
           { id: 'demo-3', l: 450, w: 300 },
@@ -238,9 +368,8 @@ async function onStartLayout() {
       squareList
     });
 
-    // submit() now always returns parsed resultJson
     if (res?.resultJson) {
-      solutions.value = Array.isArray(res.resultJson) ? res.resultJson : [res.resultJson];
+      solutions.value = parseResultJson(res.resultJson);
     }
 
     orderInfo.value = {
@@ -265,8 +394,8 @@ async function onImportOrder() {
       return;
     }
 
-    const { value: orderId } = await ElMessageBox.prompt('请输入要导入的订单ID', '导入排单信息', {
-      confirmButtonText: '导入',
+    const { value: orderId } = await ElMessageBox.prompt('请输入要排版的订单ID', '选择订单', {
+      confirmButtonText: '加载',
       cancelButtonText: '取消',
       inputType: 'text',
       inputPlaceholder: orders.map(o => `${o.orderId}=${o.orderNo}`).join(', ')
@@ -275,12 +404,8 @@ async function onImportOrder() {
     if (orderId) {
       const order = orders.find(o => String(o.orderId) === orderId.trim());
       if (order) {
-        orderInfo.value = {
-          orderName: order.orderNo || `订单 #${order.orderId}`,
-          customer: order.customerName,
-          orderId: order.orderId
-        };
-        ElMessage.success('已导入排单信息');
+        await router.push({ name: 'layout-workbench', query: { orderId: order.orderId } });
+        ElMessage.success('已加载订单排版输入');
       } else {
         ElMessage.warning('未找到该订单');
       }
@@ -298,27 +423,6 @@ function onSaveSettings() {
 async function resolveSaveOrderId() {
   const existingOrderId = Number(orderInfo.value.orderId || 0);
   if (existingOrderId > 0) return existingOrderId;
-
-  const orderNo = orderInfo.value.orderNo || orderInfo.value.orderName;
-  if (!orderNo) return null;
-
-  try {
-    const data = await listOrders({ pageNum: 1, pageSize: 100, search: orderNo });
-    const orders = Array.isArray(data) ? data : (data?.records ?? []);
-    const matched = orders.find(o => o.orderNo === orderNo);
-    if (matched?.orderId) {
-      orderInfo.value = {
-        ...orderInfo.value,
-        orderId: matched.orderId,
-        orderNo: matched.orderNo,
-        customer: matched.customerName || orderInfo.value.customer
-      };
-      return Number(matched.orderId);
-    }
-  } catch {
-    // Keep the save failure actionable below; the request itself may fail due auth/network.
-  }
-
   return null;
 }
 
@@ -338,7 +442,10 @@ function onExportToolpath() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `刀轨_${new Date().toISOString().slice(0, 10)}.svg`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
   ElMessage.success('刀轨已导出');
 }
@@ -368,7 +475,7 @@ async function onSaveResult() {
   try {
     const orderId = await resolveSaveOrderId();
     if (!orderId) {
-      ElMessage.warning('保存排版结果前，请先点击“导入排单”选择一个已存在订单');
+      ElMessage.warning('保存排版结果前，请先选择一个已存在订单');
       return;
     }
 
@@ -397,25 +504,39 @@ async function onSaveResult() {
 }
 
 function onBackToEdit() {
-  router.push({ name: 'data-input' });
+  const orderId = activeOrderId.value;
+  router.push({
+    name: 'data-input',
+    query: orderId > 0 ? { orderId } : {}
+  });
 }
 
-// Initial load: orderId(cabinet) > draftId > taskId
-if (route.query.orderId && route.query.source === 'cabinet') {
-  loadFromOrder();
-} else if (route.query.draftId) {
-  loadFromDraft();
-} else {
-  loadFromTask();
+async function loadFromRoute() {
+  const key = JSON.stringify({
+    draftId: route.query.draftId || '',
+    orderId: route.query.orderId || '',
+    taskId: route.query.taskId || ''
+  });
+  if (key === lastRouteLoadKey.value) return;
+  lastRouteLoadKey.value = key;
+
+  if (route.query.draftId) {
+    loadFromDraft();
+  } else if (route.query.orderId) {
+    await loadFromOrder();
+  } else if (route.query.taskId) {
+    await loadFromTask();
+  } else {
+    currentLayoutInput.value = null;
+  }
 }
-onActivated(() => {
-  if (route.query.orderId && route.query.source === 'cabinet') loadFromOrder();
-  else if (route.query.draftId) loadFromDraft();
-  else loadFromTask();
-});
-watch(() => route.query.orderId, () => { if (route.query.orderId && route.query.source === 'cabinet') loadFromOrder(); });
-watch(() => route.query.draftId, () => { if (route.query.draftId) loadFromDraft(); });
-watch(() => route.query.taskId, () => { if (route.query.taskId && !route.query.draftId && !route.query.orderId) loadFromTask(); });
+
+onActivated(loadFromRoute);
+watch(
+  () => [route.query.draftId, route.query.orderId, route.query.taskId],
+  loadFromRoute,
+  { immediate: true }
+);
 </script>
 
 <template>

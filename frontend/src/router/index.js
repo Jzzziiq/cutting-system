@@ -74,7 +74,7 @@ const routes = [
         path: 'cutting/cabinet-design',
         name: 'cabinet-design',
         component: () => import('@/views/cutting/CabinetDesignView.vue'),
-        meta: { title: '3D柜体设计' }
+        meta: { title: '3D 柜体设计' }
       }
     ]
   },

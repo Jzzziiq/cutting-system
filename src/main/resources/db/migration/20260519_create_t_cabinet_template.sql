@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS t_cabinet_template (
     PRIMARY KEY (id),
     INDEX idx_ct_category (category),
     INDEX idx_ct_official (is_official),
+    INDEX idx_ct_category_official (category, is_official),
     CONSTRAINT fk_ct_user FOREIGN KEY (created_by) REFERENCES t_user(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='柜体设计预设模板表';
