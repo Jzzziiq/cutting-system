@@ -66,6 +66,22 @@ export function useThreeScene() {
     side: 0x3b82f6, layer: 0xf59e0b, door: 0x10b981,
     back: 0x94a3b8, top: 0x8b5cf6, bottom: 0x8b5cf6
   };
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.setCrossOrigin('anonymous');
+  const textureCache = new Map();
+
+  function getTexture(url) {
+    if (!url) return null;
+    if (textureCache.has(url)) return textureCache.get(url);
+    const texture = textureLoader.load(url, () => {
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    });
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    textureCache.set(url, texture);
+    return texture;
+  }
 
   function getBoardGeometryArgs(board) {
     const thickness = board.thickness || 18;
@@ -76,6 +92,7 @@ export function useThreeScene() {
       case 'side':
         return [thickness, designLength, designWidth];
       case 'back':
+        return [designLength, designWidth, thickness];
       case 'door':
         return [designWidth, designLength, thickness];
       case 'top':
@@ -94,8 +111,10 @@ export function useThreeScene() {
       const pos = board.position || { x: 0, y: 0, z: 0 };
       const rot = board.rotation || { x: 0, y: 0, z: 0 };
       const geo = new THREE.BoxGeometry(...getBoardGeometryArgs(board));
+      const texture = getTexture(board.textureUrl);
       const mat = new THREE.MeshStandardMaterial({
-        color: typeColors[board.type] || 0x94a3b8,
+        color: texture ? 0xffffff : board.appearanceColor || typeColors[board.type] || 0x94a3b8,
+        map: texture,
         roughness: 0.6, metalness: 0.1
       });
       const mesh = new THREE.Mesh(geo, mat);
@@ -108,7 +127,8 @@ export function useThreeScene() {
       boardMeshes.value.set(board.id, mesh);
     });
 
-    const box = new THREE.Box3().setFromObjects(scene.children.filter(c => c.isMesh));
+    const box = new THREE.Box3();
+    Array.from(boardMeshes.value.values()).forEach(mesh => box.expandByObject(mesh));
     if (box.isEmpty()) return;
     const center = new THREE.Vector3();
     box.getCenter(center);
@@ -117,6 +137,22 @@ export function useThreeScene() {
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     const dist = maxDim * 2.5;
+    camera.position.set(center.x + dist * 0.6, center.y + dist * 0.4, center.z + dist * 0.6);
+    controls.update();
+  }
+
+  function resetView() {
+    if (!camera || !controls || boardMeshes.value.size === 0) return;
+    const box = new THREE.Box3();
+    Array.from(boardMeshes.value.values()).forEach(mesh => box.expandByObject(mesh));
+    if (box.isEmpty()) return;
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z, 600);
+    const dist = maxDim * 2.5;
+    controls.target.copy(center);
     camera.position.set(center.x + dist * 0.6, center.y + dist * 0.4, center.z + dist * 0.6);
     controls.update();
   }
@@ -161,6 +197,27 @@ export function useThreeScene() {
 
   const raycaster = new THREE.Raycaster();
 
+  function getDropPoint(event, options = {}) {
+    if (!canvasRef.value || !camera) return null;
+    const rect = canvasRef.value.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    const y = Number(options.y) || 0;
+    const snapSize = Number(options.snapSize) || 50;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -y);
+    const point = new THREE.Vector3();
+    raycaster.setFromCamera(mouse, camera);
+    const hit = raycaster.ray.intersectPlane(plane, point);
+    if (!hit) return null;
+    return {
+      x: Math.round(point.x / snapSize) * snapSize,
+      y,
+      z: Math.round(point.z / snapSize) * snapSize
+    };
+  }
+
   function onClick(event, callback) {
     if (!canvasRef.value || !camera) return;
     const rect = canvasRef.value.getBoundingClientRect();
@@ -195,9 +252,23 @@ export function useThreeScene() {
     clearScene();
     if (controls) { controls.dispose(); controls = null; }
     if (renderer) { renderer.dispose(); renderer = null; }
+    textureCache.forEach(texture => texture.dispose());
+    textureCache.clear();
     scene = null;
     camera = null;
   }
 
-  return { canvasRef, init, buildCabinet, clearScene, highlight, removeHighlight, onClick, resize, dispose };
+  return {
+    canvasRef,
+    init,
+    buildCabinet,
+    clearScene,
+    highlight,
+    removeHighlight,
+    onClick,
+    getDropPoint,
+    resetView,
+    resize,
+    dispose
+  };
 }
