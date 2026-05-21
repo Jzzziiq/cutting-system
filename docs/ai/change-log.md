@@ -8,6 +8,8 @@
 
 当前记录：
 
+- 2026-05-21 | 类型: 前端/文档 | 范围: frontend/src/styles/main.css、docs/user-manual/需求文档*.md | 原因: 完成需求文档 O-007，修复侧边栏收起时工作区高度被内容撑开 | 影响: 接口契约不变；应用外壳固定在视口高度，页面内容滚动收敛到主内容区 | 验证: `git diff --check -- frontend/src/styles/main.css docs/user-manual/需求文档.md docs/user-manual/需求文档-已完成.md docs/ai/change-log.md`
+- 2026-05-21 | 类型: 前端/文档 | 范围: AppShell 侧边栏交互、frontend/src/styles/main.css、docs/user-manual/需求文档*.md | 原因: 完成需求文档 O-006，优化侧边栏展开/收起手感 | 影响: 接口契约不变；侧边栏边缘唤出更快，工作区移入后延迟收起以减少闪烁 | 验证: `git diff --check -- frontend/src/components/AppShell.vue frontend/src/styles/main.css docs/user-manual/需求文档.md docs/user-manual/需求文档-已完成.md docs/ai/change-log.md`
 - 2026-05-21 | 类型: 前端/文档 | 范围: frontend 3D 柜体设计页、useThreeScene、cabinetDesign store、docs/ai/frontend.md | 原因: 开始实现 MVP4 自由拼装能力 | 影响: `/cutting/cabinet-design` 支持从板件库拖放新增板件、吸附对齐、选中板件属性微调、复制/删除/视角复位和撤销重做；接口契约不变，新增自由板件继续通过 `materialSlot` 映射后拆单 | 验证: `cd frontend; npm run build -- --outDir ../target/frontend-build-check`；Playwright 本地模拟订单/板材接口后验证桌面和 390px 移动视口 canvas 非空、板件新增与撤销可用
 - 2026-05-20 | 类型: API/依赖/前端/文档 | 范围: 板材纹理上传、OSS 配置、pom.xml | 原因: 用户要求板材纹理文件上传改为使用阿里云 OSS | 影响: `POST /boards/texture` 接口路径和返回结构不变，但上传落点从本地目录改为 OSS；新增 `com.aliyun.oss:aliyun-sdk-oss` 及 Java 17 JAXB 运行依赖；运行环境需配置 `ALIYUN_OSS_ENDPOINT`、`ALIYUN_OSS_BUCKET`、`ALIYUN_OSS_ACCESS_KEY_ID`、`ALIYUN_OSS_ACCESS_KEY_SECRET` | 验证: `mvn "-Dmaven.repo.local=target\.m2" -Dtest=BoardModuleTest test`、`cd frontend; npm run build`、`git diff --check`
 - 2026-05-20 | 类型: API/前端/文档 | 范围: 板材纹理上传、frontend 板材页面 | 原因: 将板材纹理从手填 URL 升级为文件上传 | 影响: 新增 `POST /boards/texture`，接收 jpg/png/webp 并返回纹理 URL；后续已改为阿里云 OSS 落点，见上一条 | 验证: `mvn "-Dmaven.repo.local=target\.m2" -Dtest=BoardModuleTest test`、`cd frontend; npm run build`、`git diff --check`

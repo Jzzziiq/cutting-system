@@ -1,10 +1,13 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
+const sidebarExpanded = ref(true);
+let expandTimer = null;
+let collapseTimer = null;
 
 const navItems = [
   { name: 'dashboard', label: '工作台', perm: null },
@@ -21,15 +24,66 @@ const visibleItems = computed(() =>
   navItems.filter((item) => !item.perm || auth.hasPermission(item.perm))
 );
 
+function clearExpandTimer() {
+  if (!expandTimer) return;
+  window.clearTimeout(expandTimer);
+  expandTimer = null;
+}
+
+function clearCollapseTimer() {
+  if (!collapseTimer) return;
+  window.clearTimeout(collapseTimer);
+  collapseTimer = null;
+}
+
+function clearSidebarTimers() {
+  clearExpandTimer();
+  clearCollapseTimer();
+}
+
+function expandSidebar() {
+  clearSidebarTimers();
+  sidebarExpanded.value = true;
+}
+
+function scheduleExpandSidebar() {
+  clearSidebarTimers();
+  expandTimer = window.setTimeout(() => {
+    sidebarExpanded.value = true;
+    expandTimer = null;
+  }, 150);
+}
+
+function scheduleCollapseSidebar() {
+  clearSidebarTimers();
+  collapseTimer = window.setTimeout(() => {
+    sidebarExpanded.value = false;
+    collapseTimer = null;
+  }, 120);
+}
+
 function logout() {
   auth.logout();
   router.replace({ name: 'login' });
 }
+
+onBeforeUnmount(clearSidebarTimers);
 </script>
 
 <template>
-  <div class="app-shell">
-    <aside class="sidebar">
+  <div class="app-shell" :class="{ 'sidebar-collapsed': !sidebarExpanded }">
+    <div
+      class="sidebar-edge"
+      aria-hidden="true"
+      @mouseenter="scheduleExpandSidebar"
+      @mouseleave="clearExpandTimer"
+    ></div>
+    <aside
+      class="sidebar"
+      @mouseenter="expandSidebar"
+      @mouseleave="scheduleCollapseSidebar"
+      @focusin="expandSidebar"
+    >
       <div class="brand-block">
         <div class="brand-title">板材切割系统</div>
         <div class="brand-subtitle">Web Console</div>
@@ -55,7 +109,7 @@ function logout() {
       </div>
     </aside>
 
-    <main class="main-panel">
+    <main class="main-panel" @focusin="scheduleCollapseSidebar" @mouseenter="scheduleCollapseSidebar">
       <section class="content-panel">
         <router-view v-slot="{ Component }">
           <keep-alive :max="10">
