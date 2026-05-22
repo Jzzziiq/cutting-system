@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cutting.cuttingsystem.entitys.DTO.LayoutInputSaveDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderItemDTO;
 import com.cutting.cuttingsystem.entitys.OrderStatus;
@@ -256,6 +257,44 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
         algoConfig.setAllowRotation(!hasTextureItems);
         vo.setAlgorithmConfig(algoConfig);
         return vo;
+    }
+
+    @Override
+    @Transactional
+    public void saveLayoutInput(Long orderId, LayoutInputSaveDTO dto) {
+        TOrder order = getById(orderId);
+        if (order == null) throw new RuntimeException("订单不存在");
+
+        orderItemService.remove(new QueryWrapper<TOrderItem>().eq("order_id", orderId));
+
+        if (dto.getGroups() == null || dto.getGroups().isEmpty()) {
+            return;
+        }
+
+        List<TOrderItem> items = new ArrayList<>();
+        for (LayoutInputSaveDTO.GroupDTO group : dto.getGroups()) {
+            TBoard board = boardService.getById(group.getBoardId());
+            Integer thickness = board != null ? board.getThickness() : null;
+
+            if (group.getItems() == null || group.getItems().isEmpty()) {
+                continue;
+            }
+            for (LayoutInputSaveDTO.ItemDTO itemDTO : group.getItems()) {
+                TOrderItem item = new TOrderItem();
+                item.setOrderId(orderId);
+                item.setBoardId(group.getBoardId());
+                item.setThickness(thickness);
+                item.setPartName(itemDTO.getPartName());
+                item.setLength(itemDTO.getLength());
+                item.setWidth(itemDTO.getWidth());
+                item.setQuantity(itemDTO.getQuantity());
+                item.setRemark(itemDTO.getRemark());
+                items.add(item);
+            }
+        }
+        if (!items.isEmpty()) {
+            orderItemService.saveBatch(items);
+        }
     }
 
     private TOrderItemVO toItemVO(TOrderItem item) {

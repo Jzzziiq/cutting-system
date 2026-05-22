@@ -1,6 +1,7 @@
 package com.cutting.cuttingsystem.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cutting.cuttingsystem.entitys.DTO.LayoutInputSaveDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
 import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
@@ -15,4 +16,6 @@ public interface TOrderService extends IService<TOrder> {
     TOrderVO transitionStatus(Long orderId, int targetStatus, String remark);
 
     Object getLayoutInput(Long orderId);
+
+    void saveLayoutInput(Long orderId, LayoutInputSaveDTO dto);
 }

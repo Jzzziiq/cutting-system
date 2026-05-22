@@ -4,10 +4,11 @@ defineProps({
   boardTypeCount: { type: Number, default: 0 },
   totalArea: { type: Number, default: 0 },
   errorCount: { type: Number, default: 0 },
-  canConfirm: { type: Boolean, default: false }
+  canConfirm: { type: Boolean, default: false },
+  canSave: { type: Boolean, default: false }
 });
 
-defineEmits(['confirm']);
+defineEmits(['confirm', 'save']);
 </script>
 
 <template>
@@ -15,14 +16,15 @@ defineEmits(['confirm']);
     <div class="stats">
       <span class="stat-item">工件数量：<strong>{{ itemCount }}</strong></span>
       <span class="stat-item">板材分组：<strong>{{ boardTypeCount }}</strong></span>
-      <span class="stat-item">总面积：<strong>{{ totalArea.toLocaleString() }}</strong> mm²</span>
+      <span class="stat-item">总面积：<strong>{{ (totalArea / 1000000).toFixed(2) }}</strong> m²</span>
       <span v-if="errorCount" class="stat-item" style="color:#dc2626">
         错误行数：<strong>{{ errorCount }}</strong>
       </span>
     </div>
-    <el-button type="primary" size="large" :disabled="!canConfirm" @click="$emit('confirm')">
-      生成排版草稿
-    </el-button>
+    <div class="actions">
+      <el-button size="large" :disabled="!canSave" @click="$emit('save')">保存当前数据</el-button>
+      <el-button type="primary" size="large" :disabled="!canConfirm" @click="$emit('confirm')">生成排版草稿</el-button>
+    </div>
   </div>
 </template>
 
@@ -46,5 +48,9 @@ defineEmits(['confirm']);
 }
 .stat-item strong {
   color: #172033;
+}
+.actions {
+  display: flex;
+  gap: 12px;
 }
 </style>

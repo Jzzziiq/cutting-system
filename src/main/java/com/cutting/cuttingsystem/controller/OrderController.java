@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.annotation.AuditLog;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
+import com.cutting.cuttingsystem.entitys.DTO.LayoutInputSaveDTO;
 import com.cutting.cuttingsystem.entitys.DTO.OrderStatusTransitionDTO;
 import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
@@ -54,8 +55,16 @@ public class OrderController {
     @RequirePermission("order:read")
     public Result getLayoutInput(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         Object layoutInput = orderService.getLayoutInput(id);
-        if (layoutInput == null) return Result.error("order not found or has no items");
         return Result.success(layoutInput);
+    }
+
+    @PutMapping("/{id}/layout-input")
+    @RequirePermission("order:write")
+    @AuditLog(module = "订单管理", action = "保存排样输入")
+    public Result saveLayoutInput(@PathVariable @Positive(message = "id must be greater than 0") Long id,
+                                  @RequestBody @Valid LayoutInputSaveDTO dto) {
+        orderService.saveLayoutInput(id, dto);
+        return Result.success();
     }
 
     @PostMapping

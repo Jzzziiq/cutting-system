@@ -31,3 +31,7 @@ export function getOrderStatusLabels() {
 export function getLayoutInput(orderId) {
   return http.get(`/orders/${orderId}/layout-input`);
 }
+
+export function saveLayoutInput(orderId, data) {
+  return http.put(`/orders/${orderId}/layout-input`, data);
+}
