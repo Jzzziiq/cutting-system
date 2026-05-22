@@ -113,7 +113,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         result.setSplitBatchCode(splitBatchCode);
         result.setCabinetName(cabinetName);
         result.setCreatedItemIds(createdItemIds);
-        result.setNextAction("layout-workbench");
+        result.setNextAction("data-input");
         return result;
     }
 
