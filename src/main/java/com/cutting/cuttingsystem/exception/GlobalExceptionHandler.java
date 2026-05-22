@@ -49,8 +49,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception e) {
-        log.error("server error", e);
-        return Result.error("server error");
+        log.error("server error: {}", e.getMessage(), e);
+        return Result.error("server error: " + e.getMessage());
     }
 
     private Map<String, String> getFieldErrors(BindException e) {
