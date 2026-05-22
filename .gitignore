@@ -113,3 +113,10 @@ lerna-debug.log*
 *.sqlite3
 *.h2.db
 *.mv.db
+
+### Local tools / artifacts ###
+.superpowers/
+output/
+cc_mimo.bat
+docs/test/
+docs/user-manual/参考资枓/
