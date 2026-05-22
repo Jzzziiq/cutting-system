@@ -3,6 +3,7 @@ package com.cutting.cuttingsystem.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TUser;
+import com.cutting.cuttingsystem.service.BoardTextureStorageService;
 import com.cutting.cuttingsystem.service.TBoardService;
 import com.cutting.cuttingsystem.util.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,6 +39,9 @@ class BoardModuleTest {
     @MockitoBean
     private TBoardService tBoardService;
 
+    @MockitoBean
+    private BoardTextureStorageService boardTextureStorageService;
+
     @Test
     void pageReturnsBoardRecords() throws Exception {
         Page<TBoard> page = new Page<>(1, 10);
@@ -50,7 +56,8 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.records[0].boardId").value(1))
-                .andExpect(jsonPath("$.data.records[0].brand").value("EGGER"));
+                .andExpect(jsonPath("$.data.records[0].brand").value("EGGER"))
+                .andExpect(jsonPath("$.data.records[0].textureUrl").value("https://example.com/oak.jpg"));
     }
 
     @Test
@@ -96,7 +103,8 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.boardId").value(1))
-                .andExpect(jsonPath("$.data.width").value(1220));
+                .andExpect(jsonPath("$.data.width").value(1220))
+                .andExpect(jsonPath("$.data.textureUrl").value("https://example.com/oak.jpg"));
     }
 
     @Test
@@ -196,6 +204,30 @@ class BoardModuleTest {
     }
 
     @Test
+    void createBoardRejectsOverlongTextureUrl() throws Exception {
+        String overlongUrl = "https://example.com/" + "a".repeat(500);
+
+        mockMvc.perform(post("/boards")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "brand": "EGGER",
+                                  "materialType": "particle",
+                                  "color": "white",
+                                  "textureUrl": "%s",
+                                  "sizeType": "standard",
+                                  "width": 1220,
+                                  "length": 2440,
+                                  "thickness": 18
+                                }
+                                """.formatted(overlongUrl)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.textureUrl").exists());
+    }
+
+    @Test
     void updateBoardReturnsSuccessWhenRequestIsValid() throws Exception {
         when(tBoardService.updateById(any(TBoard.class))).thenReturn(true);
 
@@ -248,6 +280,42 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.isEnabled").exists());
+    }
+
+    @Test
+    void uploadTextureReturnsPublicUrlWhenFileIsValid() throws Exception {
+        when(boardTextureStorageService.store(any())).thenReturn("https://example.oss-cn-hangzhou.aliyuncs.com/board-textures/oak.png");
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "oak.png",
+                "image/png",
+                new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/boards/texture")
+                        .file(file)
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.url").value("https://example.oss-cn-hangzhou.aliyuncs.com/board-textures/oak.png"));
+    }
+
+    @Test
+    void uploadTextureRejectsUnsupportedFileType() throws Exception {
+        when(boardTextureStorageService.store(any()))
+                .thenThrow(new IllegalArgumentException("texture file must be jpg, png or webp"));
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "oak.txt",
+                "text/plain",
+                new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/boards/texture")
+                        .file(file)
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
     }
 
     @Test
@@ -351,6 +419,7 @@ class BoardModuleTest {
         board.setBrand("EGGER");
         board.setMaterialType("particle");
         board.setColor("white");
+        board.setTextureUrl("https://example.com/oak.jpg");
         board.setSizeType("standard");
         board.setWidth(1220);
         board.setLength(2440);
@@ -365,6 +434,7 @@ class BoardModuleTest {
                   "brand": "EGGER",
                   "materialType": "particle",
                   "color": "white",
+                  "textureUrl": "https://example.com/oak.jpg",
                   "sizeType": "standard",
                   "width": 1220,
                   "length": 2440,

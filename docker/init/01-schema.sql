@@ -24,6 +24,7 @@ CREATE TABLE `t_board` (
   `brand` varchar(50) NOT NULL COMMENT '板材品牌',
   `material_type` varchar(50) NOT NULL COMMENT '板材材质',
   `color` varchar(50) NOT NULL COMMENT '板材颜色',
+  `texture_url` varchar(500) DEFAULT NULL COMMENT '板材纹理图片URL',
   `size_type` varchar(50) NOT NULL COMMENT '尺寸类型（标准板，加长板，自定义）',
   `width` int NOT NULL DEFAULT '1220' COMMENT '板材宽度(mm)',
   `length` int NOT NULL DEFAULT '2440' COMMENT '板材长度(mm)',

@@ -12,9 +12,12 @@ import com.cutting.cuttingsystem.entitys.DTO.TBoardDTO;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.VO.TBoardVO;
+import com.cutting.cuttingsystem.service.BoardTextureStorageService;
 import com.cutting.cuttingsystem.service.TBoardService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -25,8 +28,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -34,8 +40,13 @@ import java.util.Map;
 @Validated
 @RequirePermission({"board:read", "board:write"})
 public class BoardsController {
+    private static final Logger log = LoggerFactory.getLogger(BoardsController.class);
+
     @Autowired
     private TBoardService tBoardService;
+
+    @Autowired
+    private BoardTextureStorageService boardTextureStorageService;
 
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
@@ -95,6 +106,21 @@ public class BoardsController {
         board.setBoardId(id);
         boolean updated = tBoardService.updateById(board);
         return updated ? Result.success() : Result.error("update board failed");
+    }
+
+    @PostMapping("/texture")
+    @AuditLog(module = "板材管理", action = "上传纹理")
+    @RequirePermission("board:write")
+    public Result uploadTexture(@RequestParam("file") MultipartFile file) {
+        try {
+            String url = boardTextureStorageService.store(file);
+            return Result.success(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        } catch (IOException e) {
+            log.warn("Upload board texture failed", e);
+            return Result.error("upload texture failed");
+        }
     }
 
     private TBoardVO toVO(TBoard board) {

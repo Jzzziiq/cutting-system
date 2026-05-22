@@ -21,3 +21,12 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000
+
+app:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT:}
+    bucket: ${ALIYUN_OSS_BUCKET:}
+    access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    board-texture-prefix: ${ALIYUN_OSS_BOARD_TEXTURE_PREFIX:board-textures/}
+    public-base-url: ${ALIYUN_OSS_PUBLIC_BASE_URL:}

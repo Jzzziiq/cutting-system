@@ -14,14 +14,14 @@ defineEmits(['confirm']);
   <div class="bottom-bar">
     <div class="stats">
       <span class="stat-item">工件数量：<strong>{{ itemCount }}</strong></span>
-      <span class="stat-item">板材类型：<strong>{{ boardTypeCount }}</strong></span>
+      <span class="stat-item">板材分组：<strong>{{ boardTypeCount }}</strong></span>
       <span class="stat-item">总面积：<strong>{{ totalArea.toLocaleString() }}</strong> mm²</span>
       <span v-if="errorCount" class="stat-item" style="color:#dc2626">
         错误行数：<strong>{{ errorCount }}</strong>
       </span>
     </div>
     <el-button type="primary" size="large" :disabled="!canConfirm" @click="$emit('confirm')">
-      确认并进入排版
+      生成排版草稿
     </el-button>
   </div>
 </template>

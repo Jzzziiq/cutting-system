@@ -10,7 +10,8 @@ import {
   getBoard,
   importBoards,
   listBoards,
-  updateBoard
+  updateBoard,
+  uploadBoardTexture
 } from '@/api/boards';
 
 const loading = ref(false);
@@ -21,10 +22,12 @@ const page = reactive({ pageNum: 1, pageSize: 10 });
 const selectedIds = ref([]);
 const modalMode = ref('');
 const currentId = ref(null);
+const textureUploading = ref(false);
 const form = reactive({
   brand: '',
   materialType: '',
   color: '',
+  textureUrl: '',
   sizeType: '',
   width: '',
   length: '',
@@ -49,6 +52,7 @@ function resetForm(data = {}) {
   form.brand = data.brand || '';
   form.materialType = data.materialType || '';
   form.color = data.color || '';
+  form.textureUrl = data.textureUrl || '';
   form.sizeType = data.sizeType || '';
   form.width = data.width || '';
   form.length = data.length || '';
@@ -77,6 +81,7 @@ function toPayload(includeStatus = false) {
     brand: form.brand,
     materialType: form.materialType,
     color: form.color,
+    textureUrl: form.textureUrl,
     sizeType: form.sizeType,
     width: Number(form.width),
     length: Number(form.length),
@@ -217,6 +222,22 @@ async function handleDownloadTemplate() {
   } catch (e) { errorMessage.value = e.message; }
 }
 
+async function handleTextureUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  errorMessage.value = '';
+  textureUploading.value = true;
+  try {
+    const result = await uploadBoardTexture(file);
+    form.textureUrl = result?.url || '';
+  } catch (error) {
+    errorMessage.value = error.message;
+  } finally {
+    textureUploading.value = false;
+    e.target.value = '';
+  }
+}
+
 onMounted(loadData);
 </script>
 
@@ -266,6 +287,7 @@ onMounted(loadData);
             <th>品牌</th>
             <th>材质</th>
             <th>颜色</th>
+            <th>纹理</th>
             <th>规格</th>
             <th>尺寸</th>
             <th>状态</th>
@@ -274,10 +296,10 @@ onMounted(loadData);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="9">加载中...</td>
+            <td colspan="10">加载中...</td>
           </tr>
           <tr v-else-if="!records.length">
-            <td colspan="9">暂无板材数据</td>
+            <td colspan="10">暂无板材数据</td>
           </tr>
           <tr v-for="item in records" v-else :key="item.boardId">
             <td class="select-col">
@@ -292,6 +314,10 @@ onMounted(loadData);
             <td>{{ item.brand }}</td>
             <td>{{ item.materialType }}</td>
             <td>{{ item.color }}</td>
+            <td>
+              <a v-if="item.textureUrl" :href="item.textureUrl" target="_blank" rel="noopener">查看</a>
+              <span v-else>-</span>
+            </td>
             <td>{{ item.sizeType }}</td>
             <td>{{ item.length }} × {{ item.width }} × {{ item.thickness }}</td>
             <td>
@@ -336,6 +362,24 @@ onMounted(loadData);
         <label>
           <span>颜色</span>
           <input v-model.trim="form.color" class="input" :readonly="readonly" required />
+        </label>
+        <label class="wide">
+          <span>纹理 URL</span>
+          <input v-model.trim="form.textureUrl" class="input" :readonly="readonly" placeholder="https://..." />
+          <span v-if="!readonly" class="field-actions">
+            <label class="btn small secondary" :class="{ disabled: textureUploading }">
+              {{ textureUploading ? '上传中...' : '选择纹理图片' }}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                :disabled="textureUploading"
+                @change="handleTextureUpload"
+              />
+            </label>
+            <a v-if="form.textureUrl" :href="form.textureUrl" target="_blank" rel="noopener">预览</a>
+          </span>
+          <a v-else-if="form.textureUrl" :href="form.textureUrl" target="_blank" rel="noopener">查看纹理</a>
         </label>
         <label>
           <span>规格类型</span>

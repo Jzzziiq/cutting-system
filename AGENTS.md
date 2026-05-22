@@ -3,264 +3,75 @@
 ## AI 工具约定
 
 - AI 工具在本仓库开始分析、修改、测试或文档维护前，应先读取本文件。
-- 本文件是项目级上下文入口；当用户请求与代码、接口、数据模型、算法、依赖或文档有关时，应优先遵循本文档中的约定。
-- 如果本文件与用户当前明确指令冲突，以用户当前指令为准；如果本文件与局部代码事实冲突，应先读取代码并在回复中说明差异。
-- 修改项目后，如涉及新增 API、修改数据模型、调整算法逻辑或引入新依赖，应同步更新本文档的相关章节和”变更记录”。
+- 本文件是轻量项目入口，只放每次任务都应默认知道的事实、硬约束和文档导航；详细规则按任务读取 `docs/ai/` 下的专题文档。
+- 如果本文件与用户当前明确指令冲突，以用户当前指令为准；如果文档与局部代码事实冲突，先读取代码并在回复中说明差异。
+- 不要把接口清单、数据模型、目录百科或长变更记录继续堆进本文件；需要维护时更新对应专题文档。
 
-project_name: cutting-system  
-project_type: 柜门板材切割排版系统  
-primary_language: Java  
-backend_framework: Spring Boot 3.x  
-current_backend_version: Spring Boot 3.5.11  
-java_version: 17  
-database: MySQL 8.0+  
-orm: MyBatis-Plus 3.5.x  
-auth: JWT + Spring MVC Interceptor  
-frontend_web: Vue 3 + Vite + Pinia + Vue Router + Axios + Element Plus + Canvas 2D  
-frontend_miniprogram: 微信小程序原生框架  
-algorithm_entry: `POST /algorithm/answer`  
-algorithm_strategy: 禁忌搜索 + 天际线放置算法  
-last_updated: 2026-05-09
+project_name: cutting-system
+project_type: 柜门板材切割排版系统
+primary_language: Java
+backend_framework: Spring Boot 3.5.11
+java_version: 17
+database: MySQL 8.0+
+orm: MyBatis-Plus 3.5.x
+auth: JWT + Spring MVC Interceptor
+frontend_web: Vue 3 + Vite + Pinia + Vue Router + Axios + Element Plus + Canvas 2D
+frontend_miniprogram: 微信小程序原生框架
+algorithm_entry: `POST /algorithm/answer`
+algorithm_strategy: 禁忌搜索 + 天际线放置算法
+last_updated: 2026-05-20
 
-本项目是基于 Spring Boot 的柜门板材切割排版系统。后端负责用户认证、客户管理、板材管理、订单/余料/排样结果管理、算法接口与静态资源托管。网页端用于后台操作和排样结果可视化，小程序端用于现场录入、客户管理、板材管理、算法输入和排样结果展示。
+本项目是柜门板材切割排版系统。后端负责认证、客户、板材、订单、余料、排样结果、算法接口和静态资源托管；网页端负责后台操作和排样可视化；小程序端负责现场录入和结果展示。
 
-## 开发要求
+## 必读硬约束
 
-1. 不要一次性重构大范围代码，优先做小步、明确、可验证的修改。
-2. 每次只完成一个明确任务；如果任务跨后端、网页端和小程序端，先确认接口契约再分层修改。
-3. 修改后必须补充或运行相关测试；无法运行时，在交付说明中写明原因和风险。
-4. 保持接口返回结构稳定。除 `POST /algorithm/answer` 当前直接返回数组外，业务接口默认使用 `Result` 结构：`code`、`msg`、`data`。
-5. 中文注释保持简洁，只解释业务约束、算法意图或非显然逻辑，避免无意义注释。
-6. 代码修改后说明改了哪些文件、为什么改、如何测试。
-7. 不要随意修改已有包名、表字段名、接口路径和 DTO/VO 字段名；确需调整时同步修改后端、网页端、小程序端、测试和本文档。
-8. 新增 API、修改数据模型、调整算法逻辑或引入新依赖时，必须及时更新本文档，并在“变更记录”中标注变更日期、变更类型、原因、影响范围和验证方式。
-9. 不要提交本地运行产物、日志和敏感配置；数据库密码、JWT 密钥等生产配置应迁移到环境变量或外部配置。
-10. 修改算法时优先补充 `src/test/java/com/cutting/cuttingsystem/model/AlgorithmUnitTest.java`；修改接口时优先补充 MockMvc 测试。
+1. 优先做小步、明确、可验证的修改；不要顺手大范围重构。
+2. 保持接口返回结构稳定：业务接口默认返回 `Result { code, msg, data }`，`POST /algorithm/answer` 例外，直接返回 `List<SolutionResponseDTO>`。
+3. 不要随意修改已有包名、表字段名、接口路径和 DTO/VO 字段名；`entitys` 是既有包名，不要无任务改名。
+4. 跨后端、网页端、小程序端的任务，先确认接口契约，再分层修改。
+5. 新增 API、修改数据模型、调整算法逻辑或引入新依赖时，必须更新对应 `docs/ai/` 专题文档和 `docs/ai/change-log.md`。
+6. 不要提交本地运行产物、日志和敏感配置；数据库密码、JWT 密钥等生产配置应使用环境变量或外部配置。
+7. 中文注释只解释业务约束、算法意图或非显然逻辑，避免无意义注释。
+8. 修改后说明改了哪些文件、为什么改、如何验证；无法运行验证时写明原因和风险。
+9. Codex 默认不要主动执行全量测试、冒烟测试、浏览器自动化、Playwright/E2E 或长时间服务联调；除非用户明确授权，否则提供可交给其他 agent 执行的测试方案。
 
 ## 常用命令
 
-后端测试：
-
 ```powershell
 mvn test
-```
-
-如需隔离 Maven 本地仓库缓存：
-
-```powershell
 mvn "-Dmaven.repo.local=target\.m2" test
-```
-
-后端启动：
-
-```powershell
 mvn "-Dmaven.repo.local=target\.m2" spring-boot:run
-```
-
-本地同时启动后端和网页端：
-
-```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\start-dev.ps1
-```
-
-或直接分别在两个终端启动（适用于 PowerShell 脚本不可用的场景，如 Git Bash）：
-
-```bash
-# 终端 1：后端
-mvn "-Dmaven.repo.local=target/.m2" spring-boot:run
-
-# 终端 2：前端
-cd frontend
-npm run dev
-```
-
-停止本地开发服务：
-
-```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\stop-dev.ps1
+cd frontend; npm install; npm run dev
+cd frontend; npm run build
 ```
 
-网页端开发：
+环境依赖：JDK 17+、Maven 3.6+、MySQL 8.0+、Node.js 20.19+ 或 22.12+、微信开发者工具。
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+## 任务文档入口
 
-网页端构建：
-
-```powershell
-cd frontend
-npm run build
-```
-
-小程序端构建与预览：
-
-```text
-使用微信开发者工具打开 miniprogram/ 目录，点击“预览”并扫码。
-```
-
-环境依赖说明：
-
-- JDK 17+
-- Maven 3.6+
-- MySQL 8.0+
-- Node.js 16+（网页端开发和构建需要；小程序若引入 npm 包时也需要）
-- 微信开发者工具（小程序预览和真机调试需要）
-
-## 代码导航
-
-| 路径 | 职责 | 修改提示 |
-| --- | --- | --- |
-| `src/main/java/com/cutting/cuttingsystem/CuttingSystemApplication.java` | Spring Boot 启动入口 | 一般不需要修改 |
-| `src/main/java/com/cutting/cuttingsystem/controller/` | REST 接口层 | 新增接口时同步补测试和本文档接口地图 |
-| `src/main/java/com/cutting/cuttingsystem/service/` | 服务接口 | 保持业务边界清晰 |
-| `src/main/java/com/cutting/cuttingsystem/service/impl/` | 服务实现 | 数据写入逻辑优先放在这里 |
-| `src/main/java/com/cutting/cuttingsystem/mapper/` | MyBatis-Plus Mapper | 表结构变化时同步实体、SQL 和测试 |
-| `src/main/java/com/cutting/cuttingsystem/entitys/` | 数据实体、DTO、VO、算法模型 | 保持字段命名和前端契约稳定；`entitys` 为既有包名，不要无任务改名 |
-| `src/main/java/com/cutting/cuttingsystem/model/` | 排样算法核心 | 修改禁忌搜索或天际线逻辑必须补算法单测 |
-| `src/main/java/com/cutting/cuttingsystem/util/` | JWT、用户上下文、算法输入解析等工具 | 修改工具类需检查调用链 |
-| `src/main/resources/mapper/` | XML Mapper | 与 Mapper 接口和实体保持一致 |
-| `src/main/resources/db/migration/` | 数据库增量脚本 | 新增/调整表结构时维护 |
-| `src/main/resources/static/` | 后端托管的静态页面产物 | 避免与独立 `frontend/` 开发源混淆 |
-| `frontend/` | Vue 3 网页端 | API 代理前缀为 `/api`，默认转发到 `http://localhost:8080` |
-| `miniprogram/` | 微信小程序端 | 后端地址在 `utils/config.js` 中配置 |
-| `docs/` | 项目说明、计划和数据库文档 | 重要业务变更应同步更新 |
-| `scripts/` | 本地开发启动/停止脚本 | 修改脚本后在 Windows PowerShell 下验证 |
-
-## 接口地图
-
-| 模块 | 接口 | 认证 | 返回约定 |
-| --- | --- | --- | --- |
-| 认证 | `/auth/login`、`/auth/register`、`/auth/logout` | 不需要 JWT | `Result` |
-| 客户 | `/customers`、`/customers/{id}`、`/customers/batch`、`/customers/batch/status` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 板材 | `/boards`、`/boards/{id}`、`/boards/batch`、`/boards/batch/status` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 订单 | `/orders`、`/orders/{id}`、`/orders/{id}/status` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 订单明细 | `/order-items`、`/order-items/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 余料 | `/remnants`、`/remnants/{id}` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 排样结果 | `/layout-results`、`/layout-results/{id}`、`/layout-results/order/{orderId}` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 算法求解 | `POST /algorithm/answer` | 需要 `Authorization: Bearer <token>` | `List<SolutionResponseDTO>` |
-| 算法异步 | `POST /algorithm/submit`、`GET /algorithm/result/{taskId}`、`POST /algorithm/compare`、`GET /algorithm/algorithms` | 需要 `Authorization: Bearer <token>` | `Result` |
-| 生产任务 | `/production-tasks`、`/production-tasks/{id}`、`/production-tasks/kanban`、`/production-tasks/order/{orderId}` | 需要 `Authorization: Bearer <token>` | `Result` |
-
-认证规则：
-
-- `WebConfig` 拦截 `/**`，排除 `/`、`/index.html`、`/assets/**`、`/favicon.ico`、`/auth/*`。
-- 受保护接口必须携带 `Authorization: Bearer <token>`。
-- `TokenInterceptor` 验证 JWT 后将 `userId` 写入 `UserContext`，请求结束后清理上下文。
-
-## 数据模型与响应约定
-
-通用响应结构：
-
-```json
-{
-  "code": 200,
-  "msg": "success",
-  "data": {}
-}
-```
-
-当前主要业务实体：
-
-- `TUser`：用户与登录认证。
-- `TCustomer`：客户信息。
-- `TBoard`：板材基础信息。
-- `TOrder`、`TOrderItem`：排单和待切割明细。
-- `TOffcut`：余料信息。
-- `TLayoutResult`：排样结果持久化。
-- `Instance`、`Square`、`Solution`、`PlaceSquare`、`PlacePoint`：算法输入、矩形、解和放置结果。
-
-数据模型修改规则：
-
-- 新增字段时同步检查实体、DTO、VO、Mapper、数据库脚本、前端 API、小程序页面和测试。
-- 删除或重命名字段前先评估前端兼容性，不要让已有接口静默破坏。
-- 表结构变更优先放入 `src/main/resources/db/migration/`，并在相关文档中说明执行顺序。
-
-## 算法模块约定
-
-入口控制器：`src/main/java/com/cutting/cuttingsystem/controller/TestController.java`  
-输入 DTO：`src/main/java/com/cutting/cuttingsystem/entitys/algorithm/DTO/InstanceDTO.java`  
-输出 DTO：`src/main/java/com/cutting/cuttingsystem/entitys/algorithm/DTO/SolutionResponseDTO.java`  
-核心实现：`src/main/java/com/cutting/cuttingsystem/model/TabuSearch.java`  
-输入解析与多容器求解：`src/main/java/com/cutting/cuttingsystem/util/ReadDataUtil.java`  
-算法测试：`src/test/java/com/cutting/cuttingsystem/model/AlgorithmUnitTest.java`
-
-算法输入核心字段：
-
-- `L`：容器长度。
-- `W`：容器宽度。
-- `rotateEnable`：是否允许旋转。
-- `gapDistance`：板件间距。
-- `squareList`：待排样矩形列表，矩形字段包含 `id`、`l`、`w`。
-
-算法修改注意事项：
-
-- `TabuSearch.evaluate(...)` 负责天际线放置评估。
-- `TabuSearch.search()` 负责禁忌搜索迭代寻优。
-- `ReadDataUtil.getSolution(...)` 会按多容器循环求解，直到剩余矩形清空或判定无法装入。
-- 修改放置、旋转、间距或利用率计算时，必须覆盖“可放入、旋转放入、间距导致不可放入、空列表、多容器”场景。
-
-## 前端约定
-
-网页端：
-
-- 源码目录：`frontend/`
-- UI 组件库：Element Plus（主题色 `#0f766e` teal，通过 `:root` CSS 变量覆盖；中文语言包）
-- API 封装：`frontend/src/api/`（按后端模块拆分：`orders.js`、`boards.js`、`remnants.js`、`layout-results.js`、`algorithm.js` 等）
-- 组合式函数：`frontend/src/composables/`（`useCuttingTable`、`useLayoutCanvas`、`useAlgorithmSubmit`）
-- 路由：`frontend/src/router/index.js`
-- 认证状态：`frontend/src/stores/auth.js`
-- 开发代理：`/api` -> `http://localhost:8080`
-- 页面范围：
-  - 系统管理：登录、工作台、客户管理、板材管理、用户管理、审计日志
-  - 生产加工：**加工数据输入** (`/cutting/data-input`)、**排版工作台** (`/cutting/layout-workbench`)、生产看板
-- 加工数据输入页：顶栏（订单信息）+ 左侧（板材搜索/选择 + 余料联动选择）+ 右侧（excel 风格可编辑下料表格，支持键盘导航和 TSV 粘贴）+ 底栏（统计 + 确认排版）
-- 排版工作台页：工具栏（导入/排版/参数/缩放/导出/保存/返回）+ 左侧（历史排版记录列表）+ 中央 Canvas（板材矩形 + 工件色块布局 + 缩放平移 + 悬停 tooltip + 板材切换标签）+ 摘要栏
-
-小程序端：
-
-- 源码目录：`miniprogram/`
-- API 封装：`miniprogram/services/api.js`
-- 统一请求：`miniprogram/utils/request.js`
-- 后端地址：`miniprogram/utils/config.js`
-- 页面范围：登录、客户、板材、算法输入与结果展示。
-
-前端修改规则：
-
-- 后端接口路径、参数或返回字段变化时，网页端和小程序端必须同步检查。
-- 登录成功后前端应保存 token，并在后续业务请求中携带 `Authorization: Bearer <token>`。
-- 算法接口成功返回数组，业务接口成功返回 `Result`；前端错误处理要区分这两类结构。
-
-## 测试策略
-
-| 变更类型 | 推荐测试 |
+| 任务类型 | 先读文档 |
 | --- | --- |
-| 算法逻辑 | `mvn test -Dtest=AlgorithmUnitTest` 或完整 `mvn test` |
-| 接口路径、认证、响应结构 | MockMvc 测试，优先补充 `InterfaceSmokeTest` 和 `AuthenticationAuthorizationTest` |
-| 服务和数据库写入逻辑 | Service 单测或集成测试；必要时补 SQL 初始化数据 |
-| 网页端改动 | `cd frontend && npm run build`，必要时本地启动检查页面 |
-| 小程序端改动 | 微信开发者工具导入 `miniprogram/` 后预览检查 |
-| 脚本改动 | 在 Windows PowerShell 下运行对应脚本 |
+| 代码目录、模块职责、修改位置 | `docs/ai/code-navigation.md` |
+| REST 路径、认证、返回结构、前后端契约 | `docs/ai/api-contract.md` |
+| 实体、DTO/VO、Mapper、数据库脚本 | `docs/ai/data-model.md` |
+| 禁忌搜索、天际线放置、算法输入输出 | `docs/ai/algorithm.md` |
+| Vue 网页端、Element Plus、Canvas、小程序 | `docs/ai/frontend.md` |
+| 单测、MockMvc、构建、高成本验证策略 | `docs/ai/testing.md` |
+| 文档变更记录与维护格式 | `docs/ai/change-log.md` |
+| 本地启动/停止脚本细节 | `scripts/README.md` |
 
-## 变更记录
+## 高风险提醒
 
-后续维护格式：
+- 受保护接口必须携带 `Authorization: Bearer <token>`；`TokenInterceptor` 会把 `userId` 写入 `UserContext` 并在请求结束后清理。
+- 后端接口路径、参数或返回字段变化时，必须同步检查 `frontend/src/api/` 和 `miniprogram/services/api.js`。
+- 表结构变更优先放入 `src/main/resources/db/migration/`，并同步实体、DTO/VO、Mapper/XML、前端、小程序和测试。
+- 修改 `TabuSearch`、`ReadDataUtil` 或放置/旋转/间距/利用率逻辑时，优先补充 `AlgorithmUnitTest`。
+- 网页端生产加工核心页面是 `/cutting/data-input` 和 `/cutting/layout-workbench`；不要恢复旧 `/algorithm` 页面入口，除非用户明确要求。
 
-```text
-- YYYY-MM-DD | 类型: API/数据模型/算法/依赖/脚本/文档 | 范围: 文件或模块 | 原因: 为什么修改 | 影响: 兼容性与调用方 | 验证: 测试或检查方式
-```
+## 维护原则
 
-当前记录：
-
-- 2026-05-09 | 类型: 前端/文档 | 范围: frontend/src/router、frontend/src/components/AppShell.vue、frontend/src/views、frontend/src/styles/main.css、docs/需求文档.md | 原因: 完成需求文档 F-002，旧算法排样界面已由加工数据输入页和排版工作台替代 | 影响: 网页端不再提供 `/algorithm` 旧页面和侧边栏入口，后端算法接口和小程序算法页保持不变 | 验证: `cd frontend && npm run build`、`git diff --check`
-- 2026-05-09 | 类型: API/前端/测试 | 范围: 客户模块、板材模块、frontend 客户/板材页面 | 原因: 完成需求文档 F-001，支持客户和板材批量启用、禁用和删除 | 影响: 新增 `/customers/batch`、`/customers/batch/status`、`/boards/batch`、`/boards/batch/status` 接口；网页端客户/板材列表新增页内多选和批量操作条 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=CustomerModuleTest,BoardModuleTest test`、`cd frontend && npm run build`
-- 2026-05-01 | 类型: 测试 | 范围: 排样结果模块 LayoutResultModuleTest | 原因: 补充排样结果分页、按订单查询、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=LayoutResultModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
-- 2026-05-01 | 类型: 测试 | 范围: 余料模块 OffcutModuleTest | 原因: 补充余料分页、详情、增改删、默认状态、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OffcutModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
-- 2026-05-01 | 类型: 测试 | 范围: 订单明细模块 OrderItemModuleTest | 原因: 补充订单明细分页、详情、增改删、字段边界、业务失败和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OrderItemModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
-- 2026-05-01 | 类型: 测试 | 范围: 订单模块 OrderModuleTest | 原因: 补充订单接口关键路径、参数校验、嵌套明细校验和鉴权测试 | 影响: 不影响运行时行为 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=OrderModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
-- 2026-05-01 | 类型: API/测试 | 范围: 客户模块 CustomerController、TCustomerDTO、TCustomerVO、CustomerModuleTest | 原因: 补齐客户接口参数校验、404/删除失败响应和模块测试覆盖 | 影响: 客户新增/编辑请求会对必填和长度字段进行校验，接口路径保持不变 | 验证: `mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" -Dtest=CustomerModuleTest test`、`mvn "-Dmaven.repo.local=F:\Code\Java\cutting-system\target\.m2" test`
-- 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 增加 Codex 启动约定，提示后续任务优先读取本文档 | 影响: 不影响运行时行为 | 验证: 文档结构检查
-- 2026-04-30 | 类型: 文档 | 范围: AGENTS.md | 原因: 为 Codex 提供项目结构、开发规则和维护约定 | 影响: 不影响运行时行为 | 验证: 文档结构检查
-- 2026-05-08 | 类型: 前端架构 | 范围: frontend/（新增 17 个文件，修改 6 个文件） | 原因: 重构前端为生产加工型界面，引入 Element Plus，新增"加工数据输入页"和"排版工作台页"两个核心生产页面 | 影响: 新增 `/cutting/data-input` 和 `/cutting/layout-workbench` 路由；新增 4 个 API 模块（orders, order-items, remnants, layout-results）；新增 3 个组合式函数（useCuttingTable, useLayoutCanvas, useAlgorithmSubmit）；新增 8 个切割专用子组件；algorithm.js 扩展 submit/getResult/getAlgorithms/compare；package.json 新增 element-plus 依赖；main.css 追加 Element Plus teal 主题变量和切割页面布局样式 | 验证: `cd frontend && npm run build` 通过，DataInputView 17.46 kB / LayoutWorkbenchView 22.00 kB 均代码分割 |
+- `AGENTS.md` 目标控制在 80 行左右；超过时优先拆到 `docs/ai/`。
+- 只有“每次任务都必须默认知道”的规则才放在本文件。
+- 专题文档也要保持短、准、可执行；长篇说明应继续拆到业务文档、架构文档或测试方案中。

@@ -1,13 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Search } from '@element-plus/icons-vue';
+import { ref, onMounted, watch } from 'vue';
+import { Delete } from '@element-plus/icons-vue';
 import { listLayoutResults } from '@/api/layout-results';
 
 const props = defineProps({
-  activeResultId: [Number, String]
+  activeResultId: [Number, String],
+  refreshKey: { type: Number, default: 0 }
 });
 
-const emit = defineEmits(['select-record']);
+const emit = defineEmits(['select-record', 'delete-record']);
 
 const records = ref([]);
 const loading = ref(false);
@@ -36,8 +37,34 @@ async function loadRecords() {
   }
 }
 
+async function querySearchSuggestions(queryString, cb) {
+  try {
+    const params = { pageNum: 1, pageSize: 20 };
+    if (queryString) params.search = queryString;
+    const data = await listLayoutResults(params);
+    const list = Array.isArray(data) ? data : (data?.records ?? []);
+    cb(list.map(r => ({
+      value: r.orderName || `排版 #${r.resultId}`,
+      label: `${r.orderName || `排版 #${r.resultId}`}${r.customer ? ' - ' + r.customer : ''}`,
+      record: r
+    })));
+  } catch {
+    cb([]);
+  }
+}
+
+function onAutocompleteSelect(item) {
+  if (item.record) {
+    emit('select-record', item.record);
+  }
+}
+
 function onSelect(record) {
   emit('select-record', record);
+}
+
+function onDelete(record) {
+  emit('delete-record', record);
 }
 
 function formatTime(ts) {
@@ -47,22 +74,27 @@ function formatTime(ts) {
 }
 
 onMounted(loadRecords);
+watch(() => props.refreshKey, () => { loadRecords(); });
 </script>
 
 <template>
   <div class="history-panel panel-container">
     <div class="panel-header">
-      <span>历史排单记录</span>
+      <span>历史排版结果</span>
     </div>
     <div class="panel-body">
       <div class="search-row">
-        <el-input
+        <el-autocomplete
           v-model="searchQuery"
-          placeholder="搜索客户/订单名"
+          :fetch-suggestions="querySearchSuggestions"
+          placeholder="搜索客户/订单/结果"
           size="small"
+          style="width:100%"
           clearable
-          :suffix-icon="Search"
-          @keyup.enter="loadRecords"
+          :debounce="300"
+          value-key="label"
+          @focus="loadRecords"
+          @select="onAutocompleteSelect"
           @clear="loadRecords"
         />
       </div>
@@ -78,10 +110,24 @@ onMounted(loadRecords);
         @click="onSelect(rec)"
       >
         <div class="hi-head">
-          <span class="hi-order">{{ rec.orderName || `排版 #${rec.resultId}` }}</span>
-          <el-tag size="small" :type="(statusLabels[rec.status] || statusLabels.pending).type">
-            {{ (statusLabels[rec.status] || statusLabels.pending).text }}
-          </el-tag>
+          <span class="hi-order">{{ rec.orderNo || rec.orderName || `排版 #${rec.resultId}` }}</span>
+          <div class="hi-actions" @click.stop>
+            <el-tag size="small" :type="(statusLabels[rec.status] || statusLabels.pending).type">
+              {{ (statusLabels[rec.status] || statusLabels.pending).text }}
+            </el-tag>
+            <el-tooltip content="删除排版结果" placement="top">
+              <el-button
+                class="hi-delete"
+                :icon="Delete"
+                size="small"
+                circle
+                text
+                type="danger"
+                aria-label="删除排版结果"
+                @click="onDelete(rec)"
+              />
+            </el-tooltip>
+          </div>
         </div>
         <div class="hi-body">
           <span v-if="rec.customer">客户：{{ rec.customer }}</span>
@@ -124,9 +170,31 @@ onMounted(loadRecords);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 4px;
 }
-.hi-order { font-size: 14px; font-weight: 600; color: #172033; }
+.hi-order {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #172033;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hi-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.hi-delete {
+  opacity: 0.72;
+}
+.history-item:hover .hi-delete {
+  opacity: 1;
+}
 .hi-body {
   font-size: 13px;
   color: #64748b;

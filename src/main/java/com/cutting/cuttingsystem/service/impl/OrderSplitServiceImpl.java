@@ -32,6 +32,12 @@ public class OrderSplitServiceImpl implements OrderSplitService {
     private static final Logger log = LoggerFactory.getLogger(OrderSplitServiceImpl.class);
     private static final int EDGE_THICKNESS = 1;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ThicknessRange CABINET_PANEL_THICKNESS_RANGE = new ThicknessRange(12, 25);
+    private static final Map<String, ThicknessRange> MATERIAL_SLOT_THICKNESS_RANGES = Map.of(
+            "cabinet_body", CABINET_PANEL_THICKNESS_RANGE,
+            "door", CABINET_PANEL_THICKNESS_RANGE,
+            "back", new ThicknessRange(3, 9)
+    );
 
     @Autowired
     private TBoardService boardService;
@@ -118,14 +124,17 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         int designLength = board.get("designLength").asInt();
         int designWidth = board.get("designWidth").asInt();
         int thickness = board.get("thickness").asInt();
+        String materialSlot = board.has("materialSlot") && !board.get("materialSlot").isNull()
+                ? board.get("materialSlot").asText()
+                : null;
         String grain = board.has("grain") ? board.get("grain").asText() : "none";
 
         // Resolve boardId
         Long boardId = null;
         if (board.has("boardId") && !board.get("boardId").isNull()) {
             boardId = board.get("boardId").asLong();
-        } else if (slotMap != null && board.has("materialSlot") && !board.get("materialSlot").isNull()) {
-            boardId = slotMap.get(board.get("materialSlot").asText());
+        } else if (slotMap != null && materialSlot != null) {
+            boardId = slotMap.get(materialSlot);
         }
         if (boardId == null) {
             throw new RuntimeException("板件" + displayName + "未指定板材");
@@ -137,8 +146,8 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         if (tBoard.getIsEnabled() != null && tBoard.getIsEnabled() != 1) {
             throw new RuntimeException("板材" + boardId + "已禁用");
         }
-        if (thickness != tBoard.getThickness().intValue()) {
-            throw new RuntimeException("板件" + displayName + "厚度(" + thickness + ")与板材厚度(" + tBoard.getThickness() + ")不一致");
+        if (!isBoardThicknessAllowed(materialSlot, thickness, tBoard.getThickness())) {
+            throw new RuntimeException(thicknessErrorMessage(displayName, materialSlot, thickness, tBoard.getThickness()));
         }
         boolean fitsRotated = (designLength <= tBoard.getLength() && designWidth <= tBoard.getWidth())
                 || (designLength <= tBoard.getWidth() && designWidth <= tBoard.getLength());
@@ -215,7 +224,7 @@ public class OrderSplitServiceImpl implements OrderSplitService {
         vo.setColor(tBoard.getColor());
         vo.setLength(cutLength);
         vo.setWidth(cutWidth);
-        vo.setThickness(thickness);
+        vo.setThickness(tBoard.getThickness());
         vo.setQuantity(1);
         vo.setEdgeLeft(edgeLeft ? 1 : 0);
         vo.setEdgeRight(edgeRight ? 1 : 0);
@@ -370,6 +379,28 @@ public class OrderSplitServiceImpl implements OrderSplitService {
             }
         }
         return cache;
+    }
+
+    private boolean isBoardThicknessAllowed(String materialSlot, int modelThickness, Integer boardThickness) {
+        if (boardThickness == null) return false;
+        ThicknessRange range = materialSlot == null ? null : MATERIAL_SLOT_THICKNESS_RANGES.get(materialSlot);
+        if (range != null) return range.contains(boardThickness);
+        return boardThickness == modelThickness;
+    }
+
+    private String thicknessErrorMessage(String displayName, String materialSlot, int modelThickness, Integer boardThickness) {
+        ThicknessRange range = materialSlot == null ? null : MATERIAL_SLOT_THICKNESS_RANGES.get(materialSlot);
+        if (range != null) {
+            return "板件" + displayName + "要求板材厚度在" + range.min() + "-" + range.max()
+                    + "mm，当前板材厚度为" + boardThickness + "mm";
+        }
+        return "板件" + displayName + "厚度(" + modelThickness + ")与板材厚度(" + boardThickness + ")不一致";
+    }
+
+    private record ThicknessRange(int min, int max) {
+        boolean contains(int thickness) {
+            return thickness >= min && thickness <= max;
+        }
     }
 
     private int parseWorkpieceSequence(String partCode, String prefix) {

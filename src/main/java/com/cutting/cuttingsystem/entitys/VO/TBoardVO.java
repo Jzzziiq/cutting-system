@@ -24,6 +24,9 @@ public class TBoardVO {
     @Size(max = 50, message = "color must be at most 50 characters")
     private String color;
 
+    @Size(max = 500, message = "textureUrl must be at most 500 characters")
+    private String textureUrl;
+
     @NotBlank(message = "sizeType is required")
     @Size(max = 50, message = "sizeType must be at most 50 characters")
     private String sizeType;

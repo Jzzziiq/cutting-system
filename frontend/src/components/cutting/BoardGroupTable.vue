@@ -118,7 +118,7 @@ function onKeydown(event, groupId, rowIdx, colIdx) {
             border
             stripe
             class="group-items-table"
-            height="100%"
+            max-height="400"
           >
             <el-table-column
               v-for="(col, colIdx) in columns"

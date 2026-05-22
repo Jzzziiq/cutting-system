@@ -1,22 +1,19 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { listBoards } from '@/api/boards';
 import { Search, Plus, Delete } from '@element-plus/icons-vue';
 
 const props = defineProps({
-  modelValue: { type: Array, default: () => [] }
+  boardGroups: { type: Array, default: () => [] }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['add-board', 'remove-board']);
 
 const searchQuery = ref('');
 const searchResults = ref([]);
 const searching = ref(false);
-
-const selectedBoards = ref([...props.modelValue]);
-
-watch(selectedBoards, (val) => emit('update:modelValue', val), { deep: true });
-watch(() => props.modelValue, (val) => { selectedBoards.value = [...val]; }, { deep: true });
+const searchFocused = ref(false);
+let blurTimer = null;
 
 async function doSearch() {
   if (!searchQuery.value.trim()) {
@@ -34,14 +31,40 @@ async function doSearch() {
   }
 }
 
-function addBoard(board) {
-  if (!selectedBoards.value.find(b => b.boardId === board.boardId)) {
-    selectedBoards.value.push(board);
+async function onFocus() {
+  searchFocused.value = true;
+  clearTimeout(blurTimer);
+  if (searchResults.value.length > 0) return;
+  searching.value = true;
+  try {
+    const data = await listBoards({ pageNum: 1, pageSize: 50 });
+    searchResults.value = Array.isArray(data) ? data : (data?.records ?? []);
+  } catch {
+    searchResults.value = [];
+  } finally {
+    searching.value = false;
   }
 }
 
+function onBlur() {
+  blurTimer = setTimeout(() => {
+    searchFocused.value = false;
+    if (!searchQuery.value.trim()) {
+      searchResults.value = [];
+    }
+  }, 200);
+}
+
+function isBoardAdded(boardId) {
+  return props.boardGroups.some(g => g.board.boardId === boardId);
+}
+
+function addBoard(board) {
+  emit('add-board', board);
+}
+
 function removeBoard(boardId) {
-  selectedBoards.value = selectedBoards.value.filter(b => b.boardId !== boardId);
+  emit('remove-board', boardId);
 }
 
 function boardLabel(board) {
@@ -67,6 +90,8 @@ function dimLabel(board) {
           placeholder="搜索板材（品牌/材质/颜色）"
           size="small"
           clearable
+          @focus="onFocus"
+          @blur="onBlur"
           @keyup.enter="doSearch"
         >
           <template #append>
@@ -76,7 +101,7 @@ function dimLabel(board) {
       </div>
 
       <!-- Search results -->
-      <div v-if="searchResults.length" class="result-section">
+      <div v-if="searchResults.length && (searchFocused || searchQuery.trim())" class="result-section">
         <div class="section-label">搜索结果</div>
         <el-table :data="searchResults" size="small" max-height="180" stripe>
           <el-table-column prop="materialType" label="材质" width="80" />
@@ -87,7 +112,15 @@ function dimLabel(board) {
           <el-table-column prop="brand" label="品牌" width="80" />
           <el-table-column label="操作" width="60">
             <template #default="{ row }">
-              <el-button size="small" type="primary" :icon="Plus" circle @click="addBoard(row)" />
+              <el-button
+                v-if="!isBoardAdded(row.boardId)"
+                size="small"
+                type="primary"
+                :icon="Plus"
+                circle
+                @click="addBoard(row)"
+              />
+              <el-tag v-else size="small" type="success">已添加</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -103,15 +136,15 @@ function dimLabel(board) {
       <div class="selected-section">
         <div class="section-label">
           已选板材
-          <el-tag v-if="selectedBoards.length" size="small" type="info">{{ selectedBoards.length }} 种</el-tag>
+          <el-tag v-if="boardGroups.length" size="small" type="info">{{ boardGroups.length }} 种</el-tag>
         </div>
-        <div v-if="!selectedBoards.length" class="empty-hint">暂未添加板材，请搜索并添加</div>
-        <div v-for="board in selectedBoards" :key="board.boardId" class="board-card">
+        <div v-if="!boardGroups.length" class="empty-hint">暂未添加板材，请搜索并添加</div>
+        <div v-for="group in boardGroups" :key="group.id" class="board-card">
           <div class="board-info">
-            <div class="board-name">{{ boardLabel(board) }}</div>
-            <div class="board-dims">{{ dimLabel(board) }}</div>
+            <div class="board-name">{{ boardLabel(group.board) }}</div>
+            <div class="board-dims">{{ dimLabel(group.board) }}</div>
           </div>
-          <el-button size="small" type="danger" :icon="Delete" circle @click="removeBoard(board.boardId)" />
+          <el-button size="small" type="danger" :icon="Delete" circle @click="removeBoard(group.id)" />
         </div>
       </div>
     </div>

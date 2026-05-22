@@ -38,6 +38,14 @@ function boardLabel(boardId) {
 function getCellClass(row, colKey) {
   return row._validation && row._validation[colKey] ? 'cell-error' : '';
 }
+
+function onBoardTypeChange(boardId, row) {
+  if (!boardId) return;
+  const b = props.boardOptions.find(x => x.boardId === boardId);
+  if (!b) return;
+  if (!row.materialName) row.materialName = b.materialType || '';
+  if (!row.color) row.color = b.color || '';
+}
 </script>
 
 <template>
@@ -61,7 +69,7 @@ function getCellClass(row, colKey) {
           :key="col.key"
           :prop="col.key"
           :label="col.label"
-          :width="col.width"
+          :min-width="col.width"
         >
           <template #default="{ row, $index: rowIdx }">
             <div
@@ -89,6 +97,7 @@ function getCellClass(row, colKey) {
                   filterable
                   placeholder="选择板材"
                   style="width:100%"
+                  @change="(val) => onBoardTypeChange(val, row)"
                   @paste="onPaste($event, rowIdx, colIdx)"
                 >
                   <el-option
@@ -149,6 +158,9 @@ function getCellClass(row, colKey) {
 }
 .cutting-table {
   min-width: 1040px;
+}
+.cutting-table .el-table__header-wrapper .cell {
+  text-align: center;
 }
 .cutting-table .cell {
   padding: 0 !important;

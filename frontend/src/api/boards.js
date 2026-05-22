@@ -40,6 +40,14 @@ export function importBoards(file) {
   });
 }
 
+export function uploadBoardTexture(file) {
+  const form = new FormData();
+  form.append('file', file);
+  return http.post('/boards/texture', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+}
+
 export function downloadBoardTemplate() {
   return http.get('/boards/template', { responseType: 'blob' });
 }

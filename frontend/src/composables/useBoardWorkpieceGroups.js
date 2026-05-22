@@ -58,13 +58,13 @@ export function useBoardWorkpieceGroups() {
     let count = 0;
     for (const g of boardGroups.value) {
       for (const item of g.items) {
-        if (Object.keys(item._validation).length > 0) count++;
+        if (Object.keys(getItemValidationErrors(item, g.board)).length > 0) count++;
       }
     }
     return count;
   });
 
-  function validateItem(item, board) {
+  function getItemValidationErrors(item, board) {
     const errors = {};
     const l = Number(item.length);
     const w = Number(item.width);
@@ -90,6 +90,11 @@ export function useBoardWorkpieceGroups() {
       errors.quantity = '必填';
     }
 
+    return errors;
+  }
+
+  function validateItem(item, board) {
+    const errors = getItemValidationErrors(item, board);
     item._validation = errors;
     return Object.keys(errors).length === 0;
   }
@@ -267,7 +272,8 @@ export function useBoardWorkpieceGroups() {
     let area = 0;
     let errors = 0;
     for (const item of group.items) {
-      validateItem(item, group.board);
+      const errs = getItemValidationErrors(item, group.board);
+      if (Object.keys(errs).length > 0) errors++;
       const qty = Number(item.quantity);
       if (Number.isFinite(qty) && qty > 0) itemCount += qty;
       const l = Number(item.length);
@@ -275,7 +281,6 @@ export function useBoardWorkpieceGroups() {
       if (Number.isFinite(l) && Number.isFinite(w) && l > 0 && w > 0 && qty > 0) {
         area += l * w * qty;
       }
-      if (Object.keys(item._validation).length > 0) errors++;
     }
     return { itemCount, area, errors };
   }

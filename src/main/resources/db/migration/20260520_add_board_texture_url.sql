@@ -1,0 +1,2 @@
+ALTER TABLE t_board
+    ADD COLUMN texture_url VARCHAR(500) DEFAULT NULL COMMENT '板材纹理图片URL' AFTER color;

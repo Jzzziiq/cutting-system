@@ -53,7 +53,15 @@ build/
 .cursor/
 .continue/
 .windsurf/
-.agents/skills/
+.agents/skills/*
+!.agents/skills/cutting-system-backend/
+!.agents/skills/cutting-system-backend/**
+!.agents/skills/cutting-system-algorithm/
+!.agents/skills/cutting-system-algorithm/**
+!.agents/skills/cutting-system-api-contract/
+!.agents/skills/cutting-system-api-contract/**
+!.agents/skills/java-springboot/
+!.agents/skills/java-springboot/**
 
 ### Secrets ###
 .env

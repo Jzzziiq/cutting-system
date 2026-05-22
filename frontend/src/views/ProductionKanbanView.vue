@@ -1,9 +1,13 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   kanbanData, createTask, updateTask, deleteTask,
   transitionTask, assignTask
 } from '@/api/production-tasks';
+import { listUsers } from '@/api/users';
+import { listOrders } from '@/api/orders';
+import { listLayoutResults } from '@/api/layout-results';
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -19,8 +23,82 @@ const form = reactive({
   taskName: '', orderId: '', layoutResultId: '',
   assigneeId: '', assigneeName: '', estimatedHours: '', actualHours: '', remark: ''
 });
-const statusForm = reactive({ targetStatus: 0, remark: '' });
 
+const userOptions = ref([]);
+const userLoading = ref(false);
+
+async function queryUsers(query) {
+  userLoading.value = true;
+  try {
+    const data = await listUsers({ pageNum: 1, pageSize: 30, search: query || '' });
+    const list = Array.isArray(data) ? data : (data?.records ?? []);
+    userOptions.value = list.map(u => ({
+      userId: u.userId,
+      realName: u.realName || u.username,
+      username: u.username
+    }));
+  } catch {
+    userOptions.value = [];
+  } finally {
+    userLoading.value = false;
+  }
+}
+
+const orderOptions = ref([]);
+const orderLoading = ref(false);
+
+async function queryOrders(query) {
+  orderLoading.value = true;
+  try {
+    const data = await listOrders({ pageNum: 1, pageSize: 30, search: query || '' });
+    const list = Array.isArray(data) ? data : (data?.records ?? []);
+    orderOptions.value = list.map(o => ({
+      orderId: o.orderId,
+      orderNo: o.orderNo || `订单 #${o.orderId}`,
+      customerName: o.customerName || ''
+    }));
+  } catch {
+    orderOptions.value = [];
+  } finally {
+    orderLoading.value = false;
+  }
+}
+
+const layoutOptions = ref([]);
+const layoutLoading = ref(false);
+
+async function queryLayouts(query) {
+  layoutLoading.value = true;
+  try {
+    const data = await listLayoutResults({ pageNum: 1, pageSize: 30, search: query || '' });
+    const list = Array.isArray(data) ? data : (data?.records ?? []);
+    layoutOptions.value = list.map(r => ({
+      resultId: r.resultId,
+      label: `${r.orderName || r.orderNo || `排版 #${r.resultId}`}${r.customer ? ' - ' + r.customer : ''}`
+    }));
+  } catch {
+    layoutOptions.value = [];
+  } finally {
+    layoutLoading.value = false;
+  }
+}
+
+function onUserSelect(userId) {
+  const u = userOptions.value.find(x => x.userId === userId);
+  form.assigneeName = u ? u.realName : '';
+}
+
+function onOrderSelect(orderId) {
+  const o = orderOptions.value.find(x => x.orderId === orderId);
+  if (o && !form.taskName) {
+    form.taskName = o.orderNo || '';
+  }
+}
+
+const dialogVisible = computed({
+  get: () => !!modalMode.value,
+  set: (val) => { if (!val) closeModal(); }
+});
 const readonly = computed(() => modalMode.value === 'detail');
 const modalTitle = computed(() => {
   if (modalMode.value === 'create') return '新建任务';
@@ -68,6 +146,7 @@ function openAssign(task) {
   currentId.value = task.taskId;
   form.assigneeId = task.assigneeId || '';
   form.assigneeName = task.assigneeName || '';
+  queryUsers('');
 }
 
 function resetForm() {
@@ -135,11 +214,20 @@ async function doTransition(taskId, targetStatus) {
 }
 
 async function doDelete(taskId) {
-  if (!confirm('确认删除该任务？')) return;
   try {
+    await ElMessageBox.confirm('确认删除该任务？删除后不可恢复。', '删除确认', {
+      confirmButtonText: '确认删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
     await deleteTask(taskId);
     loadData();
-  } catch (e) { errorMessage.value = e?.message || e || '删除失败'; }
+    ElMessage.success('任务已删除');
+  } catch (e) {
+    if (e !== 'cancel' && e?.message !== 'cancel') {
+      errorMessage.value = e?.message || e || '删除失败';
+    }
+  }
 }
 
 function closeModal() {
@@ -173,7 +261,6 @@ function startTask(task) {
 }
 
 function completeTask(task) {
-  statusForm.targetStatus = 2;
   doTransition(task.taskId, 2);
 }
 
@@ -181,10 +268,13 @@ onMounted(loadData);
 </script>
 
 <template>
-  <div>
+  <div class="section-block">
     <div class="section-title">
-      <span>生产看板</span>
-      <button class="btn primary small" @click="openCreate">+ 新建任务</button>
+      <div>
+        <h2>生产看板</h2>
+        <p>管理生产加工任务，拖拽卡片切换状态</p>
+      </div>
+      <el-button type="primary" @click="openCreate">+ 新建任务</el-button>
     </div>
     <div v-if="errorMessage" class="form-error">{{ errorMessage }}</div>
 
@@ -192,12 +282,23 @@ onMounted(loadData);
       <div
         v-for="col in columns" :key="col.status"
         class="kanban-column"
+        :class="{
+          'kanban-column--pending': col.status === 0,
+          'kanban-column--active': col.status === 1,
+          'kanban-column--done': col.status === 2
+        }"
         @dragover="onDragOver($event, col.status)"
         @drop="onDrop($event, col.status)"
       >
         <div class="kanban-col-header">
           <strong>{{ col.label }}</strong>
-          <span class="kanban-count">{{ col.tasks.length }}</span>
+          <el-tag
+            size="small"
+            :type="col.status === 0 ? 'info' : col.status === 1 ? 'warning' : 'success'"
+            round
+          >
+            {{ col.tasks.length }}
+          </el-tag>
         </div>
         <div v-if="col.tasks.length === 0" class="kanban-empty">暂无任务</div>
         <div
@@ -208,54 +309,137 @@ onMounted(loadData);
           @click="openEdit(task)"
         >
           <div class="kanban-card-title">{{ task.taskName }}</div>
-          <div class="kanban-card-meta">
-            <span v-if="task.orderNo">订单: {{ task.orderNo }}</span>
-            <span v-if="task.assigneeName">{{ task.assigneeName }}</span>
-          </div>
-          <div class="kanban-card-meta">
-            <span v-if="task.estimatedHours">预估 {{ task.estimatedHours }}h</span>
-            <span v-if="task.actualHours">实际 {{ task.actualHours }}h</span>
+          <div class="kanban-card-body">
+            <div v-if="task.orderNo" class="kanban-card-row">
+              <span class="kanban-label">订单</span>
+              <span>{{ task.orderNo }}</span>
+            </div>
+            <div v-if="task.assigneeName" class="kanban-card-row">
+              <span class="kanban-label">负责人</span>
+              <span>{{ task.assigneeName }}</span>
+            </div>
+            <div class="kanban-card-row">
+              <span class="kanban-label">工时</span>
+              <span>
+                <template v-if="task.estimatedHours">预估 {{ task.estimatedHours }}h</template>
+                <template v-if="task.estimatedHours && task.actualHours"> / </template>
+                <template v-if="task.actualHours">实际 {{ task.actualHours }}h</template>
+                <template v-if="!task.estimatedHours && !task.actualHours">-</template>
+              </span>
+            </div>
           </div>
           <div class="kanban-card-actions" @click.stop>
             <template v-if="task.status === 0">
-              <button class="btn primary small" @click="startTask(task)">开始</button>
+              <el-button size="small" type="primary" @click="startTask(task)">开始</el-button>
             </template>
             <template v-if="task.status === 1">
-              <button class="btn primary small" @click="completeTask(task)">完成</button>
+              <el-button size="small" type="success" @click="completeTask(task)">完成</el-button>
             </template>
-            <button class="btn ghost small" @click="openAssign(task)">分配</button>
-            <button class="btn ghost small" @click="doDelete(task.taskId)" style="color:#dc2626">删除</button>
+            <el-button size="small" @click="openAssign(task)">分配</el-button>
+            <el-button size="small" type="danger" plain @click="doDelete(task.taskId)">删除</el-button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Modal -->
-    <div v-if="modalMode" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>{{ modalTitle }}</h2>
-        </div>
-        <div v-if="errorMessage" class="form-error">{{ errorMessage }}</div>
-        <div v-if="modalMode === 'assign'" class="form-grid">
-          <label>工人ID <input v-model.number="form.assigneeId" class="input" /></label>
-          <label>工人姓名 <input v-model="form.assigneeName" class="input" /></label>
-        </div>
-        <div v-else-if="modalMode === 'create' || modalMode === 'edit'" class="form-grid">
-          <label>任务名称 <input v-model="form.taskName" class="input" :disabled="readonly" /></label>
-          <label>订单ID <input v-model.number="form.orderId" class="input" :disabled="readonly || modalMode==='edit'" /></label>
-          <label>排样结果ID <input v-model.number="form.layoutResultId" class="input" :disabled="readonly" /></label>
-          <label>预估工时(h) <input v-model.number="form.estimatedHours" class="input" :disabled="readonly" /></label>
-          <label>实际工时(h) <input v-model.number="form.actualHours" class="input" :disabled="readonly || modalMode==='create'" /></label>
-          <label>备注 <input v-model="form.remark" class="input" :disabled="readonly" /></label>
-        </div>
-        <div class="modal-actions">
-          <button v-if="modalMode === 'create'" class="btn primary" @click="submitCreate">创建</button>
-          <button v-if="modalMode === 'edit'" class="btn primary" @click="submitEdit">保存</button>
-          <button v-if="modalMode === 'assign'" class="btn primary" @click="submitAssign">确认分配</button>
-          <button class="btn secondary" @click="closeModal">取消</button>
-        </div>
-      </div>
-    </div>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="modalTitle"
+      width="480px"
+      :close-on-click-modal="false"
+      @closed="closeModal"
+    >
+      <div v-if="errorMessage" class="form-error">{{ errorMessage }}</div>
+      <el-form v-if="modalMode === 'assign'" label-width="80px" size="small">
+        <el-form-item label="工人">
+          <el-select
+            v-model="form.assigneeId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="搜索工人姓名"
+            style="width:100%"
+            clearable
+            :remote-method="queryUsers"
+            :loading="userLoading"
+            @focus="queryUsers('')"
+            @change="onUserSelect"
+          >
+            <el-option
+              v-for="u in userOptions"
+              :key="u.userId"
+              :label="u.realName"
+              :value="u.userId"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-form v-else-if="modalMode === 'create' || modalMode === 'edit'" label-width="90px" size="small">
+        <el-form-item label="任务名称">
+          <el-input v-model="form.taskName" :disabled="readonly" />
+        </el-form-item>
+        <el-form-item label="订单">
+          <el-select
+            v-model="form.orderId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="搜索订单号"
+            style="width:100%"
+            clearable
+            :disabled="readonly || modalMode === 'edit'"
+            :remote-method="queryOrders"
+            :loading="orderLoading"
+            @focus="queryOrders('')"
+            @change="onOrderSelect"
+          >
+            <el-option
+              v-for="o in orderOptions"
+              :key="o.orderId"
+              :label="`${o.orderNo}${o.customerName ? ' - ' + o.customerName : ''}`"
+              :value="o.orderId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排样结果">
+          <el-select
+            v-model="form.layoutResultId"
+            filterable
+            remote
+            reserve-keyword
+            placeholder="搜索排版记录"
+            style="width:100%"
+            clearable
+            :disabled="readonly"
+            :remote-method="queryLayouts"
+            :loading="layoutLoading"
+            @focus="queryLayouts('')"
+          >
+            <el-option
+              v-for="r in layoutOptions"
+              :key="r.resultId"
+              :label="r.label"
+              :value="r.resultId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预估工时(h)">
+          <el-input-number v-model="form.estimatedHours" :min="0" :max="999" :disabled="readonly" style="width:100%" />
+        </el-form-item>
+        <el-form-item v-if="modalMode === 'edit'" label="实际工时(h)">
+          <el-input-number v-model="form.actualHours" :min="0" :max="999" :disabled="readonly" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="form.remark" :disabled="readonly" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="closeModal">取消</el-button>
+        <el-button v-if="modalMode === 'create'" type="primary" @click="submitCreate">创建</el-button>
+        <el-button v-if="modalMode === 'edit'" type="primary" @click="submitEdit">保存</el-button>
+        <el-button v-if="modalMode === 'assign'" type="primary" @click="submitAssign">确认分配</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

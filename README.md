@@ -28,10 +28,10 @@ cd frontend && npm install && npm run dev              # 前端 :5173
 | 文档 | 说明 |
 |------|------|
 | `AGENTS.md` | 完整接口地图、架构、数据模型、变更记录 |
-| `docs/操作手册.md` | 安装部署、使用指南、接口参考、故障排查 |
-| `docs/expansion-plan.md` | 功能规划与进度 |
-| `docs/known-issues.md` | 开发踩坑记录 |
-| `docs/文档总览.md` | 全部文档索引 |
+| `docs/user-manual/操作手册.md` | 安装部署、使用指南、接口参考、故障排查 |
+| `docs/planning/expansion-plan.md` | 功能规划与进度 |
+| `docs/planning/known-issues.md` | 开发踩坑记录 |
+| `docs/user-manual/文档总览.md` | 全部文档索引 |
 
 ## 测试
 

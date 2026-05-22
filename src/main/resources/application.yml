@@ -11,6 +11,10 @@ spring:
   output:
     ansi:
       enabled: never
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/board_cutting_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -25,6 +29,18 @@ logging:
 jwt:
   secret: ${JWT_SECRET:changeme}
   expiration: 86400000
+
+app:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT:}
+    bucket: ${ALIYUN_OSS_BUCKET:}
+    access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    board-texture-prefix: ${ALIYUN_OSS_BOARD_TEXTURE_PREFIX:board-textures/}
+    public-base-url: ${ALIYUN_OSS_PUBLIC_BASE_URL:}
+  upload:
+    local-dir: ${LOCAL_UPLOAD_DIR:uploads}
+    public-prefix: ${LOCAL_UPLOAD_PUBLIC_PREFIX:/uploads}
 
 # MyBatis-Plus 配置
 mybatis-plus:

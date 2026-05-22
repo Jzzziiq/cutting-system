@@ -1,10 +1,163 @@
 import { ref, computed, watch, nextTick } from 'vue';
 
 const PIECE_COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
-  '#84cc16', '#d946ef', '#0ea5e9', '#e11d48', '#65a30d'
+  '#6f8f8c', '#a47f7f', '#7f8fb3', '#b39a6a', '#8a7fb0',
+  '#7ea078', '#b07a99', '#6f9ba8', '#ad8370', '#9fa56e',
+  '#7188a4', '#a283aa', '#8b9672', '#8c7f72', '#77958f'
 ];
+
+const BOARD_FILL = '#ffffff';
+const OFFCUT_BOARD_FILL = '#f8fafc';
+const BOARD_STROKE = '#94a3b8';
+const PIECE_STROKE = '#f8fafc';
+const DARK_TEXT = '#172033';
+const LIGHT_TEXT = '#ffffff';
+const TOOLTIP_WIDTH = 372;
+const TOOLTIP_HEIGHT = 232;
+const TOOLTIP_GAP = 14;
+const TOOLTIP_MARGIN = 12;
+
+function hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16)
+  };
+}
+
+function getRelativeLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const channels = [r, g, b].map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+
+function getContrastRatio(luminanceA, luminanceB) {
+  const lighter = Math.max(luminanceA, luminanceB);
+  const darker = Math.min(luminanceA, luminanceB);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getReadableTextColor(backgroundColor) {
+  const backgroundLuminance = getRelativeLuminance(backgroundColor);
+  const darkContrast = getContrastRatio(backgroundLuminance, getRelativeLuminance(DARK_TEXT));
+  const lightContrast = getContrastRatio(backgroundLuminance, getRelativeLuminance(LIGHT_TEXT));
+  return darkContrast >= lightContrast ? DARK_TEXT : LIGHT_TEXT;
+}
+
+function colorDistance(colorA, colorB) {
+  const a = hexToRgb(colorA);
+  const b = hexToRgb(colorB);
+  return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
+}
+
+function stableHash(value) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function getPieceSizeKey(piece) {
+  const l = Number(piece?.l || 0).toFixed(1);
+  const w = Number(piece?.w || 0).toFixed(1);
+  return `${l}x${w}`;
+}
+
+function getPieceRect(piece) {
+  const x = Number(piece?.x || 0);
+  const y = Number(piece?.y || 0);
+  const l = Number(piece?.l || 0);
+  const w = Number(piece?.w || 0);
+  return { x, y, l, w, right: x + l, top: y + w };
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+  return Math.min(endA, endB) > Math.max(startA, startB);
+}
+
+function arePiecesAdjacent(pieceA, pieceB, tolerance) {
+  const a = getPieceRect(pieceA);
+  const b = getPieceRect(pieceB);
+  const touchesVertically = Math.abs(a.top - b.y) <= tolerance || Math.abs(b.top - a.y) <= tolerance;
+  const touchesHorizontally = Math.abs(a.right - b.x) <= tolerance || Math.abs(b.right - a.x) <= tolerance;
+  return (touchesVertically && rangesOverlap(a.x, a.right, b.x, b.right))
+    || (touchesHorizontally && rangesOverlap(a.y, a.top, b.y, b.top));
+}
+
+function buildPieceColorMap(solutions, tolerance) {
+  const entries = [];
+  const firstSeenIndex = new Map();
+  const adjacency = new Map();
+
+  for (let boardIndex = 0; boardIndex < solutions.length; boardIndex++) {
+    const solution = solutions[boardIndex];
+    for (const piece of solution.placeSquareList || []) {
+      const key = getPieceSizeKey(piece);
+      if (!firstSeenIndex.has(key)) {
+        firstSeenIndex.set(key, entries.length);
+        adjacency.set(key, new Set());
+      }
+      entries.push({ key, piece, boardIndex });
+    }
+  }
+
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      const a = entries[i];
+      const b = entries[j];
+      if (a.boardIndex !== b.boardIndex || a.key === b.key || !arePiecesAdjacent(a.piece, b.piece, tolerance)) continue;
+      adjacency.get(a.key).add(b.key);
+      adjacency.get(b.key).add(a.key);
+    }
+  }
+
+  const assignedColors = new Map();
+  const colorUseCount = new Map();
+  const sizeKeys = [...firstSeenIndex.keys()].sort((a, b) => {
+    const adjacencyDelta = (adjacency.get(b)?.size || 0) - (adjacency.get(a)?.size || 0);
+    return adjacencyDelta || firstSeenIndex.get(a) - firstSeenIndex.get(b);
+  });
+
+  for (const key of sizeKeys) {
+    const neighborColors = [...(adjacency.get(key) || [])]
+      .map(neighborKey => assignedColors.get(neighborKey))
+      .filter(Boolean);
+    const preferredIndex = stableHash(key) % PIECE_COLORS.length;
+
+    let bestColor = PIECE_COLORS[preferredIndex];
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    PIECE_COLORS.forEach((color, index) => {
+      const nearestNeighborDistance = neighborColors.length
+        ? Math.min(...neighborColors.map(neighborColor => colorDistance(color, neighborColor)))
+        : 180;
+      const reusePenalty = (colorUseCount.get(color) || 0) * 18;
+      const stableBias = index === preferredIndex ? 6 : 0;
+      const score = nearestNeighborDistance - reusePenalty + stableBias;
+      if (score > bestScore) {
+        bestScore = score;
+        bestColor = color;
+      }
+    });
+
+    assignedColors.set(key, bestColor);
+    colorUseCount.set(bestColor, (colorUseCount.get(bestColor) || 0) + 1);
+  }
+
+  return new Map(
+    [...firstSeenIndex.keys()].map((key) => {
+      const fill = assignedColors.get(key) || PIECE_COLORS[stableHash(key) % PIECE_COLORS.length];
+      return [key, { fill, text: getReadableTextColor(fill) }];
+    })
+  );
+}
 
 export function useLayoutCanvas(canvasRef, options = {}) {
   const kerfWidth = ref(options.kerfWidth ?? 3);
@@ -30,6 +183,11 @@ export function useLayoutCanvas(canvasRef, options = {}) {
   const currentSolution = computed(() => solutions.value[activeBoardIndex.value] || null);
 
   const boardCount = computed(() => solutions.value.length);
+
+  const pieceColorMap = computed(() => buildPieceColorMap(
+    solutions.value,
+    Math.max(kerfWidth.value, gapDistance.value, 1) + 0.5
+  ));
 
   const summary = computed(() => {
     if (!solutions.value.length) return { totalPieces: 0, boardsUsed: 0, offcutsUsed: 0, overallRate: 0, totalOffcutArea: 0 };
@@ -65,6 +223,20 @@ export function useLayoutCanvas(canvasRef, options = {}) {
       L: solution.containerLength || solution.instance?.L || 2440,
       W: solution.containerWidth || solution.instance?.W || 1220
     };
+  }
+
+  function getPieceVisual(piece) {
+    const fallbackFill = PIECE_COLORS[stableHash(getPieceSizeKey(piece)) % PIECE_COLORS.length];
+    return pieceColorMap.value.get(getPieceSizeKey(piece)) || {
+      fill: fallbackFill,
+      text: getReadableTextColor(fallbackFill)
+    };
+  }
+
+  function getPieceDimensionLabel(piece) {
+    const l = Number(piece?.l || 0);
+    const w = Number(piece?.w || 0);
+    return `${l.toFixed(0)}×${w.toFixed(0)}`;
   }
 
   function initCanvas() {
@@ -139,9 +311,9 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     const rate = solution.rate || 0;
 
     // Board rectangle
-    const boardColor = rate < 0.3 ? '#fef3c7' : '#ffffff';
+    const boardColor = rate < 0.3 ? OFFCUT_BOARD_FILL : BOARD_FILL;
     ctx.fillStyle = boardColor;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = BOARD_STROKE;
     ctx.lineWidth = 2;
     const tl = worldToScreen(0, W, W);
     const br = worldToScreen(L, 0, W);
@@ -154,16 +326,20 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     ctx.fillStyle = '#172033';
     ctx.font = 'bold 13px "Microsoft YaHei", sans-serif';
     ctx.textAlign = 'left';
-    const infoText = `板材 #${activeBoardIndex.value + 1}  ${L}×${W}mm  利用率 ${(rate * 100).toFixed(1)}%  工件 ${pieces.length} 个`;
+    const bgLabel = solution._boardGroup
+      ? [solution._boardGroup.brand, solution._boardGroup.materialType, solution._boardGroup.color].filter(Boolean).join(' ')
+      : '';
+    const infoText = bgLabel
+      ? `${bgLabel}  板材 #${activeBoardIndex.value + 1}  ${L}×${W}mm  利用率 ${(rate * 100).toFixed(1)}%  工件 ${pieces.length} 个`
+      : `板材 #${activeBoardIndex.value + 1}  ${L}×${W}mm  利用率 ${(rate * 100).toFixed(1)}%  工件 ${pieces.length} 个`;
     ctx.fillText(infoText, tl.x + 8, Math.max(16, tl.y - 8));
 
     // Pieces
-    pieces.forEach((piece, i) => {
-      const gap = kerfWidth.value / 2;
-      const px = piece.x + gap;
-      const py = piece.y + gap;
-      const pl = piece.l - gap * 2;
-      const pw = piece.w - gap * 2;
+    pieces.forEach((piece) => {
+      const px = piece.x;
+      const py = piece.y;
+      const pl = piece.l;
+      const pw = piece.w;
       if (pl <= 0 || pw <= 0) return;
 
       const pTl = worldToScreen(px, py + pw, W);
@@ -172,22 +348,23 @@ export function useLayoutCanvas(canvasRef, options = {}) {
       const pScreenH = pBr.y - pTl.y;
 
       // Fill
-      ctx.fillStyle = PIECE_COLORS[i % PIECE_COLORS.length];
+      const pieceVisual = getPieceVisual(piece);
+      ctx.fillStyle = pieceVisual.fill;
       ctx.fillRect(pTl.x, pTl.y, pScreenW, pScreenH);
 
       // Border
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = PIECE_STROKE;
       ctx.lineWidth = Math.max(0.5, 1 / zoom.value);
       ctx.strokeRect(pTl.x, pTl.y, pScreenW, pScreenH);
 
       // Label
       const fontSize = Math.min(12 / zoom.value, Math.min(pScreenW, pScreenH) * 0.45);
       if (fontSize > 5 && pScreenW > 20 && pScreenH > 15) {
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = pieceVisual.text;
         ctx.font = `${Math.max(8, fontSize)}px "Microsoft YaHei", sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const label = `${pl.toFixed(0)}×${pw.toFixed(0)}`;
+        const label = getPieceDimensionLabel(piece);
         const cx = pTl.x + pScreenW / 2;
         const cy = pTl.y + pScreenH / 2;
         if (pScreenW > ctx.measureText(label).width + 6) {
@@ -199,11 +376,10 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     // Highlight hovered piece
     if (hoveredPiece.value) {
       const hp = hoveredPiece.value;
-      const gap = kerfWidth.value / 2;
-      const px = hp.x + gap;
-      const py = hp.y + gap;
-      const pl = hp.l - gap * 2;
-      const pw = hp.w - gap * 2;
+      const px = hp.x;
+      const py = hp.y;
+      const pl = hp.l;
+      const pw = hp.w;
       const pTl = worldToScreen(px, py + pw, W);
       const pBr = worldToScreen(px + pl, py, W);
 
@@ -269,15 +445,14 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     const { W } = getContainerDim(solution);
     const world = screenToWorld(event.offsetX, event.offsetY, W);
     const pieces = solution.placeSquareList || [];
-    const gap = kerfWidth.value / 2;
 
     let found = null;
     for (let i = pieces.length - 1; i >= 0; i--) {
       const p = pieces[i];
-      const px = p.x + gap;
-      const py = p.y + gap;
-      const pl = p.l - gap * 2;
-      const pw = p.w - gap * 2;
+      const px = p.x;
+      const py = p.y;
+      const pl = p.l;
+      const pw = p.w;
       if (world.x >= px && world.x <= px + pl && world.y >= py && world.y <= py + pw) {
         found = p;
         break;
@@ -290,7 +465,32 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     }
 
     if (found) {
-      tooltipPos.value = { x: event.offsetX + 12, y: event.offsetY + 12 };
+      let tooltipX = event.offsetX + TOOLTIP_GAP;
+      let tooltipY = event.offsetY + TOOLTIP_GAP;
+
+      if (tooltipX + TOOLTIP_WIDTH + TOOLTIP_MARGIN > canvasSize.value.w) {
+        tooltipX = event.offsetX - TOOLTIP_WIDTH - TOOLTIP_GAP;
+      }
+      if (tooltipY + TOOLTIP_HEIGHT + TOOLTIP_MARGIN > canvasSize.value.h) {
+        tooltipY = event.offsetY - TOOLTIP_HEIGHT - TOOLTIP_GAP;
+      }
+
+      const canvasRect = canvasRef.value?.getBoundingClientRect();
+      if (canvasRect) {
+        const rightOverflow = canvasRect.left + tooltipX + TOOLTIP_WIDTH + TOOLTIP_MARGIN - window.innerWidth;
+        const bottomOverflow = canvasRect.top + tooltipY + TOOLTIP_HEIGHT + TOOLTIP_MARGIN - window.innerHeight;
+        if (rightOverflow > 0) {
+          tooltipX -= rightOverflow;
+        }
+        if (bottomOverflow > 0) {
+          tooltipY -= bottomOverflow;
+        }
+      }
+
+      tooltipPos.value = {
+        x: Math.max(TOOLTIP_MARGIN, tooltipX),
+        y: Math.max(TOOLTIP_MARGIN, tooltipY)
+      };
       tooltipData.value = found;
       showTooltip.value = true;
     } else {
@@ -334,18 +534,19 @@ export function useLayoutCanvas(canvasRef, options = {}) {
     if (!solution) return;
     const { L, W } = getContainerDim(solution);
     const pieces = solution.placeSquareList || [];
-    const gap = kerfWidth.value / 2;
+    const boardFill = (solution.rate || 0) < 0.3 ? OFFCUT_BOARD_FILL : BOARD_FILL;
 
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${L} ${W}" width="${L}" height="${W}">`;
-    svg += `<rect x="0" y="0" width="${L}" height="${W}" fill="#fff" stroke="#000" stroke-width="2"/>`;
-    pieces.forEach((p, i) => {
-      const px = p.x + gap;
-      const py = p.y + gap;
-      const pl = p.l - gap * 2;
-      const pw = p.w - gap * 2;
+    svg += `<rect x="0" y="0" width="${L}" height="${W}" fill="${boardFill}" stroke="${BOARD_STROKE}" stroke-width="2"/>`;
+    pieces.forEach((p) => {
+      const px = p.x;
+      const py = p.y;
+      const pl = p.l;
+      const pw = p.w;
       const transformY = W - py - pw;
-      svg += `<rect x="${px}" y="${transformY}" width="${pl}" height="${pw}" fill="${PIECE_COLORS[i % PIECE_COLORS.length]}" stroke="#fff" stroke-width="0.5"/>`;
-      svg += `<text x="${px + pl / 2}" y="${transformY + pw / 2}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="10">${pl.toFixed(0)}×${pw.toFixed(0)}</text>`;
+      const pieceVisual = getPieceVisual(p);
+      svg += `<rect x="${px}" y="${transformY}" width="${pl}" height="${pw}" fill="${pieceVisual.fill}" stroke="${PIECE_STROKE}" stroke-width="0.5"/>`;
+      svg += `<text x="${px + pl / 2}" y="${transformY + pw / 2}" text-anchor="middle" dominant-baseline="central" fill="${pieceVisual.text}" font-size="10">${getPieceDimensionLabel(p)}</text>`;
     });
     svg += '</svg>';
     return svg;

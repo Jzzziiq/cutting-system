@@ -113,16 +113,19 @@ $frontendLog = Join-Path $LogDir "frontend.log"
 $backendCmd = Join-Path $TargetDir "dev-backend.cmd"
 $frontendCmd = Join-Path $TargetDir "dev-frontend.cmd"
 $mavenRepo = Join-Path $TargetDir ".m2"
+$backendUrl = "http://$HostAddress`:$BackendPort"
+$frontendUrl = "http://$HostAddress`:$FrontendPort"
 
 @"
 @echo off
 cd /d "$RootDir"
-"$mvn" "-Dmaven.repo.local=$mavenRepo" spring-boot:run >> "$backendLog" 2>&1
+"$mvn" "-Dmaven.repo.local=$mavenRepo" "-Dspring-boot.run.arguments=--server.port=$BackendPort" spring-boot:run >> "$backendLog" 2>&1
 "@ | Set-Content -Path $backendCmd -Encoding ASCII
 
 @"
 @echo off
 cd /d "$FrontendDir"
+set "VITE_BACKEND_URL=$backendUrl"
 "$npm" run dev -- --host $HostAddress --port $FrontendPort >> "$frontendLog" 2>&1
 "@ | Set-Content -Path $frontendCmd -Encoding ASCII
 
@@ -131,12 +134,12 @@ $services += Start-CmdService -Name "backend" -CommandFile $backendCmd
 $services += Start-CmdService -Name "frontend" -CommandFile $frontendCmd
 
 try {
-    Wait-HttpReady -Url "http://$HostAddress`:$BackendPort/" -TimeoutSec $StartupTimeoutSec
-    Wait-HttpReady -Url "http://$HostAddress`:$FrontendPort/login" -TimeoutSec $StartupTimeoutSec
+    Wait-HttpReady -Url "$backendUrl/" -TimeoutSec $StartupTimeoutSec
+    Wait-HttpReady -Url "$frontendUrl/login" -TimeoutSec $StartupTimeoutSec
 
     $apiProxyStatus = $null
     try {
-        Invoke-WebRequest -Uri "http://$HostAddress`:$FrontendPort/api/customers" -UseBasicParsing -TimeoutSec 5 | Out-Null
+        Invoke-WebRequest -Uri "$frontendUrl/api/customers" -UseBasicParsing -TimeoutSec 5 | Out-Null
         $apiProxyStatus = "unexpected-success"
     } catch {
         $apiProxyStatus = $_.Exception.Response.StatusCode.value__
@@ -145,8 +148,8 @@ try {
     $state = [ordered]@{
         startedAt = (Get-Date).ToString("s")
         root = $RootDir
-        backendUrl = "http://$HostAddress`:$BackendPort"
-        frontendUrl = "http://$HostAddress`:$FrontendPort"
+        backendUrl = $backendUrl
+        frontendUrl = $frontendUrl
         apiProxyCustomersWithoutToken = $apiProxyStatus
         logs = [ordered]@{
             backend = $backendLog
@@ -159,8 +162,8 @@ try {
 
     Write-Output ""
     Write-Output "Development services started."
-    Write-Output "Backend : http://$HostAddress`:$BackendPort"
-    Write-Output "Frontend: http://$HostAddress`:$FrontendPort"
+    Write-Output "Backend : $backendUrl"
+    Write-Output "Frontend: $frontendUrl"
     Write-Output "API proxy check /api/customers without token: $apiProxyStatus"
     Write-Output "PID file: $PidFile"
     Write-Output "Logs: $LogDir"

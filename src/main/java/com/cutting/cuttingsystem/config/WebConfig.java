@@ -2,15 +2,23 @@ package com.cutting.cuttingsystem.config;
 
 import com.cutting.cuttingsystem.interceptor.TokenInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+
+import java.nio.file.Path;
+
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private TokenInterceptor tokenInterceptor;
+
+    @Value("${app.upload.local-dir:uploads}")
+    private String localUploadDir;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -34,5 +42,12 @@ public class WebConfig implements WebMvcConfigurer {
                         "/auth/*"
                 );
         WebMvcConfigurer.super.addInterceptors(registry);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String uploadLocation = Path.of(localUploadDir).toAbsolutePath().normalize().toUri().toString();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadLocation.endsWith("/") ? uploadLocation : uploadLocation + "/");
     }
 }

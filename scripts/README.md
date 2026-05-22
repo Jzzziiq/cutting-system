@@ -15,11 +15,26 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\start-dev.ps1
 
 首次运行时，如果 `frontend/node_modules` 不存在，脚本会自动执行前端依赖安装。
 
+## 环境要求
+
+- JDK 17+
+- Maven 3.6+
+- Node.js 20.19+ 或 22.12+（当前 Vite 7 / @vitejs/plugin-vue 6 的要求）
+- npm 10+
+
 ## 跳过依赖安装
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\start-dev.ps1 -SkipInstall
 ```
+
+## 自定义端口
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\start-dev.ps1 -BackendPort 8090 -FrontendPort 5174
+```
+
+脚本会同时设置 Spring Boot `server.port` 和前端 `VITE_BACKEND_URL`，确保 `/api` 代理跟随后端端口。
 
 ## 重启项目
 

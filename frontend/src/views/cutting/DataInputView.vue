@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import { ElMessageBox } from 'element-plus/es/components/message-box/index.mjs';
 import OrderInfoBar from '@/components/cutting/OrderInfoBar.vue';
@@ -10,7 +10,9 @@ import BoardGroupTable from '@/components/cutting/BoardGroupTable.vue';
 import BottomSummaryBar from '@/components/cutting/BottomSummaryBar.vue';
 import { useBoardWorkpieceGroups } from '@/composables/useBoardWorkpieceGroups';
 import { getAlgorithmResult, submitAlgorithm } from '@/api/algorithm';
+import { getOrder } from '@/api/orders';
 
+const route = useRoute();
 const router = useRouter();
 
 // Order info
@@ -49,6 +51,21 @@ const confirming = ref(false);
 
 function onAddBoard(board) {
   addBoardGroup(board);
+}
+
+async function loadOrderContext(orderId) {
+  const id = Number(orderId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  try {
+    const order = await getOrder(id);
+    currentOrderId.value = id;
+    customer.value = order?.customerName || '';
+    orderNo.value = order?.orderNo || '';
+    orderDate.value = order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
+    remark.value = order?.remark || '';
+  } catch (e) {
+    ElMessage.error(e?.message || '加载订单失败');
+  }
 }
 
 function parseAlgorithmSolutions(result) {
@@ -95,6 +112,10 @@ function goToCabinetDesign() {
 }
 
 async function onConfirm() {
+  if (!currentOrderId.value) {
+    ElMessage.warning('请先选择或创建一个订单');
+    return;
+  }
   if (!validateAll()) {
     ElMessage.error('存在数据错误，请检查红色标记的行');
     return;
@@ -155,6 +176,7 @@ async function onConfirm() {
     sessionStorage.setItem(`layout-draft-${draftId}`, JSON.stringify({
       draftId,
       orderInfo: {
+        orderId: currentOrderId.value,
         customer: customer.value,
         orderNo: orderNo.value,
         orderDate: orderDate.value,
@@ -167,7 +189,7 @@ async function onConfirm() {
 
     router.push({
       name: 'layout-workbench',
-      query: { draftId }
+      query: { draftId, orderId: currentOrderId.value }
     });
   } catch (e) {
     ElMessage.error(e.message || '排版提交失败');
@@ -175,6 +197,12 @@ async function onConfirm() {
     confirming.value = false;
   }
 }
+
+onMounted(() => {
+  if (route.query.orderId) {
+    loadOrderContext(route.query.orderId);
+  }
+});
 </script>
 
 <template>

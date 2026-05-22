@@ -23,7 +23,7 @@ defineEmits([
 <template>
   <div class="layout-toolbar">
     <div class="toolbar-group">
-      <el-button size="small" :icon="Upload" @click="$emit('import-order')">导入排单</el-button>
+      <el-button size="small" :icon="Upload" @click="$emit('import-order')">选择订单</el-button>
       <el-button size="small" type="primary" :icon="Setting" :loading="taskRunning" @click="$emit('start-layout')">
         开始排版
       </el-button>
@@ -43,13 +43,13 @@ defineEmits([
     <div class="toolbar-group">
       <el-button size="small" :icon="Download" @click="$emit('export-toolpath')">输出刀轨</el-button>
       <el-button size="small" :icon="Download" @click="$emit('export-file')">导出文件</el-button>
-      <el-button size="small" :icon="Download" @click="$emit('save-result')">保存结果</el-button>
+      <el-button size="small" :icon="Download" @click="$emit('save-result')">保存排版结果</el-button>
     </div>
 
     <div class="toolbar-spacer" />
 
     <div class="toolbar-group">
-      <el-button size="small" :icon="Back" @click="$emit('back-to-edit')">返回编辑</el-button>
+      <el-button size="small" :icon="Back" @click="$emit('back-to-edit')">返回录入</el-button>
     </div>
   </div>
 </template>

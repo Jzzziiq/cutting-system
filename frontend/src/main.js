@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import { ElButton } from 'element-plus/es/components/button/index.mjs';
 import { ElCheckbox } from 'element-plus/es/components/checkbox/index.mjs';
 import { ElDialog } from 'element-plus/es/components/dialog/index.mjs';
+import { ElDivider } from 'element-plus/es/components/divider/index.mjs';
 import { ElForm, ElFormItem } from 'element-plus/es/components/form/index.mjs';
 import { ElIcon } from 'element-plus/es/components/icon/index.mjs';
 import { ElInput } from 'element-plus/es/components/input/index.mjs';
@@ -15,6 +16,7 @@ import 'element-plus/es/components/base/style/css';
 import 'element-plus/es/components/button/style/css';
 import 'element-plus/es/components/checkbox/style/css';
 import 'element-plus/es/components/dialog/style/css';
+import 'element-plus/es/components/divider/style/css';
 import 'element-plus/es/components/form/style/css';
 import 'element-plus/es/components/form-item/style/css';
 import 'element-plus/es/components/icon/style/css';
@@ -38,6 +40,7 @@ const elementComponents = [
   ElButton,
   ElCheckbox,
   ElDialog,
+  ElDivider,
   ElForm,
   ElFormItem,
   ElIcon,

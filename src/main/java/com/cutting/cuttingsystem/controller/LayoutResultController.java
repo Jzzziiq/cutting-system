@@ -9,8 +9,10 @@ import com.cutting.cuttingsystem.entitys.DTO.QueryDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TLayoutResultDTO;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TLayoutResult;
+import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.VO.TLayoutResultVO;
 import com.cutting.cuttingsystem.service.TLayoutResultService;
+import com.cutting.cuttingsystem.service.TOrderService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.beans.BeanUtils;
@@ -35,10 +37,14 @@ public class LayoutResultController {
     @Autowired
     private TLayoutResultService layoutResultService;
 
+    @Autowired
+    private TOrderService orderService;
+
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
         IPage<TLayoutResult> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<TLayoutResultVO> layoutResultVOPage = layoutResultService.page(page).convert(this::toVO);
+        QueryWrapper<TLayoutResult> qw = new QueryWrapper<TLayoutResult>().orderByDesc("create_time");
+        IPage<TLayoutResultVO> layoutResultVOPage = layoutResultService.page(page, qw).convert(this::toVO);
         return Result.success(layoutResultVOPage);
     }
 
@@ -83,8 +89,16 @@ public class LayoutResultController {
     }
 
     private TLayoutResultVO toVO(TLayoutResult layoutResult) {
-        TLayoutResultVO layoutResultVO = new TLayoutResultVO();
-        BeanUtils.copyProperties(layoutResult, layoutResultVO);
-        return layoutResultVO;
+        TLayoutResultVO vo = new TLayoutResultVO();
+        BeanUtils.copyProperties(layoutResult, vo);
+        if (layoutResult.getOrderId() != null) {
+            TOrder order = orderService.getById(layoutResult.getOrderId());
+            if (order != null) {
+                vo.setOrderNo(order.getOrderNo());
+                vo.setOrderName(order.getOrderNo());
+                vo.setCustomer(order.getCustomerName());
+            }
+        }
+        return vo;
     }
 }

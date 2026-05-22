@@ -44,6 +44,11 @@ public class TBoard implements Serializable {
     private String color;
 
     /**
+     * Board texture image URL.
+     */
+    private String textureUrl;
+
+    /**
      * 板材尺寸类型
      */
     private String sizeType;

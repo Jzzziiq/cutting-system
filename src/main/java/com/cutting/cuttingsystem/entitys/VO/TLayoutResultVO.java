@@ -9,6 +9,9 @@ import java.util.Date;
 public class TLayoutResultVO {
     private Long resultId;
     private Long orderId;
+    private String orderNo;
+    private String orderName;
+    private String customer;
     private BigDecimal usageRate;
     private BigDecimal totalArea;
     private Integer containerCount;
