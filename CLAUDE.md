@@ -6,6 +6,7 @@ This file is the Claude Code entry point for this repository. `AGENTS.md` is the
 
 ## Claude Code Rules
 
+- User mentions of "需求文档" refer to `docs/user-manual/需求文档.md`, not other docs.
 - Read `AGENTS.md` before code, API, data model, algorithm, dependency, test, or documentation work.
 - Do not duplicate large project facts here; update `AGENTS.md` instead when shared rules or project facts change.
 - Keep changes small, explicit, and traceable to the user's request. Mention unrelated issues instead of fixing them opportunistically.
