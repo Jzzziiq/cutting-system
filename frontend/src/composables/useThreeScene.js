@@ -68,19 +68,32 @@ export function useThreeScene() {
   };
   const textureLoader = new THREE.TextureLoader();
   textureLoader.setCrossOrigin('anonymous');
+  // 纹理缓存按 URL 记录 { texture, status, materials }
+  // status: 'loading' | 'ready' | 'failed'
   const textureCache = new Map();
 
-  function getTexture(url) {
+  function getTextureEntry(url) {
     if (!url) return null;
     if (textureCache.has(url)) return textureCache.get(url);
-    const texture = textureLoader.load(url, () => {
-      if (renderer && scene && camera) renderer.render(scene, camera);
-    });
+    const entry = { texture: null, status: 'loading', materials: new Set() };
+    textureCache.set(url, entry);
+    const texture = textureLoader.load(
+      url,
+      () => {
+        entry.status = 'ready';
+        entry.materials.forEach(mat => { mat.needsUpdate = true; });
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+      undefined,
+      () => {
+        entry.status = 'failed';
+      }
+    );
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    textureCache.set(url, texture);
-    return texture;
+    entry.texture = texture;
+    return entry;
   }
 
   function getBoardGeometryArgs(board) {
@@ -103,7 +116,19 @@ export function useThreeScene() {
     }
   }
 
-  function buildCabinet(boards) {
+  function createBoardMaterial(board) {
+    const entry = board.textureUrl ? getTextureEntry(board.textureUrl) : null;
+    const textureReady = entry?.status === 'ready' && entry.texture;
+    const mat = new THREE.MeshStandardMaterial({
+      color: textureReady ? 0xffffff : board.appearanceColor || typeColors[board.type] || 0x94a3b8,
+      map: textureReady ? entry.texture : null,
+      roughness: 0.6, metalness: 0.1
+    });
+    if (entry) entry.materials.add(mat);
+    return mat;
+  }
+
+  function buildCabinet(boards, resetCamera = true) {
     if (!scene || !camera || !controls) return;
     clearScene();
 
@@ -111,12 +136,7 @@ export function useThreeScene() {
       const pos = board.position || { x: 0, y: 0, z: 0 };
       const rot = board.rotation || { x: 0, y: 0, z: 0 };
       const geo = new THREE.BoxGeometry(...getBoardGeometryArgs(board));
-      const texture = getTexture(board.textureUrl);
-      const mat = new THREE.MeshStandardMaterial({
-        color: texture ? 0xffffff : board.appearanceColor || typeColors[board.type] || 0x94a3b8,
-        map: texture,
-        roughness: 0.6, metalness: 0.1
-      });
+      const mat = createBoardMaterial(board);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(pos.x, pos.y, pos.z);
       mesh.rotation.set(rot.x, rot.y, rot.z);
@@ -127,21 +147,12 @@ export function useThreeScene() {
       boardMeshes.value.set(board.id, mesh);
     });
 
-    const box = new THREE.Box3();
-    Array.from(boardMeshes.value.values()).forEach(mesh => box.expandByObject(mesh));
-    if (box.isEmpty()) return;
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    controls.target.copy(center);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const dist = maxDim * 2.5;
-    camera.position.set(center.x + dist * 0.6, center.y + dist * 0.4, center.z + dist * 0.6);
-    controls.update();
+    if (resetCamera) {
+      fitCameraToBoards();
+    }
   }
 
-  function resetView() {
+  function fitCameraToBoards() {
     if (!camera || !controls || boardMeshes.value.size === 0) return;
     const box = new THREE.Box3();
     Array.from(boardMeshes.value.values()).forEach(mesh => box.expandByObject(mesh));
@@ -157,12 +168,19 @@ export function useThreeScene() {
     controls.update();
   }
 
+  function resetView() {
+    fitCameraToBoards();
+  }
+
   function clearScene() {
     if (!scene) return;
     boardMeshes.value.forEach(m => {
       scene.remove(m);
       m.geometry?.dispose();
-      m.material?.dispose();
+      if (m.material) {
+        textureCache.forEach(entry => entry.materials.delete(m.material));
+        m.material.dispose();
+      }
     });
     boardMeshes.value.clear();
     edgeLines.value.forEach(l => {
@@ -197,13 +215,19 @@ export function useThreeScene() {
 
   const raycaster = new THREE.Raycaster();
 
-  function getDropPoint(event, options = {}) {
-    if (!canvasRef.value || !camera) return null;
+  function getPointer(event) {
+    if (!canvasRef.value) return null;
     const rect = canvasRef.value.getBoundingClientRect();
-    const mouse = new THREE.Vector2(
+    return new THREE.Vector2(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     );
+  }
+
+  function getDropPoint(event, options = {}) {
+    if (!canvasRef.value || !camera) return null;
+    const mouse = getPointer(event);
+    if (!mouse) return null;
     const y = Number(options.y) || 0;
     const snapSize = Number(options.snapSize) || 50;
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -y);
@@ -218,21 +242,57 @@ export function useThreeScene() {
     };
   }
 
+  function getPlanePoint(event, options = {}) {
+    if (!canvasRef.value || !camera) return null;
+    const mouse = getPointer(event);
+    if (!mouse) return null;
+    const y = Number(options.y) || 0;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -y);
+    const point = new THREE.Vector3();
+    raycaster.setFromCamera(mouse, camera);
+    const hit = raycaster.ray.intersectPlane(plane, point);
+    if (!hit) return null;
+    return { x: point.x, y, z: point.z };
+  }
+
+  function pickBoard(event) {
+    if (!canvasRef.value || !camera) return null;
+    const mouse = getPointer(event);
+    if (!mouse) return null;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(Array.from(boardMeshes.value.values()));
+    const hit = intersects[0];
+    const board = hit?.object?.userData?.boardData;
+    if (!board) return null;
+    return { board, point: hit.point };
+  }
+
+  function setControlsEnabled(enabled) {
+    if (controls) controls.enabled = enabled;
+  }
+
+  function moveBoardPreview(boardId, position) {
+    const mesh = boardMeshes.value.get(boardId);
+    if (!mesh || !position) return;
+    mesh.position.set(position.x, position.y, position.z);
+    mesh.userData.boardData = {
+      ...(mesh.userData.boardData ?? {}),
+      position: {
+        ...(mesh.userData.boardData?.position ?? {}),
+        ...position
+      }
+    };
+    if (highlightLine) {
+      highlightLine.position.copy(mesh.position);
+      highlightLine.rotation.copy(mesh.rotation);
+    }
+  }
+
   function onClick(event, callback) {
     if (!canvasRef.value || !camera) return;
-    const rect = canvasRef.value.getBoundingClientRect();
-    const mouse = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
-    );
-    raycaster.setFromCamera(mouse, camera);
-    const meshes = Array.from(boardMeshes.value.values());
-    const intersects = raycaster.intersectObjects(meshes);
-    if (intersects.length > 0) {
-      const obj = intersects[0].object;
-      if (obj.userData.boardData) {
-        callback(obj.userData.boardData);
-      }
+    const hit = pickBoard(event);
+    if (hit?.board) {
+      callback(hit.board);
     }
   }
 
@@ -252,7 +312,7 @@ export function useThreeScene() {
     clearScene();
     if (controls) { controls.dispose(); controls = null; }
     if (renderer) { renderer.dispose(); renderer = null; }
-    textureCache.forEach(texture => texture.dispose());
+    textureCache.forEach(entry => entry.texture?.dispose());
     textureCache.clear();
     scene = null;
     camera = null;
@@ -267,6 +327,11 @@ export function useThreeScene() {
     removeHighlight,
     onClick,
     getDropPoint,
+    getPlanePoint,
+    pickBoard,
+    setControlsEnabled,
+    moveBoardPreview,
+    fitCameraToBoards,
     resetView,
     resize,
     dispose
