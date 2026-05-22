@@ -1,5 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import BoardTextureCell from '@/components/boards/BoardTextureCell.vue';
+import BoardTextureLightbox from '@/components/boards/BoardTextureLightbox.vue';
 import {
   batchDeleteBoards,
   batchUpdateBoardStatus,
@@ -23,6 +25,7 @@ const selectedIds = ref([]);
 const modalMode = ref('');
 const currentId = ref(null);
 const textureUploading = ref(false);
+const texturePreviewBoard = ref(null);
 const form = reactive({
   brand: '',
   materialType: '',
@@ -125,9 +128,14 @@ async function submit() {
 }
 
 async function remove(id) {
-  if (!window.confirm('确认删除该板材？')) return;
-  await deleteBoard(id);
-  await loadData();
+  if (!window.confirm('确认删除该板材？若已被订单明细或余料引用，系统会阻止删除以保护历史数据，可改为禁用。')) return;
+  errorMessage.value = '';
+  try {
+    await deleteBoard(id);
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
 }
 
 function toggleSelect(id) {
@@ -162,7 +170,7 @@ async function batchSetEnabled(isEnabled) {
 
 async function batchRemove() {
   if (!selectedCount.value) return;
-  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个板材？`)) return;
+  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个板材？若其中有板材已被订单明细或余料引用，系统会阻止删除以保护历史数据，可改为禁用。`)) return;
   errorMessage.value = '';
   try {
     await batchDeleteBoards([...selectedIds.value]);
@@ -236,6 +244,14 @@ async function handleTextureUpload(e) {
     textureUploading.value = false;
     e.target.value = '';
   }
+}
+
+function openTexturePreview(board) {
+  texturePreviewBoard.value = board;
+}
+
+function closeTexturePreview() {
+  texturePreviewBoard.value = null;
 }
 
 onMounted(loadData);
@@ -315,8 +331,7 @@ onMounted(loadData);
             <td>{{ item.materialType }}</td>
             <td>{{ item.color }}</td>
             <td>
-              <a v-if="item.textureUrl" :href="item.textureUrl" target="_blank" rel="noopener">查看</a>
-              <span v-else>-</span>
+              <BoardTextureCell :board="item" @preview="openTexturePreview" />
             </td>
             <td>{{ item.sizeType }}</td>
             <td>{{ item.length }} × {{ item.width }} × {{ item.thickness }}</td>
@@ -416,4 +431,6 @@ onMounted(loadData);
       </div>
     </form>
   </div>
+
+  <BoardTextureLightbox :board="texturePreviewBoard" @close="closeTexturePreview" />
 </template>

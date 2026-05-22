@@ -56,7 +56,7 @@ public class BoardsController {
     }
 
     @GetMapping("/{id}")
-    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
+    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         TBoard board = tBoardService.getById(id);
         if (board == null) {
             return Result.error("board not found");
@@ -66,16 +66,24 @@ public class BoardsController {
 
     @DeleteMapping("/{id}")
     @AuditLog(module = "板材管理", action = "删除")
-    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
-        boolean removed = tBoardService.removeById(id);
-        return removed ? Result.success() : Result.error("delete board failed");
+    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
+        try {
+            boolean removed = tBoardService.removeByIdIfUnused(id);
+            return removed ? Result.success() : Result.error("delete board failed");
+        } catch (IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @DeleteMapping("/batch")
     @AuditLog(module = "板材管理", action = "批量删除")
     public Result batchDelete(@RequestBody @Valid BatchIdsDTO batchIdsDTO) {
-        boolean removed = tBoardService.removeByIds(batchIdsDTO.getIds());
-        return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete board failed");
+        try {
+            boolean removed = tBoardService.removeByIdsIfUnused(batchIdsDTO.getIds());
+            return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete board failed");
+        } catch (IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @PutMapping("/batch/status")

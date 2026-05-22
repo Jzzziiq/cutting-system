@@ -45,7 +45,7 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
+    public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         TCustomer customer = customerService.getById(id);
         if (customer == null) {
             return Result.error("customer not found");
@@ -55,16 +55,24 @@ public class CustomerController {
 
     @DeleteMapping("/{id}")
     @AuditLog(module = "客户管理", action = "删除")
-    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Integer id) {
-        boolean removed = customerService.removeById(id);
-        return removed ? Result.success() : Result.error("delete customer failed");
+    public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
+        try {
+            boolean removed = customerService.removeByIdIfUnused(id);
+            return removed ? Result.success() : Result.error("delete customer failed");
+        } catch (IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @DeleteMapping("/batch")
     @AuditLog(module = "客户管理", action = "批量删除")
     public Result batchDelete(@RequestBody @Valid BatchIdsDTO batchIdsDTO) {
-        boolean removed = customerService.removeByIds(batchIdsDTO.getIds());
-        return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete customer failed");
+        try {
+            boolean removed = customerService.removeByIdsIfUnused(batchIdsDTO.getIds());
+            return removed ? Result.success(Map.of("affected", batchIdsDTO.getIds().size())) : Result.error("batch delete customer failed");
+        } catch (IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @PutMapping("/batch/status")

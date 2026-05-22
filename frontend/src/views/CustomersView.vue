@@ -102,9 +102,14 @@ async function submit() {
 }
 
 async function remove(id) {
-  if (!window.confirm('确认删除该客户？')) return;
-  await deleteCustomer(id);
-  await loadData();
+  if (!window.confirm('确认删除该客户？若已有订单引用，系统会阻止删除以保护订单数据，可改为禁用。')) return;
+  errorMessage.value = '';
+  try {
+    await deleteCustomer(id);
+    await loadData();
+  } catch (e) {
+    errorMessage.value = e.message;
+  }
 }
 
 function toggleSelect(id) {
@@ -139,7 +144,7 @@ async function batchSetEnabled(isEnabled) {
 
 async function batchRemove() {
   if (!selectedCount.value) return;
-  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个客户？`)) return;
+  if (!window.confirm(`确认删除已选 ${selectedCount.value} 个客户？若其中有客户已有订单引用，系统会阻止删除以保护订单数据，可改为禁用。`)) return;
   errorMessage.value = '';
   try {
     await batchDeleteCustomers([...selectedIds.value]);

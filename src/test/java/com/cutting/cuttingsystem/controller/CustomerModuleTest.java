@@ -89,7 +89,7 @@ class CustomerModuleTest {
 
     @Test
     void getByIdReturnsCustomerDetail() throws Exception {
-        when(customerService.getById(1)).thenReturn(customer(1L));
+        when(customerService.getById(1L)).thenReturn(customer(1L));
 
         mockMvc.perform(get("/customers/1")
                         .header("Authorization", bearerToken()))
@@ -101,7 +101,7 @@ class CustomerModuleTest {
 
     @Test
     void getByIdReturnsBusinessErrorWhenCustomerDoesNotExist() throws Exception {
-        when(customerService.getById(999)).thenReturn(null);
+        when(customerService.getById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/customers/999")
                         .header("Authorization", bearerToken()))
@@ -248,7 +248,7 @@ class CustomerModuleTest {
 
     @Test
     void deleteCustomerReturnsSuccessWhenRemoveSucceeds() throws Exception {
-        when(customerService.removeById(1)).thenReturn(true);
+        when(customerService.removeByIdIfUnused(1L)).thenReturn(true);
 
         mockMvc.perform(delete("/customers/1")
                         .header("Authorization", bearerToken()))
@@ -258,7 +258,7 @@ class CustomerModuleTest {
 
     @Test
     void deleteCustomerReturnsBusinessErrorWhenRemoveFails() throws Exception {
-        when(customerService.removeById(999)).thenReturn(false);
+        when(customerService.removeByIdIfUnused(999L)).thenReturn(false);
 
         mockMvc.perform(delete("/customers/999")
                         .header("Authorization", bearerToken()))
@@ -267,8 +267,20 @@ class CustomerModuleTest {
     }
 
     @Test
+    void deleteCustomerRejectsReferencedCustomer() throws Exception {
+        when(customerService.removeByIdIfUnused(1L))
+                .thenThrow(new IllegalStateException("该客户已有订单引用，不能删除；如暂不使用，请改为禁用"));
+
+        mockMvc.perform(delete("/customers/1")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.msg").value("该客户已有订单引用，不能删除；如暂不使用，请改为禁用"));
+    }
+
+    @Test
     void batchDeleteCustomersReturnsSuccessWhenRemoveSucceeds() throws Exception {
-        when(customerService.removeByIds(any())).thenReturn(true);
+        when(customerService.removeByIdsIfUnused(any())).thenReturn(true);
 
         mockMvc.perform(delete("/customers/batch")
                         .header("Authorization", bearerToken())
@@ -281,6 +293,24 @@ class CustomerModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchDeleteCustomersRejectsReferencedCustomers() throws Exception {
+        when(customerService.removeByIdsIfUnused(any()))
+                .thenThrow(new IllegalStateException("存在已有订单引用的客户，不能删除；如暂不使用，请改为禁用"));
+
+        mockMvc.perform(delete("/customers/batch")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.msg").value("存在已有订单引用的客户，不能删除；如暂不使用，请改为禁用"));
     }
 
     @Test

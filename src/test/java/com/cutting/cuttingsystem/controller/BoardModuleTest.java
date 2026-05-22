@@ -96,7 +96,7 @@ class BoardModuleTest {
 
     @Test
     void getByIdReturnsBoardDetail() throws Exception {
-        when(tBoardService.getById(1)).thenReturn(board(1L));
+        when(tBoardService.getById(1L)).thenReturn(board(1L));
 
         mockMvc.perform(get("/boards/1")
                         .header("Authorization", bearerToken()))
@@ -109,7 +109,7 @@ class BoardModuleTest {
 
     @Test
     void getByIdReturnsBusinessErrorWhenBoardDoesNotExist() throws Exception {
-        when(tBoardService.getById(999)).thenReturn(null);
+        when(tBoardService.getById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/boards/999")
                         .header("Authorization", bearerToken()))
@@ -320,7 +320,7 @@ class BoardModuleTest {
 
     @Test
     void deleteBoardReturnsSuccessWhenRemoveSucceeds() throws Exception {
-        when(tBoardService.removeById(1)).thenReturn(true);
+        when(tBoardService.removeByIdIfUnused(1L)).thenReturn(true);
 
         mockMvc.perform(delete("/boards/1")
                         .header("Authorization", bearerToken()))
@@ -330,7 +330,7 @@ class BoardModuleTest {
 
     @Test
     void deleteBoardReturnsBusinessErrorWhenRemoveFails() throws Exception {
-        when(tBoardService.removeById(999)).thenReturn(false);
+        when(tBoardService.removeByIdIfUnused(999L)).thenReturn(false);
 
         mockMvc.perform(delete("/boards/999")
                         .header("Authorization", bearerToken()))
@@ -339,8 +339,20 @@ class BoardModuleTest {
     }
 
     @Test
+    void deleteBoardRejectsReferencedBoard() throws Exception {
+        when(tBoardService.removeByIdIfUnused(1L))
+                .thenThrow(new IllegalStateException("该板材已被订单明细或余料引用，不能删除；如暂不使用，请改为禁用"));
+
+        mockMvc.perform(delete("/boards/1")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.msg").value("该板材已被订单明细或余料引用，不能删除；如暂不使用，请改为禁用"));
+    }
+
+    @Test
     void batchDeleteBoardsReturnsSuccessWhenRemoveSucceeds() throws Exception {
-        when(tBoardService.removeByIds(any())).thenReturn(true);
+        when(tBoardService.removeByIdsIfUnused(any())).thenReturn(true);
 
         mockMvc.perform(delete("/boards/batch")
                         .header("Authorization", bearerToken())
@@ -353,6 +365,24 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.affected").value(2));
+    }
+
+    @Test
+    void batchDeleteBoardsRejectsReferencedBoards() throws Exception {
+        when(tBoardService.removeByIdsIfUnused(any()))
+                .thenThrow(new IllegalStateException("存在已被订单明细或余料引用的板材，不能删除；如暂不使用，请改为禁用"));
+
+        mockMvc.perform(delete("/boards/batch")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "ids": [1, 2]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.msg").value("存在已被订单明细或余料引用的板材，不能删除；如暂不使用，请改为禁用"));
     }
 
     @Test

@@ -37,6 +37,8 @@
 
 板材请求/响应字段包含可选 `textureUrl`，用于网页端 3D 柜体建模纹理贴图；`POST /boards/texture` 接收 `multipart/form-data` 的 `file`，上传到阿里云 OSS 后返回 `{ url }` 供板材保存时写入 `textureUrl`。OSS 配置从环境变量读取：`ALIYUN_OSS_ENDPOINT`、`ALIYUN_OSS_BUCKET`、`ALIYUN_OSS_ACCESS_KEY_ID`、`ALIYUN_OSS_ACCESS_KEY_SECRET`，可选 `ALIYUN_OSS_BOARD_TEXTURE_PREFIX`、`ALIYUN_OSS_PUBLIC_BASE_URL`。
 
+删除保护：客户已被订单引用时，`DELETE /customers/{id}` 和 `/customers/batch` 返回业务错误；板材已被订单明细或余料引用时，`DELETE /boards/{id}` 和 `/boards/batch` 返回业务错误。前端应提示用户改为禁用，避免破坏历史订单数据。
+
 ## 认证规则
 
 - `WebConfig` 拦截 `/**`，排除 `/`、`/index.html`、`/assets/**`、`/favicon.ico`、`/auth/*`。
