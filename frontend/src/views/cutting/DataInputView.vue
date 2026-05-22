@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onActivated, watch, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import { ElMessageBox } from 'element-plus/es/components/message-box/index.mjs';
@@ -9,8 +9,8 @@ import OffcutPanel from '@/components/cutting/OffcutPanel.vue';
 import BoardGroupTable from '@/components/cutting/BoardGroupTable.vue';
 import BottomSummaryBar from '@/components/cutting/BottomSummaryBar.vue';
 import { useBoardWorkpieceGroups } from '@/composables/useBoardWorkpieceGroups';
-import { getAlgorithmResult, submitAlgorithm } from '@/api/algorithm';
-import { getOrder } from '@/api/orders';
+import { useAlgorithmSubmit } from '@/composables/useAlgorithmSubmit';
+import { getOrder, getLayoutInput, saveLayoutInput } from '@/api/orders';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,9 +22,6 @@ const orderNo = ref('');
 const orderDate = ref(new Date().toISOString().slice(0, 10));
 const operator = ref('');
 const remark = ref('');
-
-// Offcut selection
-const selectedOffcuts = ref([]);
 
 // Board groups
 const {
@@ -42,12 +39,14 @@ const {
   handleKeydown,
   validateAll,
   buildAlgorithmJobs,
-  getGroupStats
+  getGroupStats,
+  loadFromLayoutInput,
+  buildSavePayload
 } = useBoardWorkpieceGroups();
 
-const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
+const { submitting: confirming, submit: submitAlgorithmJob } = useAlgorithmSubmit();
 
-const confirming = ref(false);
+const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
 
 function onAddBoard(board) {
   addBoardGroup(board);
@@ -63,6 +62,11 @@ async function loadOrderContext(orderId) {
     orderNo.value = order?.orderNo || '';
     orderDate.value = order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
     remark.value = order?.remark || '';
+
+    const layoutInput = await getLayoutInput(id);
+    if (layoutInput?.groups?.length) {
+      loadFromLayoutInput(layoutInput);
+    }
   } catch (e) {
     ElMessage.error(e?.message || '加载订单失败');
   }
@@ -74,12 +78,6 @@ function parseAlgorithmSolutions(result) {
     ? JSON.parse(result.resultJson)
     : result.resultJson;
   return Array.isArray(data) ? data : [data];
-}
-
-async function getCompletedAlgorithmResult(result) {
-  if (result?.resultJson || !result?.taskId) return result;
-  const detail = await getAlgorithmResult(result.taskId);
-  return { ...result, ...detail };
 }
 
 async function onRemoveBoardGroup(groupId) {
@@ -100,9 +98,28 @@ async function onRemoveBoardGroup(groupId) {
   removeBoardGroup(groupId);
 }
 
-function goToCabinetDesign() {
+async function onSave() {
   if (!currentOrderId.value) {
     ElMessage.warning('请先选择或创建一个订单');
+    return;
+  }
+  try {
+    await saveLayoutInput(currentOrderId.value, buildSavePayload());
+    ElMessage.success('保存成功');
+  } catch (e) {
+    ElMessage.error(e?.message || '保存失败');
+  }
+}
+
+async function goToCabinetDesign() {
+  if (!currentOrderId.value) {
+    ElMessage.warning('请先选择或创建一个订单');
+    return;
+  }
+  try {
+    await saveLayoutInput(currentOrderId.value, buildSavePayload());
+  } catch (e) {
+    ElMessage.error(e?.message || '保存失败');
     return;
   }
   router.push({
@@ -129,74 +146,62 @@ async function onConfirm() {
     return;
   }
 
-  confirming.value = true;
-  const draftId = `draft-${Date.now()}`;
+  const jobs = buildAlgorithmJobs();
   const boardResults = [];
   let allSolutions = [];
 
-  try {
-    const jobs = buildAlgorithmJobs();
-    for (const job of jobs) {
-      const payload = {
+  for (const job of jobs) {
+    try {
+      const result = await submitAlgorithmJob({
         L: job.board.length,
         W: job.board.width,
         isRotateEnable: true,
         gapDistance: 3,
         squareList: job.squareList
-      };
-
-      try {
-        const result = await getCompletedAlgorithmResult(
-          await submitAlgorithm(payload, 'tabu_search')
-        );
-        if (result?.status === -1) {
-          throw new Error(result.errorMsg || '算法任务失败');
-        }
-        const solutions = parseAlgorithmSolutions(result);
-        if (!solutions.length) {
-          throw new Error('算法未返回排版结果');
-        }
-        boardResults.push({
-          board: job.board,
-          solutions,
-          bestRate: result?.bestRate,
-          containerCount: result?.containerCount
-        });
-        allSolutions = allSolutions.concat(
-          solutions.map(s => ({ ...s, _boardGroup: job.board }))
-        );
-      } catch (e) {
-        const label = [job.board.brand, job.board.materialType, job.board.color]
-          .filter(Boolean).join(' ');
-        ElMessage.error(`板材"${label}"排版失败：${e.message || '未知错误'}`);
-        return;
-      }
+      });
+      if (result?.status === -1) throw new Error(result.errorMsg || '算法任务失败');
+      const solutions = parseAlgorithmSolutions(result);
+      if (!solutions.length) throw new Error('算法未返回排版结果');
+      boardResults.push({
+        board: job.board, solutions,
+        bestRate: result?.bestRate, containerCount: result?.containerCount
+      });
+      allSolutions.push(...solutions.map(s => ({ ...s, _boardGroup: job.board })));
+    } catch (e) {
+      const label = [job.board.brand, job.board.materialType, job.board.color].filter(Boolean).join(' ');
+      ElMessage.error(`板材"${label}"排版失败：${e.message || '未知错误'}`);
+      return;
     }
-
-    sessionStorage.setItem(`layout-draft-${draftId}`, JSON.stringify({
-      draftId,
-      orderInfo: {
-        orderId: currentOrderId.value,
-        customer: customer.value,
-        orderNo: orderNo.value,
-        orderDate: orderDate.value,
-        operator: operator.value,
-        remark: remark.value
-      },
-      boardResults,
-      mergedSolutions: allSolutions
-    }));
-
-    router.push({
-      name: 'layout-workbench',
-      query: { draftId, orderId: currentOrderId.value }
-    });
-  } catch (e) {
-    ElMessage.error(e.message || '排版提交失败');
-  } finally {
-    confirming.value = false;
   }
+
+  const draftId = `draft-${Date.now()}`;
+  sessionStorage.setItem(`layout-draft-${draftId}`, JSON.stringify({
+    draftId,
+    orderInfo: {
+      orderId: currentOrderId.value, customer: customer.value,
+      orderNo: orderNo.value, orderDate: orderDate.value,
+      operator: operator.value, remark: remark.value
+    },
+    boardResults, mergedSolutions: allSolutions
+  }));
+  router.push({ name: 'layout-workbench', query: { draftId, orderId: currentOrderId.value } });
 }
+
+onActivated(() => {
+  const oid = route.query.orderId;
+  if (oid) {
+    loadOrderContext(oid);
+  }
+});
+
+watch(
+  () => route.query.orderId,
+  (newId) => {
+    if (newId) {
+      loadOrderContext(newId);
+    }
+  }
+);
 
 onMounted(() => {
   if (route.query.orderId) {
@@ -227,7 +232,6 @@ onMounted(() => {
             @remove-board="onRemoveBoardGroup"
           />
           <OffcutPanel
-            v-model="selectedOffcuts"
             :selected-boards="boardGroups.map(g => g.board)"
           />
         </div>
@@ -254,7 +258,9 @@ onMounted(() => {
           :total-area="totalArea"
           :error-count="totalErrors"
           :can-confirm="canConfirm && !confirming"
+          :can-save="!!currentOrderId"
           @confirm="onConfirm"
+          @save="onSave"
         />
         <el-button
           v-if="currentOrderId"

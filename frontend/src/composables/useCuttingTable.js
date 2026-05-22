@@ -1,4 +1,5 @@
 import { ref, computed, nextTick } from 'vue';
+import { validateWorkpieceDimensions } from '@/utils/validation';
 
 let nextId = 1;
 
@@ -76,35 +77,9 @@ export function useCuttingTable(boardOptionsRef) {
   }
 
   function validateRow(row) {
-    const errors = {};
-    const l = Number(row.length);
-    const w = Number(row.width);
-    const qty = Number(row.quantity);
-
-    if (row.length === '' || row.length == null || !Number.isFinite(l) || l <= 0) {
-      errors.length = '必填';
-    } else if (l > 3000) {
-      errors.length = '异常(>3000mm)';
-    } else {
-      const board = getSelectedBoard(row);
-      if (board && l > board.length) errors.length = `超出板材(${board.length}mm)`;
-    }
-
-    if (row.width === '' || row.width == null || !Number.isFinite(w) || w <= 0) {
-      errors.width = '必填';
-    } else if (w > 1500) {
-      errors.width = '异常(>1500mm)';
-    } else {
-      const board = getSelectedBoard(row);
-      if (board && w > board.width) errors.width = `超出板材(${board.width}mm)`;
-    }
-
-    if (row.quantity === '' || row.quantity == null || !Number.isFinite(qty) || qty <= 0) {
-      errors.quantity = '必填';
-    }
-
-    row._validation = errors;
-    return Object.keys(errors).length === 0;
+    const board = getSelectedBoard(row);
+    row._validation = validateWorkpieceDimensions(row, board);
+    return Object.keys(row._validation).length === 0;
   }
 
   function addRow(index) {

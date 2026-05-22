@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { listBoards } from '@/api/boards';
 import { Search, Plus, Delete } from '@element-plus/icons-vue';
+import { boardLabel, dimLabel } from '@/utils/boardLabel';
 
 const props = defineProps({
   boardGroups: { type: Array, default: () => [] }
@@ -65,15 +66,6 @@ function addBoard(board) {
 
 function removeBoard(boardId) {
   emit('remove-board', boardId);
-}
-
-function boardLabel(board) {
-  return [board.brand, board.materialType, board.color, board.sizeType]
-    .filter(Boolean).join(' ');
-}
-
-function dimLabel(board) {
-  return `${board.length || '-'} × ${board.width || '-'} × ${board.thickness || '-'} mm`;
 }
 </script>
 

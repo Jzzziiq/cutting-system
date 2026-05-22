@@ -1,4 +1,5 @@
 import { ref, computed, nextTick } from 'vue';
+import { validateWorkpieceDimensions } from '@/utils/validation';
 
 let nextGroupId = 1;
 let nextItemId = 1;
@@ -65,32 +66,7 @@ export function useBoardWorkpieceGroups() {
   });
 
   function getItemValidationErrors(item, board) {
-    const errors = {};
-    const l = Number(item.length);
-    const w = Number(item.width);
-    const qty = Number(item.quantity);
-
-    if (item.length === '' || item.length == null || !Number.isFinite(l) || l <= 0) {
-      errors.length = '必填';
-    } else if (l > 3000) {
-      errors.length = '异常(>3000mm)';
-    } else if (board && l > board.length) {
-      errors.length = `超出板材(${board.length}mm)`;
-    }
-
-    if (item.width === '' || item.width == null || !Number.isFinite(w) || w <= 0) {
-      errors.width = '必填';
-    } else if (w > 1500) {
-      errors.width = '异常(>1500mm)';
-    } else if (board && w > board.width) {
-      errors.width = `超出板材(${board.width}mm)`;
-    }
-
-    if (item.quantity === '' || item.quantity == null || !Number.isFinite(qty) || qty <= 0) {
-      errors.quantity = '必填';
-    }
-
-    return errors;
+    return validateWorkpieceDimensions(item, board);
   }
 
   function validateItem(item, board) {
@@ -285,6 +261,52 @@ export function useBoardWorkpieceGroups() {
     return { itemCount, area, errors };
   }
 
+  function loadFromLayoutInput(layoutInput) {
+    if (!layoutInput?.groups?.length) {
+      boardGroups.value = [];
+      return;
+    }
+    boardGroups.value = layoutInput.groups.map((group, gi) => ({
+      id: `g${gi + 1}`,
+      board: { ...group.board },
+      items: group.items.map((item, ii) => ({
+        _id: ii + 1,
+        itemName: item.partName || '',
+        length: item.length,
+        width: item.width,
+        quantity: item.quantity,
+        notes: '',
+        _validation: {}
+      })),
+      expanded: true
+    }));
+    nextGroupId = layoutInput.groups.length + 1;
+    nextItemId = Math.max(...boardGroups.value.flatMap(g => g.items.map(i => i._id))) + 1;
+    validateAll();
+  }
+
+  function buildSavePayload() {
+    return {
+      groups: boardGroups.value.map(g => ({
+        boardId: g.board.boardId,
+        items: g.items
+          .filter(item => {
+            const l = Number(item.length);
+            const w = Number(item.width);
+            const qty = Number(item.quantity);
+            return Number.isFinite(l) && l > 0 && Number.isFinite(w) && w > 0 && Number.isFinite(qty) && qty > 0;
+          })
+          .map(item => ({
+            partName: item.itemName || '',
+            length: Number(item.length),
+            width: Number(item.width),
+            quantity: Number(item.quantity),
+            remark: item.notes || ''
+        }))
+      })).filter(g => g.items.length > 0)
+    };
+  }
+
   return {
     boardGroups,
     columns,
@@ -301,6 +323,8 @@ export function useBoardWorkpieceGroups() {
     validateAll,
     buildAlgorithmJobs,
     getGroupStats,
-    focusCellElement
+    focusCellElement,
+    loadFromLayoutInput,
+    buildSavePayload
   };
 }

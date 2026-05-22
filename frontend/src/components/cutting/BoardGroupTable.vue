@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Delete, Plus, ArrowDown, ArrowRight } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus/es/components/message-box/index.mjs';
+import { boardLabel, dimLabel } from '@/utils/boardLabel';
 
 const props = defineProps({
   boardGroups: { type: Array, required: true },
@@ -25,15 +26,6 @@ function isExpanded(groupId) {
 
 function toggleGroup(groupId) {
   expandedGroups.value[groupId] = !isExpanded(groupId);
-}
-
-function boardLabel(board) {
-  return [board.brand, board.materialType, board.color, board.sizeType]
-    .filter(Boolean).join(' ');
-}
-
-function dimLabel(board) {
-  return `${board.length || '-'} × ${board.width || '-'} × ${board.thickness || '-'} mm`;
 }
 
 function getCellClass(item, colKey) {
@@ -96,7 +88,7 @@ function onKeydown(event, groupId, rowIdx, colIdx) {
           </div>
           <div class="group-stats">
             <span class="group-stat">工件 {{ getGroupStats(group).itemCount }}</span>
-            <span class="group-stat">面积 {{ getGroupStats(group).area.toLocaleString() }} mm²</span>
+            <span class="group-stat">面积 {{ (getGroupStats(group).area / 1000000).toFixed(2) }} m²</span>
             <span v-if="getGroupStats(group).errors" class="group-stat group-errors">
               错误 {{ getGroupStats(group).errors }}
             </span>
