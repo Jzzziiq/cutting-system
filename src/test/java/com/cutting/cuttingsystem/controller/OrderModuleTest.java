@@ -20,6 +20,8 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -44,7 +46,7 @@ class OrderModuleTest {
         Page<TOrder> page = new Page<>(1, 10);
         page.setRecords(List.of(order(1L)));
         page.setTotal(1);
-        when(orderService.page(any())).thenReturn(page);
+        when(orderService.page(any(Page.class), any(QueryWrapper.class))).thenReturn(page);
 
         mockMvc.perform(get("/orders")
                         .header("Authorization", bearerToken())

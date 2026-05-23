@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.annotation.AuditLog;
@@ -38,7 +39,14 @@ public class OrderController {
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
         IPage<TOrder> page = new Page<>(query.getPageNum(), query.getPageSize());
-        IPage<TOrderVO> orderVOPage = orderService.page(page).convert(this::toVO);
+        QueryWrapper<TOrder> qw = new QueryWrapper<>();
+        if (query.getSearch() != null && !query.getSearch().isBlank()) {
+            qw.and(w -> w.like("order_no", query.getSearch())
+                    .or().like("process_name", query.getSearch())
+                    .or().like("customer_name", query.getSearch()));
+        }
+        qw.orderByDesc("create_time");
+        IPage<TOrderVO> orderVOPage = orderService.page(page, qw).convert(this::toVO);
         return Result.success(orderVOPage);
     }
 
@@ -107,6 +115,9 @@ public class OrderController {
     private TOrderVO toVO(TOrder order) {
         TOrderVO orderVO = new TOrderVO();
         BeanUtils.copyProperties(order, orderVO);
+        if (order.getOrderStatus() != null) {
+            orderVO.setStatusLabel(OrderStatus.fromCode(order.getOrderStatus()).getLabel());
+        }
         return orderVO;
     }
 }

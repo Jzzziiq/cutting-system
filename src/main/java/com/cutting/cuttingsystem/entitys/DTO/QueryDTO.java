@@ -15,4 +15,6 @@ public class QueryDTO {
     @Min(value = 1, message = "每页条数必须大于等于1")
     @Max(value = 100, message = "每页条数不能超过100")
     private Integer pageSize;
+
+    private String search;
 }
