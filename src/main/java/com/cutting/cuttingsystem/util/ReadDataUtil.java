@@ -39,14 +39,11 @@ public class ReadDataUtil {
         instance.setRotateEnable(dto.isRotateEnable());
         instance.setGapDistance(dto.getGapDistance());
 
-        // 3. 转换 Square 列表，为每个 Square 生成 UUID
+        // 3. 转换 Square 列表，保留原始 ID 或回退到 UUID
         List<Square> squareList = new ArrayList<>();
         for (com.cutting.cuttingsystem.entitys.algorithm.Square square : dto.getSquareList()) {
-            squareList.add(new Square(
-                    UUID.randomUUID().toString(),
-                    square.getL(),
-                    square.getW()
-            ));
+            String id = square.getId() != null ? square.getId() : UUID.randomUUID().toString();
+            squareList.add(new Square(id, square.getL(), square.getW()));
         }
         instance.setSquareList(squareList);
 
@@ -58,7 +55,7 @@ public class ReadDataUtil {
         Instance originInstance = util.getInstanceFromJson(jsonStr);
         List<Square> remainingSquares = new ArrayList<>();
         for (Square sq : originInstance.getSquareList()) {
-            remainingSquares.add(new Square(UUID.randomUUID().toString(), sq.getL(), sq.getW()));
+            remainingSquares.add(new Square(sq.getId(), sq.getL(), sq.getW()));
         }
 
         List<Solution> allContainerSolutions = new ArrayList<>();
