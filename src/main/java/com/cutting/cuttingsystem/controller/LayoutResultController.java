@@ -13,6 +13,7 @@ import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.VO.TLayoutResultVO;
 import com.cutting.cuttingsystem.service.TLayoutResultService;
 import com.cutting.cuttingsystem.service.TOrderService;
+import com.cutting.cuttingsystem.service.TProductionTaskService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.beans.BeanUtils;
@@ -39,6 +40,9 @@ public class LayoutResultController {
 
     @Autowired
     private TOrderService orderService;
+
+    @Autowired
+    private TProductionTaskService productionTaskService;
 
     @GetMapping
     public Result pageQuery(@Valid QueryDTO query) {
@@ -95,9 +99,15 @@ public class LayoutResultController {
             TOrder order = orderService.getById(layoutResult.getOrderId());
             if (order != null) {
                 vo.setOrderNo(order.getOrderNo());
-                vo.setOrderName(order.getOrderNo());
+                vo.setOrderName(order.getProcessName());
                 vo.setCustomer(order.getCustomerName());
             }
+            productionTaskService.listByOrderId(layoutResult.getOrderId()).stream()
+                    .findFirst()
+                    .ifPresent(task -> {
+                        vo.setAssigneeId(task.getAssigneeId());
+                        vo.setAssigneeName(task.getAssigneeName());
+                    });
         }
         return vo;
     }

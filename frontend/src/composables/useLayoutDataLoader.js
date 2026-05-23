@@ -110,9 +110,18 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
       currentLayoutInput.value = null;
       boardResults.value = draft.boardResults || [];
       solutions.value = draft.mergedSolutions || [];
-      const totalRate = boardResults.value.length
-        ? boardResults.value.reduce((s, r) => s + (r.bestRate || 0), 0) / boardResults.value.length
-        : 0;
+      let totalRate = 0;
+      if (boardResults.value.length) {
+        let weightedSum = 0;
+        let totalArea = 0;
+        for (const r of boardResults.value) {
+          const board = r.board || {};
+          const area = (board.length || 0) * (board.width || 0);
+          weightedSum += (r.bestRate || 0) * area;
+          totalArea += area;
+        }
+        totalRate = totalArea > 0 ? weightedSum / totalArea : 0;
+      }
       const boardGroupLabels = boardResults.value.map(br =>
         [br.board?.brand, br.board?.materialType, br.board?.color].filter(Boolean).join(' ') || '未知板材'
       );
@@ -243,6 +252,10 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
     }
   }
 
+  function resetRouteKey() {
+    lastRouteLoadKey.value = '';
+  }
+
   return {
     solutions,
     loadingCanvas,
@@ -252,6 +265,7 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
     draftData,
     boardResults,
     currentLayoutInput,
+    resetRouteKey,
     loadFromOrder,
     loadFromTask,
     loadFromDraft,

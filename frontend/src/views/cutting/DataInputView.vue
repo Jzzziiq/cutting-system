@@ -49,6 +49,7 @@ const {
 
 const { submitting: confirming, submit: submitAlgorithmJob } = useAlgorithmSubmit();
 
+const selectedOffcuts = ref([]);
 const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
 
 function displayOrderNo(order, fallbackId) {
@@ -251,6 +252,7 @@ onMounted(() => {
             @remove-board="onRemoveBoardGroup"
           />
           <OffcutPanel
+            v-model="selectedOffcuts"
             :selected-boards="boardGroups.map(g => g.board)"
           />
         </div>
