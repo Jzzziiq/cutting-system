@@ -39,7 +39,7 @@ public class LayoutInputVO {
 
     @Data
     public static class AlgorithmConfigVO {
-        private int gapDistance = 3;
-        private boolean allowRotation = false;
+        private Integer gapDistance;
+        private Boolean allowRotation;
     }
 }

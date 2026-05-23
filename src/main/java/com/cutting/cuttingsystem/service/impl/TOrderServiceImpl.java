@@ -253,8 +253,8 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
 
         vo.setGroups(groups);
         LayoutInputVO.AlgorithmConfigVO algoConfig = new LayoutInputVO.AlgorithmConfigVO();
-        algoConfig.setGapDistance(3);
-        algoConfig.setAllowRotation(!hasTextureItems);
+        algoConfig.setGapDistance(null);
+        algoConfig.setAllowRotation(hasTextureItems ? false : null);
         vo.setAlgorithmConfig(algoConfig);
         return vo;
     }
@@ -285,9 +285,16 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
                 item.setBoardId(group.getBoardId());
                 item.setThickness(thickness);
                 item.setPartName(itemDTO.getPartName());
+                item.setPartCode(itemDTO.getPartCode());
                 item.setLength(itemDTO.getLength());
                 item.setWidth(itemDTO.getWidth());
                 item.setQuantity(itemDTO.getQuantity());
+                item.setIsTexture(itemDTO.getIsTexture());
+                item.setAllowRotation(itemDTO.getAllowRotation());
+                item.setEdgeLeft(itemDTO.getEdgeLeft());
+                item.setEdgeRight(itemDTO.getEdgeRight());
+                item.setEdgeTop(itemDTO.getEdgeTop());
+                item.setEdgeBottom(itemDTO.getEdgeBottom());
                 item.setRemark(itemDTO.getRemark());
                 items.add(item);
             }
