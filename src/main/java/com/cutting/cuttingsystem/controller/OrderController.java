@@ -84,8 +84,8 @@ public class OrderController {
     @DeleteMapping("/{id}")
     @AuditLog(module = "订单管理", action = "删除")
     public Result deleteById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
-        boolean removed = orderService.removeById(id);
-        return removed ? Result.success() : Result.error("delete order failed");
+        int deleted = orderService.deleteByIdIgnoreTenant(id);
+        return deleted > 0 ? Result.success() : Result.error("删除失败，订单不存在");
     }
 
     @PutMapping("/{id}/status")

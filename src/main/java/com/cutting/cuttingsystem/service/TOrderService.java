@@ -18,4 +18,6 @@ public interface TOrderService extends IService<TOrder> {
     Object getLayoutInput(Long orderId);
 
     void saveLayoutInput(Long orderId, LayoutInputSaveDTO dto);
+
+    int deleteByIdIgnoreTenant(Long orderId);
 }

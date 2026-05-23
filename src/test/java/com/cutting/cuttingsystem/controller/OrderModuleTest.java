@@ -268,7 +268,7 @@ class OrderModuleTest {
 
     @Test
     void deleteOrderReturnsSuccessWhenRemoveSucceeds() throws Exception {
-        when(orderService.removeById(1L)).thenReturn(true);
+        when(orderService.deleteByIdIgnoreTenant(1L)).thenReturn(1);
 
         mockMvc.perform(delete("/orders/1")
                         .header("Authorization", bearerToken()))
@@ -278,13 +278,13 @@ class OrderModuleTest {
 
     @Test
     void deleteOrderReturnsBusinessErrorWhenRemoveFails() throws Exception {
-        when(orderService.removeById(999L)).thenReturn(false);
+        when(orderService.deleteByIdIgnoreTenant(999L)).thenReturn(0);
 
         mockMvc.perform(delete("/orders/999")
                         .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.msg").value("delete order failed"));
+                .andExpect(jsonPath("$.msg").value("删除失败，订单不存在"));
     }
 
     @Test

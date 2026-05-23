@@ -2,6 +2,7 @@ package com.cutting.cuttingsystem.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cutting.cuttingsystem.entitys.TProductionTask;
+import com.cutting.cuttingsystem.entitys.VO.TProductionTaskDetailVO;
 import com.cutting.cuttingsystem.entitys.VO.TProductionTaskVO;
 
 import java.util.List;
@@ -17,9 +18,17 @@ public interface TProductionTaskService extends IService<TProductionTask> {
 
     TProductionTaskVO assignTask(Long taskId, Long assigneeId, String assigneeName);
 
+    TProductionTaskVO assignOrderTask(Long orderId, Long assigneeId);
+
     TProductionTaskVO transitionStatus(Long taskId, int targetStatus, String remark);
 
     List<TProductionTaskVO> listByOrderId(Long orderId);
 
+    List<TProductionTaskVO> listMyTasks(Long assigneeId);
+
+    TProductionTaskDetailVO getMyTaskDetail(Long taskId, Long assigneeId);
+
     Map<Integer, List<TProductionTaskVO>> kanbanData();
+
+    int deleteByIdIgnoreTenant(Long taskId);
 }

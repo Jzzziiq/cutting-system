@@ -302,4 +302,9 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
         BeanUtils.copyProperties(item, itemVO);
         return itemVO;
     }
+
+    @Override
+    public int deleteByIdIgnoreTenant(Long orderId) {
+        return baseMapper.deleteByIdIgnoreTenant(orderId);
+    }
 }
