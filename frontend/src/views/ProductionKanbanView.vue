@@ -253,6 +253,11 @@ function onDrop(e, targetStatus) {
   if (!raw) return;
   const { taskId, status: fromStatus } = JSON.parse(raw);
   if (fromStatus === targetStatus) return;
+  const validTransitions = { 0: [1], 1: [2], 2: [] };
+  if (!validTransitions[fromStatus]?.includes(targetStatus)) {
+    ElMessage.warning('该状态转换不被允许');
+    return;
+  }
   doTransition(taskId, targetStatus);
 }
 
