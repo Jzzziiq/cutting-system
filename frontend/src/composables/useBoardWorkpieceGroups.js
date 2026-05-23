@@ -298,9 +298,16 @@ export function useBoardWorkpieceGroups() {
           })
           .map(item => ({
             partName: item.itemName || '',
+            partCode: item.partCode || '',
             length: Number(item.length),
             width: Number(item.width),
             quantity: Number(item.quantity),
+            isTexture: item.isTexture ?? null,
+            allowRotation: item.allowRotation ?? null,
+            edgeLeft: item.edgeLeft ?? null,
+            edgeRight: item.edgeRight ?? null,
+            edgeTop: item.edgeTop ?? null,
+            edgeBottom: item.edgeBottom ?? null,
             remark: item.notes || ''
         }))
       })).filter(g => g.items.length > 0)

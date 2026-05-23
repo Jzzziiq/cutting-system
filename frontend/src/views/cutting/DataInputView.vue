@@ -11,9 +11,11 @@ import BottomSummaryBar from '@/components/cutting/BottomSummaryBar.vue';
 import { useBoardWorkpieceGroups } from '@/composables/useBoardWorkpieceGroups';
 import { useAlgorithmSubmit } from '@/composables/useAlgorithmSubmit';
 import { getOrder, getLayoutInput, saveLayoutInput } from '@/api/orders';
+import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 // Order info
 const currentOrderId = ref(null);
@@ -22,6 +24,7 @@ const orderNo = ref('');
 const orderDate = ref(new Date().toISOString().slice(0, 10));
 const operator = ref('');
 const remark = ref('');
+const currentOperatorName = computed(() => authStore.user?.realName || authStore.user?.username || '');
 
 // Board groups
 const {
@@ -48,6 +51,17 @@ const { submitting: confirming, submit: submitAlgorithmJob } = useAlgorithmSubmi
 
 const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
 
+function displayOrderNo(order, fallbackId) {
+  const id = order?.orderId ?? fallbackId;
+  return id ? String(id) : '';
+}
+
+function applyDefaultOperator() {
+  if (!operator.value && currentOperatorName.value) {
+    operator.value = currentOperatorName.value;
+  }
+}
+
 function onAddBoard(board) {
   addBoardGroup(board);
 }
@@ -59,9 +73,10 @@ async function loadOrderContext(orderId) {
     const order = await getOrder(id);
     currentOrderId.value = id;
     customer.value = order?.customerName || '';
-    orderNo.value = order?.orderNo || '';
+    orderNo.value = displayOrderNo(order, id);
     orderDate.value = order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
     remark.value = order?.remark || '';
+    applyDefaultOperator();
 
     const layoutInput = await getLayoutInput(id);
     if (layoutInput?.groups?.length) {
@@ -152,10 +167,11 @@ async function onConfirm() {
 
   for (const job of jobs) {
     try {
+      const hasTexture = job.squareList.some(s => s.isTexture === 1);
       const result = await submitAlgorithmJob({
         L: job.board.length,
         W: job.board.width,
-        isRotateEnable: true,
+        isRotateEnable: !hasTexture,
         gapDistance: 3,
         squareList: job.squareList
       });
@@ -188,6 +204,7 @@ async function onConfirm() {
 }
 
 onActivated(() => {
+  applyDefaultOperator();
   const oid = route.query.orderId;
   if (oid) {
     loadOrderContext(oid);
@@ -197,6 +214,7 @@ onActivated(() => {
 watch(
   () => route.query.orderId,
   (newId) => {
+    applyDefaultOperator();
     if (newId) {
       loadOrderContext(newId);
     }
@@ -204,6 +222,7 @@ watch(
 );
 
 onMounted(() => {
+  applyDefaultOperator();
   if (route.query.orderId) {
     loadOrderContext(route.query.orderId);
   }
