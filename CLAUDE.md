@@ -15,6 +15,8 @@ This file is the Claude Code entry point for this repository. `AGENTS.md` is the
 - For data model changes, check entity, DTO, VO, Mapper/XML, migration scripts, frontend API clients, miniprogram pages, and tests.
 - For algorithm changes, prioritize `src/test/java/com/cutting/cuttingsystem/model/AlgorithmUnitTest.java` and cover fit, rotation, gap, empty list, and multi-container scenarios.
 - Use relevant, low-cost verification by default. Do not run full tests, browser automation, E2E, or long service integration unless the user asks; provide the recommended test plan when not run.
+- If changes include SQL migration scripts, execute them directly against local MySQL using credentials from `src/main/resources/application-local.yml` (password) and `application.yml` (host/port/dbname). Verify with `SHOW COLUMNS` after execution.
+- User mentions of "写入规则" or "记录规则" refer to `CLAUDE.md` (project root) or `src/CLAUDE.md` / `frontend/CLAUDE.md` (subdirectory-specific), not memory files.
 
 ## Maintenance
 
