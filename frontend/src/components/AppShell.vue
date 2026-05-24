@@ -1,89 +1,58 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
-const sidebarExpanded = ref(true);
-let expandTimer = null;
-let collapseTimer = null;
 
 const navItems = [
-  { name: 'dashboard', label: '工作台', perm: null },
+  // system admin
+  { name: 'admin-dashboard', label: '系统概览', perm: 'account:manage', adminOnly: true },
+  { name: 'organizations', label: '组织管理', perm: 'account:manage', adminOnly: true },
+  { name: 'users', label: '账号管理', perm: 'account:manage', adminOnly: true },
+
+  // org admin
+  { name: 'dashboard', label: '工作台', perm: 'board:read', orgAdminOnly: true, operatorExcluded: true },
+  { name: 'production-board', label: '生产看板', perm: 'board:read' },
   { name: 'customers', label: '客户管理', perm: 'customer:read' },
   { name: 'boards', label: '板材管理', perm: 'board:read' },
-  { name: 'production-board', label: '生产看板', perm: 'order:read' },
+  { name: 'org-users', label: '成员管理', perm: 'user:manage' },
+  { name: 'audit-logs', label: '审计日志', perm: 'audit:read' },
+
+  // operator
   { name: 'data-input', label: '加工数据输入', perm: 'order:write' },
   { name: 'layout-workbench', label: '排版工作台', perm: 'layout:read' },
-  { name: 'users', label: '用户管理', perm: 'user:manage' },
-  { name: 'audit-logs', label: '审计日志', perm: 'user:manage' }
+
+  // producer
+  { name: 'producer-tasks', label: '我的任务', perm: 'production:read', producerOnly: true },
+
+  // common
+  { name: 'profile', label: '个人设置', perm: null }
 ];
 
 const visibleItems = computed(() =>
-  navItems.filter((item) => !item.perm || auth.hasPermission(item.perm))
+  navItems.filter((item) => {
+    if (item.adminOnly) return auth.isSystemAdmin;
+    if (item.producerOnly) return auth.isProducer;
+    if (item.orgAdminExcluded && auth.isOrgAdmin) return false;
+    if (item.operatorExcluded && (auth.isOperator || auth.isProducer)) return false;
+    if (item.orgAdminOnly) return auth.isOrgAdmin;
+    if (item.operatorOnly) return auth.isOperator || auth.isProducer;
+    if (item.perm) return auth.hasPermission(item.perm);
+    return true;
+  })
 );
-
-function clearExpandTimer() {
-  if (!expandTimer) return;
-  window.clearTimeout(expandTimer);
-  expandTimer = null;
-}
-
-function clearCollapseTimer() {
-  if (!collapseTimer) return;
-  window.clearTimeout(collapseTimer);
-  collapseTimer = null;
-}
-
-function clearSidebarTimers() {
-  clearExpandTimer();
-  clearCollapseTimer();
-}
-
-function expandSidebar() {
-  clearSidebarTimers();
-  sidebarExpanded.value = true;
-}
-
-function scheduleExpandSidebar() {
-  clearSidebarTimers();
-  expandTimer = window.setTimeout(() => {
-    sidebarExpanded.value = true;
-    expandTimer = null;
-  }, 150);
-}
-
-function scheduleCollapseSidebar() {
-  clearSidebarTimers();
-  collapseTimer = window.setTimeout(() => {
-    sidebarExpanded.value = false;
-    collapseTimer = null;
-  }, 120);
-}
 
 function logout() {
   auth.logout();
   router.replace({ name: 'login' });
 }
-
-onBeforeUnmount(clearSidebarTimers);
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'sidebar-collapsed': !sidebarExpanded }">
-    <div
-      class="sidebar-edge"
-      aria-hidden="true"
-      @mouseenter="scheduleExpandSidebar"
-      @mouseleave="clearExpandTimer"
-    ></div>
-    <aside
-      class="sidebar"
-      @mouseenter="expandSidebar"
-      @mouseleave="scheduleCollapseSidebar"
-      @focusin="expandSidebar"
-    >
+  <div class="app-shell">
+    <aside class="sidebar">
       <div class="brand-block">
         <div class="brand-title">板材切割系统</div>
         <div class="brand-subtitle">Web Console</div>
@@ -109,7 +78,7 @@ onBeforeUnmount(clearSidebarTimers);
       </div>
     </aside>
 
-    <main class="main-panel" @focusin="scheduleCollapseSidebar" @mouseenter="scheduleCollapseSidebar">
+    <main class="main-panel">
       <section class="content-panel">
         <router-view v-slot="{ Component }">
           <keep-alive :max="10">

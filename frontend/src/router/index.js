@@ -3,12 +3,19 @@ import { useAuthStore } from '@/stores/auth';
 import AppShell from '@/components/AppShell.vue';
 
 const LoginView = () => import('@/views/LoginView.vue');
+const RegisterView = () => import('@/views/RegisterView.vue');
 const DashboardView = () => import('@/views/DashboardView.vue');
+const AdminDashboardView = () => import('@/views/AdminDashboardView.vue');
 const CustomersView = () => import('@/views/CustomersView.vue');
 const BoardsView = () => import('@/views/BoardsView.vue');
 const UsersView = () => import('@/views/UsersView.vue');
+const OrganizationsView = () => import('@/views/OrganizationsView.vue');
+const OrgUsersView = () => import('@/views/OrgUsersView.vue');
 const AuditLogView = () => import('@/views/AuditLogView.vue');
 const ProductionKanbanView = () => import('@/views/ProductionKanbanView.vue');
+const ProductionMyOrdersView = () => import('@/views/ProductionMyOrdersView.vue');
+const ProfileView = () => import('@/views/ProfileView.vue');
+const ProducerTasksView = () => import('@/views/ProducerTasksView.vue');
 
 const routes = [
   {
@@ -16,6 +23,12 @@ const routes = [
     name: 'login',
     component: LoginView,
     meta: { public: true, title: '登录' }
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: { public: true, title: '注册' }
   },
   {
     path: '/',
@@ -29,52 +42,88 @@ const routes = [
         meta: { title: '工作台' }
       },
       {
+        path: 'admin/dashboard',
+        name: 'admin-dashboard',
+        component: AdminDashboardView,
+        meta: { title: '系统概览', perm: 'account:manage' }
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: ProfileView,
+        meta: { title: '个人设置' }
+      },
+      {
+        path: 'producer/tasks',
+        name: 'producer-tasks',
+        component: ProducerTasksView,
+        meta: { title: '我的任务', perm: 'production:read' }
+      },
+      {
         path: 'customers',
         name: 'customers',
         component: CustomersView,
-        meta: { title: '客户管理' }
+        meta: { title: '客户管理', perm: 'customer:read' }
       },
       {
         path: 'boards',
         name: 'boards',
         component: BoardsView,
-        meta: { title: '板材管理' }
+        meta: { title: '板材管理', perm: 'board:read' }
       },
       {
         path: 'users',
         name: 'users',
         component: UsersView,
-        meta: { title: '用户管理' }
+        meta: { title: '账号管理', perm: 'account:manage' }
+      },
+      {
+        path: 'organizations',
+        name: 'organizations',
+        component: OrganizationsView,
+        meta: { title: '组织管理', perm: 'account:manage' }
+      },
+      {
+        path: 'org-users',
+        name: 'org-users',
+        component: OrgUsersView,
+        meta: { title: '成员管理', perm: 'user:manage' }
       },
       {
         path: 'audit-logs',
         name: 'audit-logs',
         component: AuditLogView,
-        meta: { title: '审计日志' }
+        meta: { title: '审计日志', perm: 'audit:read' }
       },
       {
         path: 'production-board',
         name: 'production-board',
         component: ProductionKanbanView,
-        meta: { title: '生产看板' }
+        meta: { title: '生产看板', perm: 'board:read' }
+      },
+      {
+        path: 'production/my-orders',
+        name: 'production-my-orders',
+        component: ProductionMyOrdersView,
+        meta: { title: '我的生产订单', perm: 'order:read' }
       },
       {
         path: 'cutting/data-input',
         name: 'data-input',
         component: () => import('@/views/cutting/DataInputView.vue'),
-        meta: { title: '加工数据输入' }
+        meta: { title: '加工数据输入', perm: 'order:write' }
       },
       {
         path: 'cutting/layout-workbench',
         name: 'layout-workbench',
         component: () => import('@/views/cutting/LayoutWorkbenchView.vue'),
-        meta: { title: '排版工作台' }
+        meta: { title: '排版工作台', perm: 'layout:read' }
       },
       {
         path: 'cutting/cabinet-design',
         name: 'cabinet-design',
         component: () => import('@/views/cutting/CabinetDesignView.vue'),
-        meta: { title: '3D 柜体设计' }
+        meta: { title: '3D 柜体设计', perm: 'order:write' }
       }
     ]
   },
@@ -98,6 +147,21 @@ router.beforeEach((to) => {
   }
 
   if (to.name === 'login' && auth.isAuthenticated) {
+    // role-based default landing page
+    if (auth.isSystemAdmin) return { name: 'admin-dashboard' };
+    if (auth.isProducer) return { name: 'producer-tasks' };
+    return { name: 'dashboard' };
+  }
+
+  if (to.meta.operatorOnly && !auth.isOperator && !auth.isProducer) {
+    if (auth.isSystemAdmin) return { name: 'admin-dashboard' };
+    return { name: 'dashboard' };
+  }
+
+  if (to.meta.perm && !auth.hasPermission(to.meta.perm)) {
+    // redirect to appropriate default page
+    if (auth.isSystemAdmin) return { name: 'admin-dashboard' };
+    if (auth.isProducer) return { name: 'producer-tasks' };
     return { name: 'dashboard' };
   }
 
