@@ -547,9 +547,10 @@ onBeforeUnmount(() => {
         <el-tooltip content="视角复位" placement="bottom">
           <el-button size="small" :icon="Aim" circle :disabled="!hasCabinet" @click="onResetView" />
         </el-tooltip>
-        <el-button size="small" :disabled="!activeCabinetJson" @click="onSaveTemplate">保存当前柜体为模板</el-button>
+        <el-button v-permission="'order:write'" size="small" :disabled="!activeCabinetJson" @click="onSaveTemplate">保存当前柜体为模板</el-button>
         <el-button size="small" :disabled="!hasCabinet" @click="onOpenSlotMap">板材映射</el-button>
         <el-button
+          v-permission="'order:write'"
           size="small"
           type="success"
           :disabled="!hasCabinet || store.splitting"

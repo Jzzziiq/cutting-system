@@ -22,7 +22,15 @@ export const useAuthStore = defineStore('auth', {
     displayName: (state) => state.user?.realName || state.user?.username || '用户',
     permissions: (state) => state.user?.permissions || [],
     roles: (state) => state.user?.roles || [],
-    hasPermission: (state) => (code) => (state.user?.permissions || []).includes(code)
+    orgId: (state) => state.user?.orgId || null,
+    orgRole: (state) => state.user?.orgRole || null,
+    isOrgAdmin: (state) => state.user?.orgRole === 'org_admin',
+    isAdmin: (state) => (state.user?.roles || []).includes('admin'),
+    isSystemAdmin: (state) => (state.user?.roles || []).includes('admin') && !state.user?.orgId,
+    isProducer: (state) => (state.user?.roles || []).includes('viewer'),
+    isOperator: (state) => (state.user?.roles || []).includes('operator'),
+    hasPermission: (state) => (code) => (state.user?.permissions || []).includes(code),
+    hasRole: (state) => (code) => (state.user?.roles || []).includes(code)
   },
   actions: {
     async login(credentials) {
@@ -32,6 +40,12 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem(TOKEN_KEY, this.token);
       localStorage.setItem(USER_KEY, JSON.stringify(this.user));
       return user;
+    },
+    setUser(user) {
+      this.token = user?.token || '';
+      this.user = user || null;
+      localStorage.setItem(TOKEN_KEY, this.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(this.user));
     },
     logout() {
       this.token = '';

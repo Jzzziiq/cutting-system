@@ -9,7 +9,6 @@ import OffcutPanel from '@/components/cutting/OffcutPanel.vue';
 import BoardGroupTable from '@/components/cutting/BoardGroupTable.vue';
 import BottomSummaryBar from '@/components/cutting/BottomSummaryBar.vue';
 import { useBoardWorkpieceGroups } from '@/composables/useBoardWorkpieceGroups';
-import { useAlgorithmSubmit } from '@/composables/useAlgorithmSubmit';
 import { getOrder, getLayoutInput, saveLayoutInput } from '@/api/orders';
 import { useAuthStore } from '@/stores/auth';
 
@@ -41,13 +40,10 @@ const {
   handlePaste,
   handleKeydown,
   validateAll,
-  buildAlgorithmJobs,
   getGroupStats,
   loadFromLayoutInput,
   buildSavePayload
 } = useBoardWorkpieceGroups();
-
-const { submitting: confirming, submit: submitAlgorithmJob } = useAlgorithmSubmit();
 
 const selectedOffcuts = ref([]);
 const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
@@ -75,7 +71,7 @@ async function loadOrderContext(orderId) {
     currentOrderId.value = id;
     customer.value = order?.customerName || '';
     orderNo.value = displayOrderNo(order, id);
-    orderDate.value = order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
+    orderDate.value = order?.dispatchDate || order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
     remark.value = order?.remark || '';
     applyDefaultOperator();
 
@@ -86,14 +82,6 @@ async function loadOrderContext(orderId) {
   } catch (e) {
     ElMessage.error(e?.message || '加载订单失败');
   }
-}
-
-function parseAlgorithmSolutions(result) {
-  if (!result?.resultJson) return [];
-  const data = typeof result.resultJson === 'string'
-    ? JSON.parse(result.resultJson)
-    : result.resultJson;
-  return Array.isArray(data) ? data : [data];
 }
 
 async function onRemoveBoardGroup(groupId) {
@@ -162,46 +150,15 @@ async function onConfirm() {
     return;
   }
 
-  const jobs = buildAlgorithmJobs();
-  const boardResults = [];
-  let allSolutions = [];
-
-  for (const job of jobs) {
-    try {
-      const hasTexture = job.squareList.some(s => s.isTexture === 1);
-      const result = await submitAlgorithmJob({
-        L: job.board.length,
-        W: job.board.width,
-        isRotateEnable: !hasTexture,
-        gapDistance: 3,
-        squareList: job.squareList
-      });
-      if (result?.status === -1) throw new Error(result.errorMsg || '算法任务失败');
-      const solutions = parseAlgorithmSolutions(result);
-      if (!solutions.length) throw new Error('算法未返回排版结果');
-      boardResults.push({
-        board: job.board, solutions,
-        bestRate: result?.bestRate, containerCount: result?.containerCount
-      });
-      allSolutions.push(...solutions.map(s => ({ ...s, _boardGroup: job.board })));
-    } catch (e) {
-      const label = [job.board.brand, job.board.materialType, job.board.color].filter(Boolean).join(' ');
-      ElMessage.error(`板材"${label}"排版失败：${e.message || '未知错误'}`);
-      return;
-    }
+  try {
+    await saveLayoutInput(currentOrderId.value, buildSavePayload());
+    ElMessage.success('排版输入已保存，进入排版工作台');
+  } catch (e) {
+    ElMessage.error('保存排版输入失败：' + (e.message || '未知错误'));
+    return;
   }
 
-  const draftId = `draft-${Date.now()}`;
-  sessionStorage.setItem(`layout-draft-${draftId}`, JSON.stringify({
-    draftId,
-    orderInfo: {
-      orderId: currentOrderId.value, customer: customer.value,
-      orderNo: orderNo.value, orderDate: orderDate.value,
-      operator: operator.value, remark: remark.value
-    },
-    boardResults, mergedSolutions: allSolutions
-  }));
-  router.push({ name: 'layout-workbench', query: { draftId, orderId: currentOrderId.value } });
+  router.push({ name: 'layout-workbench', query: { orderId: currentOrderId.value } });
 }
 
 onActivated(() => {
@@ -278,13 +235,14 @@ onMounted(() => {
           :board-type-count="groupCount"
           :total-area="totalArea"
           :error-count="totalErrors"
-          :can-confirm="canConfirm && !confirming"
+          :can-confirm="canConfirm"
           :can-save="!!currentOrderId"
           @confirm="onConfirm"
           @save="onSave"
         />
         <el-button
           v-if="currentOrderId"
+          v-permission="'order:write'"
           type="success"
           size="large"
           @click="goToCabinetDesign"

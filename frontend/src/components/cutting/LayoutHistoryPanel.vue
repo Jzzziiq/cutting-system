@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { Delete } from '@element-plus/icons-vue';
 import { listLayoutResults } from '@/api/layout-results';
 
@@ -14,11 +14,10 @@ const records = ref([]);
 const loading = ref(false);
 const searchQuery = ref('');
 
-const statusLabels = {
-  'pending': { text: '未开始', type: 'info' },
-  'running': { text: '计算中', type: 'warning' },
-  'done': { text: '已完成', type: 'success' },
-  'failed': { text: '计算失败', type: 'danger' }
+const taskStatusMap = {
+  0: { text: '待生产', type: 'info' },
+  1: { text: '生产中', type: 'warning' },
+  2: { text: '已完成', type: 'success' }
 };
 
 async function loadRecords() {
@@ -112,8 +111,8 @@ watch(() => props.refreshKey, () => { loadRecords(); });
         <div class="hi-head">
           <span class="hi-order">{{ rec.orderNo || rec.orderName || `排版 #${rec.resultId}` }}</span>
           <div class="hi-actions" @click.stop>
-            <el-tag size="small" :type="(statusLabels[rec.status] || statusLabels.pending).type">
-              {{ (statusLabels[rec.status] || statusLabels.pending).text }}
+            <el-tag v-if="rec.taskStatus != null" size="small" :type="(taskStatusMap[rec.taskStatus] || taskStatusMap[0]).type">
+              {{ rec.taskStatusLabel || (taskStatusMap[rec.taskStatus] || taskStatusMap[0]).text }}
             </el-tag>
             <el-tooltip content="删除排版结果" placement="top">
               <el-button
@@ -136,6 +135,7 @@ watch(() => props.refreshKey, () => { loadRecords(); });
         <div class="hi-foot">
           <span>{{ formatTime(rec.createTime) }}</span>
           <span v-if="rec.containerCount != null">{{ rec.containerCount }} 张板材</span>
+          <span v-if="rec.assigneeName" class="hi-assignee">已分配：{{ rec.assigneeName }}</span>
         </div>
       </div>
     </div>
@@ -207,5 +207,10 @@ watch(() => props.refreshKey, () => { loadRecords(); });
   margin-top: 4px;
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+}
+.hi-assignee {
+  color: #0f766e;
+  font-weight: 700;
 }
 </style>

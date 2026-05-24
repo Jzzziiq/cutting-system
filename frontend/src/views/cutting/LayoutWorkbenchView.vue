@@ -40,6 +40,7 @@ const {
   orderInfo,
   boardResults,
   currentLayoutInput,
+  loadOrderMeta,
   loadFromOrder,
   loadFromRoute,
   onSelectRecord,
@@ -66,12 +67,17 @@ async function onStartLayout() {
   if (currentLayoutInput.value?.groups?.length) {
     const ok = await loadFromOrder(orderId, settings);
     if (ok !== false) {
+      await onSaveResult();
       ElMessage.success('排版计算完成');
     }
     return;
   }
   if (orderId > 0) {
-    await loadFromOrder(orderId, settings);
+    const ok = await loadFromOrder(orderId, settings);
+    if (ok !== false) {
+      await onSaveResult();
+      ElMessage.success('排版计算完成');
+    }
     return;
   }
 
@@ -198,6 +204,10 @@ async function submitAssignOrder() {
     await assignOrderTask(assignRecord.value.orderId, Number(assignAssigneeId.value));
     ElMessage.success('生产任务已分配');
     assignDialogVisible.value = false;
+    // 重新加载 orderInfo 以同步 taskStatus
+    if (orderInfo.value?.orderId) {
+      await loadOrderMeta(Number(orderInfo.value.orderId));
+    }
     historyRefreshKey.value++;
   } catch (e) {
     ElMessage.error(e?.message || '分配生产失败');
@@ -227,12 +237,25 @@ function onBackToEdit() {
 // --- Route loading ---
 onActivated(() => {
   resetRouteKey();
-  loadFromRoute(settings);
+  const orderId = route.query.orderId;
+  const draftId = route.query.draftId;
+  const taskId = route.query.taskId;
+  if (draftId) {
+    loadFromRoute(settings);
+  } else if (orderId) {
+    loadOrderMeta(Number(orderId));
+  } else if (taskId) {
+    loadFromRoute(settings);
+  } else {
+    currentLayoutInput.value = null;
+    solutions.value = [];
+  }
 });
 watch(
-  () => [route.query.draftId, route.query.orderId, route.query.taskId],
-  () => loadFromRoute(settings),
-  { immediate: true }
+  () => route.query.orderId,
+  (id) => {
+    if (id) loadOrderMeta(Number(id));
+  }
 );
 </script>
 
@@ -250,9 +273,18 @@ watch(
         @fit-screen="onFitScreen"
         @export-toolpath="onExportToolpath"
         @export-file="onExportFile"
-        @save-result="onSaveResult"
         @back-to-edit="onBackToEdit"
       />
+
+      <div v-if="orderInfo?.orderId" class="order-header">
+        <div class="order-header-info">
+          <span class="order-header-no">{{ orderInfo.orderNo || `订单 #${orderInfo.orderId}` }}</span>
+          <span v-if="orderInfo.customer" class="order-header-customer">{{ orderInfo.customer }}</span>
+          <span v-if="orderInfo.totalPieces" class="order-header-meta">共 {{ orderInfo.totalPieces }} 件</span>
+          <span v-if="orderInfo.boardGroupCount" class="order-header-meta">{{ orderInfo.boardGroupCount }} 种板材</span>
+        </div>
+        <el-button v-permission="'order:write'" size="small" type="primary" @click="onAssignRecord(orderInfo)">分配生产</el-button>
+      </div>
 
       <div class="workbench-layout">
         <LayoutHistoryPanel
@@ -260,7 +292,6 @@ watch(
           :refresh-key="historyRefreshKey"
           @select-record="onSelectRecord"
           @delete-record="onDeleteRecord"
-          @assign-record="onAssignRecord"
         />
 
         <LayoutCanvas
@@ -298,7 +329,7 @@ watch(
         </el-form>
         <template #footer>
           <el-button @click="showSettings = false">取消</el-button>
-          <el-button type="primary" @click="onSaveSettings">确认</el-button>
+          <el-button v-permission="'order:write'" type="primary" @click="onSaveSettings">确认</el-button>
         </template>
       </el-dialog>
 
@@ -339,7 +370,7 @@ watch(
         </el-form>
         <template #footer>
           <el-button @click="assignDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="assignSubmitting" @click="submitAssignOrder">确认分配</el-button>
+          <el-button v-permission="'order:write'" type="primary" :loading="assignSubmitting" @click="submitAssignOrder">确认分配</el-button>
         </template>
       </el-dialog>
     </div>
@@ -347,6 +378,32 @@ watch(
 </template>
 
 <style scoped>
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+.order-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.order-header-no {
+  font-weight: 700;
+  color: #0f766e;
+}
+.order-header-customer {
+  color: #64748b;
+}
+.order-header-meta {
+  color: #94a3b8;
+}
 .workbench-layout {
   display: grid;
   grid-template-columns: 260px 1fr;

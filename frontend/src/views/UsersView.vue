@@ -163,8 +163,8 @@ onMounted(() => {
             <td>
               <div class="row-actions">
                 <button class="btn small ghost" type="button" @click="openDetail(item.userId)">查看</button>
-                <button class="btn small secondary" type="button" @click="openEdit(item.userId)">编辑</button>
-                <button class="btn small danger" type="button" @click="toggleStatus(item)">
+                <button v-permission="['user:manage', 'account:manage']" class="btn small secondary" type="button" @click="openEdit(item.userId)">编辑</button>
+                <button v-permission="['user:manage', 'account:manage']" class="btn small danger" type="button" @click="toggleStatus(item)">
                   {{ item.accountStatus === 1 ? '禁用' : '启用' }}
                 </button>
               </div>
@@ -227,8 +227,8 @@ onMounted(() => {
       </div>
       <div class="modal-actions">
         <button class="btn ghost" type="button" @click="modalMode = ''">取消</button>
-        <button v-if="!readonly" class="btn primary" type="submit">保存</button>
-        <button v-else class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
+        <button v-if="!readonly" v-permission="['user:manage', 'account:manage']" class="btn primary" type="submit">保存</button>
+        <button v-else v-permission="['user:manage', 'account:manage']" class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
       </div>
     </form>
   </div>

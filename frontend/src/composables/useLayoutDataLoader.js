@@ -71,6 +71,32 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
     }
   }
 
+  async function loadOrderMeta(orderId) {
+    const numericOrderId = Number(orderId);
+    if (!Number.isFinite(numericOrderId) || numericOrderId <= 0) return false;
+    loadingCanvas.value = true;
+    try {
+      const input = await getLayoutInput(numericOrderId);
+      currentLayoutInput.value = input;
+      const baseOrderInfo = await buildOrderInfo(numericOrderId);
+      const totalPieces = input?.groups?.reduce((sum, g) =>
+        sum + (g.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0), 0) || 0;
+      orderInfo.value = {
+        ...baseOrderInfo,
+        totalPieces,
+        boardGroupCount: input?.groups?.length || 0
+      };
+      solutions.value = [];
+      boardResults.value = [];
+      activeResultId.value = null;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      loadingCanvas.value = false;
+    }
+  }
+
   async function loadFromTask(taskId) {
     if (!taskId) return;
     loadingCanvas.value = true;
@@ -266,6 +292,7 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
     boardResults,
     currentLayoutInput,
     resetRouteKey,
+    loadOrderMeta,
     loadFromOrder,
     loadFromTask,
     loadFromDraft,

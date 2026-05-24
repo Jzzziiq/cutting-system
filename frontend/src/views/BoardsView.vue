@@ -11,6 +11,7 @@ import {
   exportBoards,
   getBoard,
   importBoards,
+  listBoardOptions,
   listBoards,
   updateBoard,
   uploadBoardTexture
@@ -26,6 +27,14 @@ const modalMode = ref('');
 const currentId = ref(null);
 const textureUploading = ref(false);
 const texturePreviewBoard = ref(null);
+const boardOptions = ref({
+  brand: [],
+  materialType: [],
+  sizeType: [],
+  length: [],
+  width: [],
+  thickness: []
+});
 const form = reactive({
   brand: '',
   materialType: '',
@@ -50,6 +59,25 @@ const modalTitle = computed(() => {
   if (modalMode.value === 'edit') return '编辑板材';
   return '板材详情';
 });
+
+function normalizeOptions(data = {}) {
+  boardOptions.value = {
+    brand: data.brand || [],
+    materialType: data.materialType || [],
+    sizeType: data.sizeType || [],
+    length: data.length || [],
+    width: data.width || [],
+    thickness: data.thickness || []
+  };
+}
+
+async function loadOptions() {
+  try {
+    normalizeOptions(await listBoardOptions());
+  } catch {
+    normalizeOptions();
+  }
+}
 
 function resetForm(data = {}) {
   form.brand = data.brand || '';
@@ -97,13 +125,15 @@ function toPayload(includeStatus = false) {
   return payload;
 }
 
-function openCreate() {
+async function openCreate() {
+  await loadOptions();
   currentId.value = null;
   resetForm();
   modalMode.value = 'create';
 }
 
 async function openDetail(id) {
+  await loadOptions();
   const data = await getBoard(id);
   currentId.value = id;
   resetForm(data);
@@ -111,6 +141,7 @@ async function openDetail(id) {
 }
 
 async function openEdit(id) {
+  await loadOptions();
   const data = await getBoard(id);
   currentId.value = id;
   resetForm(data);
@@ -125,6 +156,7 @@ async function submit() {
   }
   modalMode.value = '';
   await loadData();
+  await loadOptions();
 }
 
 async function remove(id) {
@@ -206,7 +238,7 @@ function downloadBlob(data, filename) {
 
 async function handleExport() {
   try {
-    const data = await exportBoards();
+    const data = await exportBoards(selectedIds.value);
     downloadBlob(data, 'boards.xlsx');
   } catch (e) { errorMessage.value = e.message; }
 }
@@ -265,9 +297,9 @@ onMounted(loadData);
         <p>维护品牌、材质、颜色、规格和尺寸信息</p>
       </div>
       <div class="action-group">
-        <button class="btn primary" type="button" @click="openCreate">新增板材</button>
-        <button class="btn secondary" type="button" @click="handleExport">导出</button>
-        <label class="btn secondary" style="cursor:pointer">
+        <button v-permission="'board:write'" class="btn primary" type="button" @click="openCreate">新增板材</button>
+        <button v-permission="'board:write'" class="btn secondary" type="button" @click="handleExport">导出</button>
+        <label v-permission="'board:write'" class="btn secondary" style="cursor:pointer">
           导入
           <input type="file" accept=".xlsx" hidden @change="handleImport" />
         </label>
@@ -288,9 +320,9 @@ onMounted(loadData);
         <span>已选 {{ selectedCount }} 条</span>
       </label>
       <div class="batch-actions">
-        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
-        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
-        <button class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
+        <button v-permission="'board:write'" class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
+        <button v-permission="'board:write'" class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
+        <button v-permission="'board:write'" class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
       </div>
     </div>
 
@@ -343,8 +375,8 @@ onMounted(loadData);
             <td>
               <div class="row-actions">
                 <button class="btn small ghost" type="button" @click="openDetail(item.boardId)">查看</button>
-                <button class="btn small secondary" type="button" @click="openEdit(item.boardId)">编辑</button>
-                <button class="btn small danger" type="button" @click="remove(item.boardId)">删除</button>
+                <button v-permission="'board:write'" class="btn small secondary" type="button" @click="openEdit(item.boardId)">编辑</button>
+                <button v-permission="'board:write'" class="btn small danger" type="button" @click="remove(item.boardId)">删除</button>
               </div>
             </td>
           </tr>
@@ -368,11 +400,11 @@ onMounted(loadData);
       <div class="form-grid">
         <label>
           <span>品牌</span>
-          <input v-model.trim="form.brand" class="input" :readonly="readonly" required />
+          <input v-model.trim="form.brand" class="input" list="board-brand-options" :readonly="readonly" required />
         </label>
         <label>
           <span>材质</span>
-          <input v-model.trim="form.materialType" class="input" :readonly="readonly" required />
+          <input v-model.trim="form.materialType" class="input" list="board-material-options" :readonly="readonly" required />
         </label>
         <label>
           <span>颜色</span>
@@ -398,19 +430,19 @@ onMounted(loadData);
         </label>
         <label>
           <span>规格类型</span>
-          <input v-model.trim="form.sizeType" class="input" :readonly="readonly" required />
+          <input v-model.trim="form.sizeType" class="input" list="board-size-type-options" :readonly="readonly" required />
         </label>
         <label>
           <span>长度 mm</span>
-          <input v-model.number="form.length" class="input" type="number" min="1" :readonly="readonly" required />
+          <input v-model.number="form.length" class="input" type="number" min="1" list="board-length-options" :readonly="readonly" required />
         </label>
         <label>
           <span>宽度 mm</span>
-          <input v-model.number="form.width" class="input" type="number" min="1" :readonly="readonly" required />
+          <input v-model.number="form.width" class="input" type="number" min="1" list="board-width-options" :readonly="readonly" required />
         </label>
         <label>
           <span>厚度 mm</span>
-          <input v-model.number="form.thickness" class="input" type="number" min="1" :readonly="readonly" required />
+          <input v-model.number="form.thickness" class="input" type="number" min="1" list="board-thickness-options" :readonly="readonly" required />
         </label>
         <label>
           <span>状态</span>
@@ -424,10 +456,28 @@ onMounted(loadData);
           <textarea v-model.trim="form.remark" class="input" rows="3" :readonly="readonly"></textarea>
         </label>
       </div>
+      <datalist id="board-brand-options">
+        <option v-for="option in boardOptions.brand" :key="`brand-${option}`" :value="option"></option>
+      </datalist>
+      <datalist id="board-material-options">
+        <option v-for="option in boardOptions.materialType" :key="`material-${option}`" :value="option"></option>
+      </datalist>
+      <datalist id="board-size-type-options">
+        <option v-for="option in boardOptions.sizeType" :key="`size-${option}`" :value="option"></option>
+      </datalist>
+      <datalist id="board-length-options">
+        <option v-for="option in boardOptions.length" :key="`length-${option}`" :value="option"></option>
+      </datalist>
+      <datalist id="board-width-options">
+        <option v-for="option in boardOptions.width" :key="`width-${option}`" :value="option"></option>
+      </datalist>
+      <datalist id="board-thickness-options">
+        <option v-for="option in boardOptions.thickness" :key="`thickness-${option}`" :value="option"></option>
+      </datalist>
       <div class="modal-actions">
         <button class="btn ghost" type="button" @click="modalMode = ''">取消</button>
-        <button v-if="!readonly" class="btn primary" type="submit">保存</button>
-        <button v-else class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
+        <button v-if="!readonly" v-permission="'board:write'" class="btn primary" type="submit">保存</button>
+        <button v-else v-permission="'board:write'" class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
       </div>
     </form>
   </div>

@@ -215,9 +215,9 @@ onMounted(loadData);
         <p>维护客户基础资料，供后续订单与排样流程使用</p>
       </div>
       <div class="action-group">
-        <button class="btn primary" type="button" @click="openCreate">新增客户</button>
-        <button class="btn secondary" type="button" @click="handleExport">导出</button>
-        <label class="btn secondary" style="cursor:pointer">
+        <button v-permission="'customer:write'" class="btn primary" type="button" @click="openCreate">新增客户</button>
+        <button v-permission="'customer:write'" class="btn secondary" type="button" @click="handleExport">导出</button>
+        <label v-permission="'customer:write'" class="btn secondary" style="cursor:pointer">
           导入
           <input type="file" accept=".xlsx" hidden @change="handleImport" />
         </label>
@@ -238,9 +238,9 @@ onMounted(loadData);
         <span>已选 {{ selectedCount }} 条</span>
       </label>
       <div class="batch-actions">
-        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
-        <button class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
-        <button class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
+        <button v-permission="'customer:write'" class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(1)">批量启用</button>
+        <button v-permission="'customer:write'" class="btn small ghost" type="button" :disabled="!selectedCount" @click="batchSetEnabled(0)">批量禁用</button>
+        <button v-permission="'customer:write'" class="btn small danger" type="button" :disabled="!selectedCount" @click="batchRemove">批量删除</button>
       </div>
     </div>
 
@@ -285,8 +285,8 @@ onMounted(loadData);
             <td>
               <div class="row-actions">
                 <button class="btn small ghost" type="button" @click="openDetail(item.customerId)">查看</button>
-                <button class="btn small secondary" type="button" @click="openEdit(item.customerId)">编辑</button>
-                <button class="btn small danger" type="button" @click="remove(item.customerId)">删除</button>
+                <button v-permission="'customer:write'" class="btn small secondary" type="button" @click="openEdit(item.customerId)">编辑</button>
+                <button v-permission="'customer:write'" class="btn small danger" type="button" @click="remove(item.customerId)">删除</button>
               </div>
             </td>
           </tr>
@@ -334,8 +334,8 @@ onMounted(loadData);
       </div>
       <div class="modal-actions">
         <button class="btn ghost" type="button" @click="modalMode = ''">取消</button>
-        <button v-if="!readonly" class="btn primary" type="submit">保存</button>
-        <button v-else class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
+        <button v-if="!readonly" v-permission="'customer:write'" class="btn primary" type="submit">保存</button>
+        <button v-else v-permission="'customer:write'" class="btn secondary" type="button" @click="modalMode = 'edit'">编辑</button>
       </div>
     </form>
   </div>

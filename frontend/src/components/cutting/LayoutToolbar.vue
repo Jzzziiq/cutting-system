@@ -15,7 +15,6 @@ defineEmits([
   'fit-screen',
   'export-toolpath',
   'export-file',
-  'save-result',
   'back-to-edit'
 ]);
 </script>
@@ -24,7 +23,7 @@ defineEmits([
   <div class="layout-toolbar">
     <div class="toolbar-group">
       <el-button size="small" :icon="Upload" @click="$emit('import-order')">选择订单</el-button>
-      <el-button size="small" type="primary" :icon="Setting" :loading="taskRunning" @click="$emit('start-layout')">
+      <el-button v-permission="'order:write'" size="small" type="primary" :icon="Setting" :loading="taskRunning" @click="$emit('start-layout')">
         开始排版
       </el-button>
     </div>
@@ -41,9 +40,8 @@ defineEmits([
     </div>
 
     <div class="toolbar-group">
-      <el-button size="small" :icon="Download" @click="$emit('export-toolpath')">输出刀轨</el-button>
-      <el-button size="small" :icon="Download" @click="$emit('export-file')">导出文件</el-button>
-      <el-button size="small" :icon="Download" @click="$emit('save-result')">保存排版结果</el-button>
+      <el-button v-permission="'order:write'" size="small" :icon="Download" @click="$emit('export-toolpath')">输出刀轨</el-button>
+      <el-button v-permission="'order:write'" size="small" :icon="Download" @click="$emit('export-file')">导出文件</el-button>
     </div>
 
     <div class="toolbar-spacer" />

@@ -24,8 +24,16 @@ export function transitionTask(id, targetStatus, remark) {
   return http.put(`/production-tasks/${id}/status`, { targetStatus, remark });
 }
 
+export function myTransitionTask(id, targetStatus, remark) {
+  return http.put(`/production-tasks/my/${id}/status`, { targetStatus, remark });
+}
+
 export function assignTask(id, assigneeId, assigneeName) {
   return http.put(`/production-tasks/${id}/assign`, { assigneeId, assigneeName });
+}
+
+export function assignOrderTask(orderId, assigneeId) {
+  return http.put(`/production-tasks/order/${orderId}/assign`, { assigneeId });
 }
 
 export function kanbanData() {
@@ -34,4 +42,12 @@ export function kanbanData() {
 
 export function listTasksByOrder(orderId) {
   return http.get(`/production-tasks/order/${orderId}`);
+}
+
+export function listMyTasks() {
+  return http.get('/production-tasks/my');
+}
+
+export function getMyTaskDetail(taskId) {
+  return http.get(`/production-tasks/my/${taskId}`);
 }

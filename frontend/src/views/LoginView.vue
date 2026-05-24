@@ -51,6 +51,21 @@ async function submit() {
           {{ loading ? '登录中...' : '登录' }}
         </button>
       </form>
+
+      <div class="register-link">
+        <router-link to="/register">注册组织 / 加入组织</router-link>
+      </div>
     </section>
   </main>
 </template>
+
+<style scoped>
+.register-link {
+  text-align: center;
+  margin-top: 16px;
+}
+.register-link a {
+  color: #0d9488;
+  font-size: 14px;
+}
+</style>

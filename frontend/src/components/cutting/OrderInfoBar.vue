@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import { listCustomers } from '@/api/customers';
 import { listOrders, createOrder, getOrder } from '@/api/orders';
-import { listUsers } from '@/api/users';
 
 const props = defineProps({
   customer: String,
@@ -29,7 +28,7 @@ const customerModel = computed({
 });
 const orderNoModel = computed({
   get: () => props.orderNo,
-  set: (val) => emit('update:orderNo', val)
+  set: () => {}
 });
 const orderDateModel = computed({
   get: () => props.orderDate,
@@ -37,7 +36,7 @@ const orderDateModel = computed({
 });
 const operatorModel = computed({
   get: () => props.operator,
-  set: (val) => emit('update:operator', val)
+  set: () => {}
 });
 const remarkModel = computed({
   get: () => props.remark,
@@ -60,25 +59,6 @@ async function queryCustomers(query) {
     customerOptions.value = [];
   } finally {
     customerLoading.value = false;
-  }
-}
-
-// Operator autocomplete (existing)
-const operatorOptions = ref([]);
-const operatorLoading = ref(false);
-async function queryOperators(query) {
-  operatorLoading.value = true;
-  try {
-    const data = await listUsers({ pageNum: 1, pageSize: 20, search: query || '' });
-    const list = Array.isArray(data) ? data : (data?.records ?? []);
-    operatorOptions.value = list.map(u => ({
-      value: u.realName || u.username,
-      label: u.realName || u.username
-    }));
-  } catch {
-    operatorOptions.value = [];
-  } finally {
-    operatorLoading.value = false;
   }
 }
 
@@ -115,14 +95,15 @@ async function loadOrders(query) {
 async function onOrderSelect(orderId) {
   if (!orderId) {
     emit('update:orderId', null);
+    emit('update:orderNo', '');
     return;
   }
   try {
     const data = await getOrder(orderId);
     const order = data?.orderId !== undefined ? data : (data?.data ?? data);
     emit('update:customer', order.customerName || '');
-    emit('update:orderNo', order.orderNo || '');
-    emit('update:orderDate', order.orderDate || order.createTime?.slice(0, 10) || '');
+    emit('update:orderNo', String(order.orderId || orderId));
+    emit('update:orderDate', order.dispatchDate || order.orderDate || order.createTime?.slice(0, 10) || '');
     emit('update:remark', order.remark || '');
     emit('update:orderId', orderId);
   } catch (e) {
@@ -136,6 +117,7 @@ const newOrderForm = ref({
   customerId: null,
   customerName: '',
   processName: '',
+  dispatchDate: null,
   remark: ''
 });
 const creating = ref(false);
@@ -168,7 +150,13 @@ function onCustomerSelect(customerId) {
 }
 
 function openCreateDialog() {
-  newOrderForm.value = { customerId: null, customerName: '', processName: '', remark: '' };
+  newOrderForm.value = {
+    customerId: null,
+    customerName: '',
+    processName: '',
+    dispatchDate: new Date().toISOString().slice(0, 10),
+    remark: ''
+  };
   createDialogVisible.value = true;
 }
 
@@ -177,16 +165,13 @@ async function onCreateOrder() {
     ElMessage.warning('请选择客户');
     return;
   }
-  if (!newOrderForm.value.processName.trim()) {
-    ElMessage.warning('请输入加工名称');
-    return;
-  }
   creating.value = true;
   try {
     const result = await createOrder({
       customerId: newOrderForm.value.customerId,
       customerName: newOrderForm.value.customerName,
-      processName: newOrderForm.value.processName.trim(),
+      processName: newOrderForm.value.processName.trim() || null,
+      dispatchDate: newOrderForm.value.dispatchDate,
       remark: newOrderForm.value.remark.trim(),
       orderStatus: 0
     });
@@ -268,33 +253,13 @@ async function onCreateOrder() {
           </el-select>
         </el-form-item>
         <el-form-item label="订单号">
-          <el-input v-model="orderNoModel" placeholder="订单号" style="width:140px" clearable />
+          <el-input v-model="orderNoModel" placeholder="创建后自动生成" style="width:140px" readonly />
         </el-form-item>
         <el-form-item label="排单日期">
-          <el-input v-model="orderDateModel" placeholder="日期" style="width:130px" clearable />
+          <el-date-picker v-model="orderDateModel" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width:140px" clearable />
         </el-form-item>
-        <el-form-item label="操作人员">
-          <el-select
-            v-model="operatorModel"
-            filterable
-            allow-create
-            remote
-            reserve-keyword
-            placeholder="操作员"
-            size="small"
-            style="width:140px"
-            clearable
-            :remote-method="queryOperators"
-            :loading="operatorLoading"
-            @focus="queryOperators('')"
-          >
-            <el-option
-              v-for="opt in operatorOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
+        <el-form-item label="创建者">
+          <el-input v-model="operatorModel" placeholder="当前登录用户" style="width:140px" readonly />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="remarkModel" placeholder="备注" style="width:200px" clearable />
@@ -303,8 +268,8 @@ async function onCreateOrder() {
     </div>
 
     <!-- Create Order Dialog -->
-    <el-dialog v-model="createDialogVisible" title="新建订单" width="480px" :close-on-click-modal="false">
-      <el-form label-width="80px" size="small">
+    <el-dialog v-model="createDialogVisible" title="新建订单" width="520px" :close-on-click-modal="false">
+      <el-form label-position="top" label-width="90px" size="default">
         <el-form-item label="客户" required>
           <el-select
             v-model="newOrderForm.customerId"
@@ -326,16 +291,19 @@ async function onCreateOrder() {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="加工名称" required>
+        <el-form-item label="加工名称">
           <el-input v-model="newOrderForm.processName" placeholder="如：主卧衣柜板材加工" maxlength="100" />
         </el-form-item>
+        <el-form-item label="排单日期">
+          <el-date-picker v-model="newOrderForm.dispatchDate" type="date" placeholder="选择排单日期" value-format="YYYY-MM-DD" style="width:100%" clearable />
+        </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="newOrderForm.remark" placeholder="可选" maxlength="255" />
+          <el-input v-model="newOrderForm.remark" type="textarea" placeholder="可选" maxlength="255" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button size="small" @click="createDialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" :loading="creating" @click="onCreateOrder">
+        <el-button @click="createDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="onCreateOrder">
           创建
         </el-button>
       </template>

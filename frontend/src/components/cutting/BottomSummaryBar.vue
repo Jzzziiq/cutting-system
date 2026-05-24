@@ -22,8 +22,8 @@ defineEmits(['confirm', 'save']);
       </span>
     </div>
     <div class="actions">
-      <el-button size="large" :disabled="!canSave" @click="$emit('save')">保存当前数据</el-button>
-      <el-button type="primary" size="large" :disabled="!canConfirm" @click="$emit('confirm')">生成排版草稿</el-button>
+      <el-button v-permission="'order:write'" size="large" :disabled="!canSave" @click="$emit('save')">保存当前数据</el-button>
+      <el-button v-permission="'order:write'" type="primary" size="large" :disabled="!canConfirm" @click="$emit('confirm')">生成排版草稿</el-button>
     </div>
   </div>
 </template>
