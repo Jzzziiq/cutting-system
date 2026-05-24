@@ -10,6 +10,7 @@ import java.util.List;
 public class UserContext {
 
     private static final ThreadLocal<Long> USER_ID_TL = new ThreadLocal<>();
+    private static final ThreadLocal<Long> ORG_ID_TL = new ThreadLocal<>();
     private static final ThreadLocal<List<String>> ROLES_TL = ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<List<String>> PERMISSIONS_TL = ThreadLocal.withInitial(ArrayList::new);
 
@@ -19,6 +20,14 @@ public class UserContext {
 
     public static Long getCurrentUserId() {
         return USER_ID_TL.get();
+    }
+
+    public static void setCurrentOrgId(Long orgId) {
+        ORG_ID_TL.set(orgId);
+    }
+
+    public static Long getCurrentOrgId() {
+        return ORG_ID_TL.get();
     }
 
     public static void setRoles(List<String> roles) {
@@ -52,6 +61,7 @@ public class UserContext {
 
     public static void clear() {
         USER_ID_TL.remove();
+        ORG_ID_TL.remove();
         ROLES_TL.remove();
         PERMISSIONS_TL.remove();
     }

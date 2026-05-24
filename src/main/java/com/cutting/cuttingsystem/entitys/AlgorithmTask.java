@@ -13,6 +13,7 @@ public class AlgorithmTask implements Serializable {
     @TableId
     private String taskId;
     private Long userId;
+    private Long orgId;
     private String algorithm;
     private Integer status;         // 0 pending, 1 running, 2 completed, -1 failed
     private String inputJson;

@@ -16,8 +16,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -125,6 +128,29 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.id").exists());
+    }
+
+    @Test
+    void optionsReturnsBoardCandidateValues() throws Exception {
+        when(tBoardService.listBoardOptions()).thenReturn(Map.of(
+                "brand", List.<Object>of("EGGER", "兔宝宝"),
+                "materialType", List.<Object>of("particle"),
+                "sizeType", List.<Object>of("standard"),
+                "length", List.<Object>of(2440),
+                "width", List.<Object>of(1220),
+                "thickness", List.<Object>of(18)
+        ));
+
+        mockMvc.perform(get("/boards/options")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.brand[0]").value("EGGER"))
+                .andExpect(jsonPath("$.data.materialType[0]").value("particle"))
+                .andExpect(jsonPath("$.data.sizeType[0]").value("standard"))
+                .andExpect(jsonPath("$.data.length[0]").value(2440))
+                .andExpect(jsonPath("$.data.width[0]").value(1220))
+                .andExpect(jsonPath("$.data.thickness[0]").value(18));
     }
 
     @Test
@@ -433,6 +459,31 @@ class BoardModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.isEnabled").exists());
+    }
+
+    @Test
+    void exportBoardsWithoutIdsExportsAllBoards() throws Exception {
+        when(tBoardService.list()).thenReturn(List.of(board(1L)));
+
+        mockMvc.perform(get("/boards/export")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk());
+
+        verify(tBoardService).list();
+        verify(tBoardService, never()).listByIds(any());
+    }
+
+    @Test
+    void exportBoardsWithIdsExportsSelectedBoards() throws Exception {
+        when(tBoardService.listByIds(List.of(1L, 2L))).thenReturn(List.of(board(1L), board(2L)));
+
+        mockMvc.perform(get("/boards/export")
+                        .header("Authorization", bearerToken())
+                        .param("ids", "1,2"))
+                .andExpect(status().isOk());
+
+        verify(tBoardService).listByIds(List.of(1L, 2L));
+        verify(tBoardService, never()).list();
     }
 
     @Test

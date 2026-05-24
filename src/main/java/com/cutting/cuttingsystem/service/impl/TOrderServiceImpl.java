@@ -37,7 +37,7 @@ import java.util.Map;
 
 @Service
 public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> implements TOrderService {
-    private static final DateTimeFormatter ORDER_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+    private static final DateTimeFormatter ORDER_NO_DATE = DateTimeFormatter.ofPattern("MMDD");
 
     @Autowired
     private TOrderItemService orderItemService;
@@ -56,7 +56,9 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
         TOrder order = new TOrder();
         BeanUtils.copyProperties(orderDTO, order);
         if (!StringUtils.hasText(order.getOrderNo())) {
-            order.setOrderNo("ORD" + LocalDateTime.now().format(ORDER_NO_FORMATTER));
+            String datePart = LocalDateTime.now().format(ORDER_NO_DATE);
+            long seq = count(new QueryWrapper<TOrder>().likeRight("order_no", "ORD" + datePart)) + 1;
+            order.setOrderNo("ORD" + datePart + String.format("%03d", seq));
         }
         if (order.getOrderStatus() == null) {
             order.setOrderStatus(0);
@@ -133,6 +135,11 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
             task.setLayoutResultId(order.getLayoutResultId());
             task.setStatus(TaskStatus.PENDING.getCode());
             productionTaskService.save(task);
+
+            // 同步排版结果的生产任务状态
+            if (order.getLayoutResultId() != null) {
+                productionTaskService.syncLayoutResultTaskStatus(order.getLayoutResultId(), TaskStatus.PENDING.getCode());
+            }
         }
 
         return getOrderDetail(orderId);

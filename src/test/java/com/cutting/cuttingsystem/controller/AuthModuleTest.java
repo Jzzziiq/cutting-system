@@ -41,7 +41,7 @@ class AuthModuleTest {
     @Test
     void loginReturnsTokenWhenCredentialsAreValid() throws Exception {
         when(tUserService.login("admin", "123456"))
-                .thenReturn(new LoginInfo(1L, "admin", "admin", "mock-token", null, null));
+                .thenReturn(new LoginInfo(1L, "admin", "admin", "mock-token", null, null, null, null, null));
 
         mockMvc.perform(post("/auth/login")
                         .param("username", "admin")

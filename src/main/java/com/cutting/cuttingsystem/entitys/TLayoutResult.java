@@ -21,6 +21,9 @@ public class TLayoutResult implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Long userId;
 
+    @TableField(fill = FieldFill.INSERT)
+    private Long orgId;
+
     private BigDecimal usageRate;
 
     private BigDecimal totalArea;
@@ -34,6 +37,8 @@ public class TLayoutResult implements Serializable {
     private String ncFilePath;
 
     private String labelFilePath;
+
+    private Integer taskStatus;
 
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;

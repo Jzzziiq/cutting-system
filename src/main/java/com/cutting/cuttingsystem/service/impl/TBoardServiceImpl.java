@@ -1,6 +1,7 @@
 package com.cutting.cuttingsystem.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TOffcut;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TBoardServiceImpl extends ServiceImpl<TBoardMapper, TBoard> implements TBoardService {
@@ -43,6 +46,18 @@ public class TBoardServiceImpl extends ServiceImpl<TBoardMapper, TBoard> impleme
         return removeByIds(ids);
     }
 
+    @Override
+    public Map<String, List<Object>> listBoardOptions() {
+        Map<String, List<Object>> options = new LinkedHashMap<>();
+        options.put("brand", distinctValuesByFrequency("brand"));
+        options.put("materialType", distinctValuesByFrequency("material_type"));
+        options.put("sizeType", distinctValuesByFrequency("size_type"));
+        options.put("length", distinctValuesByFrequency("length"));
+        options.put("width", distinctValuesByFrequency("width"));
+        options.put("thickness", distinctValuesByFrequency("thickness"));
+        return options;
+    }
+
     private void assertNotReferenced(Collection<Long> ids, String message) {
         if (ids == null || ids.isEmpty()) {
             return;
@@ -58,5 +73,17 @@ public class TBoardServiceImpl extends ServiceImpl<TBoardMapper, TBoard> impleme
 
     private boolean hasRows(Long count) {
         return count != null && count > 0;
+    }
+
+    private List<Object> distinctValuesByFrequency(String column) {
+        return listMaps(new QueryWrapper<TBoard>()
+                .select(column + " AS value", "COUNT(*) AS count")
+                .isNotNull(column)
+                .groupBy(column)
+                .orderByDesc("count"))
+                .stream()
+                .map(row -> row.get("value"))
+                .filter(value -> !(value instanceof String text) || !text.isBlank())
+                .toList();
     }
 }

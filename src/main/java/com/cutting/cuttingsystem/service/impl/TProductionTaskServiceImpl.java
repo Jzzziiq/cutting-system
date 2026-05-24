@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cutting.cuttingsystem.entitys.TLayoutResult;
 import com.cutting.cuttingsystem.entitys.TOrder;
@@ -18,6 +19,7 @@ import com.cutting.cuttingsystem.mapper.TOrderMapper;
 import com.cutting.cuttingsystem.mapper.TProductionTaskMapper;
 import com.cutting.cuttingsystem.service.TProductionTaskService;
 import com.cutting.cuttingsystem.service.TUserService;
+import com.cutting.cuttingsystem.util.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,6 +118,10 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
         } else {
             baseMapper.updateAssignmentIgnoreTenant(task.getTaskId(), task.getAssigneeId(), task.getAssigneeName());
         }
+
+        // 同步排版结果的生产任务状态
+        syncLayoutResultTaskStatus(task.getLayoutResultId(), task.getStatus());
+
         return toVO(baseMapper.selectByIdIgnoreTenant(task.getTaskId()));
     }
 
@@ -141,6 +147,10 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
             task.setCompleteTime(new Date());
         }
         updateById(task);
+
+        // 同步排版结果的生产任务状态
+        syncLayoutResultTaskStatus(task.getLayoutResultId(), task.getStatus());
+
         return getTaskDetail(taskId);
     }
 
@@ -179,7 +189,13 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
 
     @Override
     public Map<Integer, List<TProductionTaskVO>> kanbanData() {
-        List<TProductionTask> all = baseMapper.selectAllIgnoreTenant();
+        Long orgId = UserContext.getCurrentOrgId();
+        QueryWrapper<TProductionTask> qw = new QueryWrapper<>();
+        if (orgId != null) {
+            qw.eq("org_id", orgId);
+        }
+        qw.orderByDesc("create_time");
+        List<TProductionTask> all = baseMapper.selectList(qw);
         return all.stream()
                 .map(this::toVO)
                 .collect(Collectors.groupingBy(
@@ -210,6 +226,9 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
         if (layoutResult == null) return null;
         TLayoutResultVO vo = new TLayoutResultVO();
         BeanUtils.copyProperties(layoutResult, vo);
+        if (layoutResult.getTaskStatus() != null) {
+            vo.setTaskStatusLabel(TaskStatus.fromCode(layoutResult.getTaskStatus()).getLabel());
+        }
         if (layoutResult.getOrderId() != null) {
             TOrder order = orderMapper.selectByIdIgnoreTenant(layoutResult.getOrderId());
             if (order != null) {
@@ -244,5 +263,15 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
     @Override
     public int deleteByIdIgnoreTenant(Long taskId) {
         return baseMapper.deleteByIdIgnoreTenant(taskId);
+    }
+
+    @Override
+    public void syncLayoutResultTaskStatus(Long layoutResultId, Integer taskStatus) {
+        if (layoutResultId == null) return;
+        TLayoutResult lr = layoutResultMapper.selectById(layoutResultId);
+        if (lr != null) {
+            lr.setTaskStatus(taskStatus);
+            layoutResultMapper.updateById(lr);
+        }
     }
 }

@@ -19,5 +19,9 @@ public class TLayoutResultVO {
     private String imagePath;
     private String ncFilePath;
     private String labelFilePath;
+    private Integer taskStatus;
+    private String taskStatusLabel;
+    private Long assigneeId;
+    private String assigneeName;
     private Date createTime;
 }

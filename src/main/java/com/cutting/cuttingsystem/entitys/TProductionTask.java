@@ -21,6 +21,9 @@ public class TProductionTask implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Long userId;
 
+    @TableField(fill = FieldFill.INSERT)
+    private Long orgId;
+
     private Long orderId;
     private Long layoutResultId;
     private String taskName;

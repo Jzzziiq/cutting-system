@@ -13,21 +13,21 @@ import java.util.List;
 public class UserIdHandler implements TenantLineHandler {
     private static final List<String> IGNORE_TABLES = List.of(
         "t_user", "t_role", "t_permission", "t_user_role", "t_role_permission",
-        "t_cabinet_template"
+        "t_cabinet_template", "t_organization", "t_audit_log"
     );
 
     @Override
     public Expression getTenantId() {
-        Long currentUserId = UserContext.getCurrentUserId();
-        if (currentUserId == null) {
+        Long orgId = UserContext.getCurrentOrgId();
+        if (orgId == null) {
             return new LongValue(0L);
         }
-        return new LongValue(currentUserId);
+        return new LongValue(orgId);
     }
 
     @Override
     public String getTenantIdColumn() {
-        return "user_id";
+        return "org_id";
     }
 
     @Override

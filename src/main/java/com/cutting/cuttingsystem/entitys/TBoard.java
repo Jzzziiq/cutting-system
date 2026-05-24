@@ -29,6 +29,11 @@ public class TBoard implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Long userId;
     /**
+     * 所属组织ID
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Long orgId;
+    /**
      * 板材品牌
      */
     private String brand;

@@ -10,6 +10,7 @@ import com.cutting.cuttingsystem.entitys.DTO.TLayoutResultDTO;
 import com.cutting.cuttingsystem.entitys.Result;
 import com.cutting.cuttingsystem.entitys.TLayoutResult;
 import com.cutting.cuttingsystem.entitys.TOrder;
+import com.cutting.cuttingsystem.entitys.TaskStatus;
 import com.cutting.cuttingsystem.entitys.VO.TLayoutResultVO;
 import com.cutting.cuttingsystem.service.TLayoutResultService;
 import com.cutting.cuttingsystem.service.TOrderService;
@@ -95,6 +96,9 @@ public class LayoutResultController {
     private TLayoutResultVO toVO(TLayoutResult layoutResult) {
         TLayoutResultVO vo = new TLayoutResultVO();
         BeanUtils.copyProperties(layoutResult, vo);
+        if (layoutResult.getTaskStatus() != null) {
+            vo.setTaskStatusLabel(TaskStatus.fromCode(layoutResult.getTaskStatus()).getLabel());
+        }
         if (layoutResult.getOrderId() != null) {
             TOrder order = orderService.getById(layoutResult.getOrderId());
             if (order != null) {

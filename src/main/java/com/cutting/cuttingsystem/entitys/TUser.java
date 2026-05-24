@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 存储系统所有用户账号信息，区分管理员与生产人员双角色，实现账号权限管控与注册审批流程
+ * 存储系统所有用户账号信息，区分管理员与生产员双角色，实现账号权限管控与注册审批流程
  *
  * @TableName t_user
  */
@@ -44,7 +44,7 @@ public class TUser implements Serializable {
 
     private String phone;
     /**
-     * 角色类型：1 = 系统管理员，2 = 生产人员；注册账号默认为生产人员
+     * 角色类型：1 = 系统管理员，2 = 生产员；注册账号默认为生产员
      */
     private Integer roleType;
     /**
@@ -63,6 +63,14 @@ public class TUser implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * 所属组织ID
+     */
+    private Long orgId;
+    /**
+     * 组织内角色: org_admin/operator/viewer
+     */
+    private String orgRole;
     /**
      * 备注信息
      */

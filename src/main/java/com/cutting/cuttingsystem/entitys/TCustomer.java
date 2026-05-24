@@ -30,6 +30,11 @@ public class TCustomer implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Long userId;
     /**
+     * 所属组织ID
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Long orgId;
+    /**
      * 客户姓名/公司名
      */
     private String customerName;

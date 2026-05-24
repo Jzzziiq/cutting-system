@@ -24,7 +24,7 @@ public class JwtUtil {
     private Long expiration;
 
     /**
-     * 生成 JWT Token（含角色编码）
+     * 生成 JWT Token（含角色编码和组织ID）
      */
     public String generateToken(TUser user, List<String> roleCodes) {
         Map<String, Object> claims = new HashMap<>();
@@ -32,6 +32,12 @@ public class JwtUtil {
         claims.put("username", user.getUsername());
         if (roleCodes != null && !roleCodes.isEmpty()) {
             claims.put("roles", roleCodes);
+        }
+        if (user.getOrgId() != null) {
+            claims.put("orgId", user.getOrgId());
+        }
+        if (user.getOrgRole() != null) {
+            claims.put("orgRole", user.getOrgRole());
         }
 
         return Jwts.builder()
@@ -58,6 +64,22 @@ public class JwtUtil {
     public Long getUserIdFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims.get("userId", Long.class);
+    }
+
+    /**
+     * 从 Token 中获取组织ID
+     */
+    public Long getOrgIdFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("orgId", Long.class);
+    }
+
+    /**
+     * 从 Token 中获取组织角色
+     */
+    public String getOrgRoleFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("orgRole", String.class);
     }
 
     @SuppressWarnings("unchecked")

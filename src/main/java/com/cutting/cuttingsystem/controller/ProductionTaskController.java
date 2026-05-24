@@ -37,20 +37,20 @@ public class ProductionTaskController {
     private TProductionTaskService productionTaskService;
 
     @GetMapping("/kanban")
-    @RequirePermission("order:write")
+    @RequirePermission("board:read")
     public Result kanbanData() {
         Map<Integer, List<TProductionTaskVO>> data = productionTaskService.kanbanData();
         return Result.success(data);
     }
 
     @GetMapping("/my")
-    @RequirePermission("order:read")
+    @RequirePermission({"order:read", "production:read"})
     public Result myTasks() {
         return Result.success(productionTaskService.listMyTasks(UserContext.getCurrentUserId()));
     }
 
     @GetMapping("/my/{taskId}")
-    @RequirePermission("order:read")
+    @RequirePermission({"order:read", "production:read"})
     public Result myTaskDetail(@PathVariable @Positive Long taskId) {
         TProductionTaskDetailVO detail = productionTaskService.getMyTaskDetail(taskId, UserContext.getCurrentUserId());
         return detail != null ? Result.success(detail) : Result.error("任务不存在或未分配给当前用户");
@@ -95,6 +95,25 @@ public class ProductionTaskController {
     public Result transitionStatus(@PathVariable @Positive Long id,
                                    @RequestBody @Valid OrderStatusTransitionDTO dto) {
         try {
+            TProductionTaskVO vo = productionTaskService.transitionStatus(id, dto.getTargetStatus(), dto.getRemark());
+            return Result.success(vo);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PutMapping("/my/{id}/status")
+    @RequirePermission({"order:read", "production:read"})
+    @AuditLog(module = "生产任务", action = "员工状态变更")
+    public Result myTransitionStatus(@PathVariable @Positive Long id,
+                                     @RequestBody @Valid OrderStatusTransitionDTO dto) {
+        try {
+            TProductionTaskVO taskDetail = productionTaskService.getTaskDetail(id);
+            if (taskDetail == null) return Result.error("任务不存在");
+            Long currentUserId = UserContext.getCurrentUserId();
+            if (taskDetail.getAssigneeId() != null && !taskDetail.getAssigneeId().equals(currentUserId)) {
+                return Result.error("无权操作他人的任务");
+            }
             TProductionTaskVO vo = productionTaskService.transitionStatus(id, dto.getTargetStatus(), dto.getRemark());
             return Result.success(vo);
         } catch (RuntimeException e) {

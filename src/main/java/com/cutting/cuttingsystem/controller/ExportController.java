@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -46,9 +47,11 @@ public class ExportController {
 
     @GetMapping("/boards/export")
     @RequirePermission({"board:read", "board:write"})
-    public void exportBoards(HttpServletResponse response) throws IOException {
+    public void exportBoards(@RequestParam(required = false) List<Long> ids,
+                             HttpServletResponse response) throws IOException {
         setExcelResponse(response, "boards.xlsx");
-        List<TBoardVO> list = boardService.list().stream().map(e -> {
+        List<TBoard> boards = ids == null || ids.isEmpty() ? boardService.list() : boardService.listByIds(ids);
+        List<TBoardVO> list = boards.stream().map(e -> {
             TBoardVO vo = new TBoardVO();
             BeanUtils.copyProperties(e, vo);
             return vo;
@@ -57,7 +60,7 @@ public class ExportController {
     }
 
     @GetMapping("/audit-logs/export")
-    @RequirePermission("user:manage")
+    @RequirePermission("audit:read")
     public void exportAuditLogs(HttpServletResponse response) throws IOException {
         setExcelResponse(response, "audit-logs.xlsx");
         List<TAuditLog> list = auditLogService.list();

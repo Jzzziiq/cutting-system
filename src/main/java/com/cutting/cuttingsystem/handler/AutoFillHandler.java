@@ -15,6 +15,7 @@ public class AutoFillHandler implements MetaObjectHandler {
     public void insertFill(MetaObject metaObject) {
         log.debug("start insert auto fill");
         this.strictInsertFill(metaObject, "userId", Long.class, UserContext.getCurrentUserId());
+        this.strictInsertFill(metaObject, "orgId", Long.class, UserContext.getCurrentOrgId());
         this.strictInsertFill(metaObject, "createTime", Date.class, new Date());
     }
 

@@ -16,6 +16,8 @@ public class UserVO {
     private Date lastLoginTime;
     private Date createTime;
     private String remark;
+    private Long orgId;
+    private String orgRole;
     private List<String> roles;
     private List<String> permissions;
 }

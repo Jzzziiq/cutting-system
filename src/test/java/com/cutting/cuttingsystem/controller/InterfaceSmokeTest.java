@@ -65,7 +65,7 @@ class InterfaceSmokeTest {
     @Test
     void loginReturnsSuccessResponse() throws Exception {
         when(tUserService.login("admin", "123456"))
-                .thenReturn(new LoginInfo(1L, "admin", "管理员", "mock-token", null, null));
+                .thenReturn(new LoginInfo(1L, "admin", "管理员", "mock-token", null, null, null, null, null));
 
         mockMvc.perform(post("/auth/login")
                         .param("username", "admin")

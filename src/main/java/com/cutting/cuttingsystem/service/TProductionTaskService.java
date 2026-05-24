@@ -31,4 +31,6 @@ public interface TProductionTaskService extends IService<TProductionTask> {
     Map<Integer, List<TProductionTaskVO>> kanbanData();
 
     int deleteByIdIgnoreTenant(Long taskId);
+
+    void syncLayoutResultTaskStatus(Long layoutResultId, Integer taskStatus);
 }

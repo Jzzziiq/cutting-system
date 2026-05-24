@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cutting.cuttingsystem.entitys.TLayoutResult;
 import com.cutting.cuttingsystem.entitys.TUser;
 import com.cutting.cuttingsystem.service.TLayoutResultService;
+import com.cutting.cuttingsystem.service.TOrderService;
+import com.cutting.cuttingsystem.service.TProductionTaskService;
 import com.cutting.cuttingsystem.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +41,19 @@ class LayoutResultModuleTest {
     @MockitoBean
     private TLayoutResultService layoutResultService;
 
+    @MockitoBean
+    private TOrderService orderService;
+
+    @MockitoBean
+    private TProductionTaskService productionTaskService;
+
     @Test
     void pageReturnsLayoutResultRecords() throws Exception {
         Page<TLayoutResult> page = new Page<>(1, 10);
         page.setRecords(List.of(layoutResult(1L)));
         page.setTotal(1);
-        when(layoutResultService.page(any())).thenReturn(page);
+        when(layoutResultService.page(any(), any())).thenReturn(page);
+        when(productionTaskService.listByOrderId(1L)).thenReturn(List.of(assignedTask()));
 
         mockMvc.perform(get("/layout-results")
                         .header("Authorization", bearerToken())
@@ -53,12 +62,14 @@ class LayoutResultModuleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.records[0].resultId").value(1))
-                .andExpect(jsonPath("$.data.records[0].containerCount").value(1));
+                .andExpect(jsonPath("$.data.records[0].containerCount").value(1))
+                .andExpect(jsonPath("$.data.records[0].assigneeId").value(2))
+                .andExpect(jsonPath("$.data.records[0].assigneeName").value("王工"));
     }
 
     @Test
     void pageAllowsMaximumPageSize() throws Exception {
-        when(layoutResultService.page(any())).thenReturn(new Page<TLayoutResult>(1, 100));
+        when(layoutResultService.page(any(), any())).thenReturn(new Page<TLayoutResult>(1, 100));
 
         mockMvc.perform(get("/layout-results")
                         .header("Authorization", bearerToken())
@@ -324,6 +335,15 @@ class LayoutResultModuleTest {
         layoutResult.setNcFilePath("/outputs/layout-1.nc");
         layoutResult.setLabelFilePath("/outputs/layout-1-label.pdf");
         return layoutResult;
+    }
+
+    private com.cutting.cuttingsystem.entitys.VO.TProductionTaskVO assignedTask() {
+        com.cutting.cuttingsystem.entitys.VO.TProductionTaskVO task = new com.cutting.cuttingsystem.entitys.VO.TProductionTaskVO();
+        task.setTaskId(100L);
+        task.setOrderId(1L);
+        task.setAssigneeId(2L);
+        task.setAssigneeName("王工");
+        return task;
     }
 
     private String validLayoutResultJson() {

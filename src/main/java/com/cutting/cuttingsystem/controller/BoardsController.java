@@ -55,6 +55,11 @@ public class BoardsController {
         return Result.success(boardVOPage);
     }
 
+    @GetMapping("/options")
+    public Result options() {
+        return Result.success(tBoardService.listBoardOptions());
+    }
+
     @GetMapping("/{id}")
     public Result getById(@PathVariable @Positive(message = "id must be greater than 0") Long id) {
         TBoard board = tBoardService.getById(id);

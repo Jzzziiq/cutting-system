@@ -3,12 +3,12 @@ package com.cutting.cuttingsystem.entitys.DTO;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -26,9 +26,10 @@ public class TOrderDTO {
     @Size(max = 255, message = "customerAddress must be at most 255 characters")
     private String customerAddress;
 
-    @NotBlank(message = "processName is required")
     @Size(max = 100, message = "processName must be at most 100 characters")
     private String processName;
+
+    private Date dispatchDate;
 
     @Min(value = 0, message = "orderStatus must be at least 0")
     @Max(value = 9, message = "orderStatus must be at most 9")

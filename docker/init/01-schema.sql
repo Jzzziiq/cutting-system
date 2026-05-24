@@ -199,7 +199,7 @@ CREATE TABLE `t_user` (
   `password` char(32) NOT NULL COMMENT '登录密码，MD5 加密存储',
   `real_name` varchar(50) DEFAULT NULL COMMENT '用户真实姓名',
   `phone` varchar(20) DEFAULT NULL COMMENT '联系电话',
-  `role_type` tinyint NOT NULL DEFAULT '2' COMMENT '角色类型：1 = 系统管理员，2 = 生产人员；注册账号默认为生产人员',
+  `role_type` tinyint NOT NULL DEFAULT '2' COMMENT '角色类型：1 = 系统管理员，2 = 生产员；注册账号默认为生产员',
   `account_status` tinyint NOT NULL DEFAULT '3' COMMENT '账号状态：1 = 正常启用，2 = 禁用，3 = 待审批；注册后默认为待审批',
   `last_login_time` datetime DEFAULT NULL COMMENT '最后一次登录时间',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -208,7 +208,7 @@ CREATE TABLE `t_user` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `uk_username` (`username`),
   KEY `idx_role_status` (`role_type`,`account_status`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='存储系统所有用户账号信息，区分管理员与生产人员双角色，实现账号权限管控与注册审批流程';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='存储系统所有用户账号信息，区分管理员与生产员双角色，实现账号权限管控与注册审批流程';
 CREATE TABLE `t_user_role` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
@@ -224,8 +224,9 @@ CREATE TABLE `t_user_role` (
 -- Seed data
 INSERT INTO t_role (role_code, role_name, description) VALUES
 ('admin', '超级管理员', '系统全部权限'),
+('org_admin', '组织管理员', '组织内管理权限，可管理用户和客户板材'),
 ('operator', '操作员', '业务操作与排样执行'),
-('viewer', '观察员', '只读访问');
+('viewer', '生产员', '查看数据，执行生产任务');
 
 INSERT INTO t_permission (perm_code, perm_name, description) VALUES
 ('user:manage', '用户管理', '查看、编辑用户与分配角色'),
@@ -236,18 +237,31 @@ INSERT INTO t_permission (perm_code, perm_name, description) VALUES
 ('order:write', '订单编辑', '新增、修改、删除订单'),
 ('order:read', '订单查看', '查看订单信息'),
 ('algorithm:execute', '算法执行', '提交排样计算'),
-('layout:read', '排样查看', '查看排样结果');
+('layout:read', '排样查看', '查看排样结果'),
+('org:manage', '组织管理', '管理系统组织'),
+('account:manage', '账号管理', '管理系统所有用户账号'),
+('audit:read', '审计日志', '查看操作审计日志'),
+('production:read', '任务查看', '查看分配给自己的生产任务');
 
+-- admin: system-level only
 INSERT INTO t_role_permission (role_id, perm_id)
-SELECT (SELECT role_id FROM t_role WHERE role_code='admin'), perm_id FROM t_permission;
+SELECT (SELECT role_id FROM t_role WHERE role_code='admin'), perm_id
+FROM t_permission WHERE perm_code IN ('org:manage','account:manage');
 
+-- org_admin: all business + user:manage + audit:read
+INSERT INTO t_role_permission (role_id, perm_id)
+SELECT (SELECT role_id FROM t_role WHERE role_code='org_admin'), perm_id
+FROM t_permission WHERE perm_code NOT IN ('org:manage','account:manage');
+
+-- operator: business permissions only (no production:read, that's viewer-only)
 INSERT INTO t_role_permission (role_id, perm_id)
 SELECT (SELECT role_id FROM t_role WHERE role_code='operator'), perm_id
-FROM t_permission WHERE perm_code <> 'user:manage';
+FROM t_permission WHERE perm_code NOT IN ('user:manage','audit:read','org:manage','account:manage','production:read');
 
+-- viewer: only production:read
 INSERT INTO t_role_permission (role_id, perm_id)
 SELECT (SELECT role_id FROM t_role WHERE role_code='viewer'), perm_id
-FROM t_permission WHERE perm_code IN ('customer:read', 'board:read', 'order:read', 'layout:read');
+FROM t_permission WHERE perm_code = 'production:read';
 
 INSERT INTO t_user (username, password, real_name, role_type, account_status) VALUES
 ('admin', '827ccb0eea8a706c4c34a16891f84e7b', '系统管理员', 1, 1);

@@ -16,4 +16,7 @@ public class LoginInfo {
     private String token;
     private List<String> roles;
     private List<String> permissions;
+    private Long orgId;
+    private String orgRole;
+    private String orgName;
 }

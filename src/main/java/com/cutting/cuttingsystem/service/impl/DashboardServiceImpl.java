@@ -7,6 +7,8 @@ import com.cutting.cuttingsystem.service.DashboardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.cutting.cuttingsystem.util.UserContext;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -30,10 +32,11 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public Map<String, Object> summary() {
         Map<String, Object> result = new LinkedHashMap<>();
+        Long orgId = UserContext.getCurrentOrgId();
 
-        long orderTotal = orderMapper.selectCount(null);
+        long orderTotal = orderMapper.selectCount(orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class));
         long activeOrders = orderMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TOrder>().in("order_status", Arrays.asList(
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class).in("order_status", Arrays.asList(
                         OrderStatus.APPROVED.getCode(),
                         OrderStatus.CALCULATING.getCode(),
                         OrderStatus.LAYOUT_DONE.getCode(),
@@ -41,24 +44,24 @@ public class DashboardServiceImpl implements DashboardService {
 
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
         long orderToday = orderMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TOrder>().apply("DATE(create_time) = {0}", today));
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class).apply("DATE(create_time) = {0}", today));
         String monthStart = LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_LOCAL_DATE);
         long orderThisMonth = orderMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TOrder>().apply("DATE(create_time) >= {0}", monthStart));
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class).apply("DATE(create_time) >= {0}", monthStart));
 
         long taskPending = productionTaskMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TProductionTask>().eq("status", 0));
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TProductionTask.class).eq("status", 0));
         long taskInProgress = productionTaskMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TProductionTask>().eq("status", 1));
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TProductionTask.class).eq("status", 1));
         long taskCompletedThisWeek = productionTaskMapper.selectCount(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TProductionTask>().eq("status", 2)
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TProductionTask.class).eq("status", 2)
                         .apply("DATE(complete_time) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"));
 
-        long customerCount = customerMapper.selectCount(null);
-        long boardCount = boardMapper.selectCount(null);
+        long customerCount = customerMapper.selectCount(orgEq(orgId, com.cutting.cuttingsystem.entitys.TCustomer.class));
+        long boardCount = boardMapper.selectCount(orgEq(orgId, com.cutting.cuttingsystem.entitys.TBoard.class));
 
         Map<String, Object> avgRateRow = layoutResultMapper.selectMaps(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TLayoutResult>().select("IFNULL(AVG(usage_rate),0) as avgRate")).stream()
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TLayoutResult.class).select("IFNULL(AVG(usage_rate),0) as avgRate")).stream()
                 .findFirst().orElse(Map.of("avgRate", 0));
 
         result.put("orderTotal", orderTotal);
@@ -76,8 +79,9 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public Map<String, Object> orderTrend(int days) {
+        Long orgId = UserContext.getCurrentOrgId();
         List<Map<String, Object>> rows = orderMapper.selectMaps(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TOrder>()
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class)
                         .select("DATE(create_time) as date", "COUNT(*) as count")
                         .apply("create_time >= DATE_SUB(CURDATE(), INTERVAL {0} DAY)", days)
                         .groupBy("DATE(create_time)")
@@ -106,8 +110,9 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public Map<String, Object> orderStatusDist() {
+        Long orgId = UserContext.getCurrentOrgId();
         List<Map<String, Object>> rows = orderMapper.selectMaps(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TOrder>()
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TOrder.class)
                         .select("order_status", "COUNT(*) as count")
                         .groupBy("order_status"));
 
@@ -127,8 +132,9 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public Map<String, Object> utilizationTrend(int days) {
+        Long orgId = UserContext.getCurrentOrgId();
         List<Map<String, Object>> rows = layoutResultMapper.selectMaps(
-                new QueryWrapper<com.cutting.cuttingsystem.entitys.TLayoutResult>()
+                orgEq(orgId, com.cutting.cuttingsystem.entitys.TLayoutResult.class)
                         .select("DATE(create_time) as date", "AVG(usage_rate) as avgRate")
                         .apply("create_time >= DATE_SUB(CURDATE(), INTERVAL {0} DAY)", days)
                         .groupBy("DATE(create_time)")
@@ -154,6 +160,14 @@ public class DashboardServiceImpl implements DashboardService {
         result.put("labels", labels);
         result.put("data", data);
         return result;
+    }
+
+    private <T> QueryWrapper<T> orgEq(Long orgId, Class<T> entityClass) {
+        QueryWrapper<T> qw = new QueryWrapper<>();
+        if (orgId != null) {
+            qw.eq("org_id", orgId);
+        }
+        return qw;
     }
 
     private BigDecimal round(Object value) {

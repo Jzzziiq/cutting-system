@@ -141,7 +141,9 @@ class OrderModuleTest {
     }
 
     @Test
-    void createOrderRejectsBlankProcessName() throws Exception {
+    void createOrderAcceptsBlankProcessName() throws Exception {
+        when(orderService.createOrder(any())).thenReturn(orderVO(1L));
+
         mockMvc.perform(post("/orders")
                         .header("Authorization", bearerToken())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -152,8 +154,8 @@ class OrderModuleTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data.processName").exists());
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.orderId").value(1));
     }
 
     @Test

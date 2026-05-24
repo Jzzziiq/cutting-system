@@ -13,6 +13,7 @@ public class TOrderVO {
     private String customerName;
     private String customerAddress;
     private String processName;
+    private Date dispatchDate;
     private Integer orderStatus;
     private String statusLabel;
     private String statusHistory;

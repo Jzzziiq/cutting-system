@@ -18,6 +18,9 @@ public class TOrder implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Long userId;
 
+    @TableField(fill = FieldFill.INSERT)
+    private Long orgId;
+
     private String orderNo;
 
     private Long customerId;
@@ -27,6 +30,8 @@ public class TOrder implements Serializable {
     private String customerAddress;
 
     private String processName;
+
+    private Date dispatchDate;
 
     private Integer orderStatus;
 

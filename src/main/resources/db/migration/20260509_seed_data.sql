@@ -15,7 +15,7 @@ INSERT INTO t_user (username, password, real_name, phone, role_type, account_sta
 ('wangwu',   'e10adc3949ba59abbe56e057f20f883e', '王工',   '13800001111', 2, 1, NOW(), NOW()),
 ('zhaoliu',  'e10adc3949ba59abbe56e057f20f883e', '赵主管', '13800002222', 1, 1, NOW(), NOW()),
 ('sunqi',    'e10adc3949ba59abbe56e057f20f883e', '孙师傅', '13800003333', 2, 1, NOW(), NOW()),
-('viewer01', 'e10adc3949ba59abbe56e057f20f883e', '查阅员', '13800004444', 2, 1, NOW(), NOW());
+('viewer01', 'e10adc3949ba59abbe56e057f20f883e', '生产员', '13800004444', 2, 1, NOW(), NOW());
 
 -- 为新增用户分配角色 (admin=1, operator=2, viewer=3)
 INSERT INTO t_user_role (user_id, role_id)
