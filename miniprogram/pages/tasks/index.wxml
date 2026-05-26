@@ -4,7 +4,7 @@
     <view class="title">我的任务</view>
     <view class="bell-btn" bindtap="goNotifications">
       <text class="bell-icon">🔔</text>
-      <van-badge wx:if="{{unreadCount > 0}}" content="{{unreadCount > 99 ? '99+' : unreadCount}}" />
+      <van-info wx:if="{{unreadCount > 0}}" content="{{unreadCount > 99 ? '99+' : unreadCount}}" style="position:absolute;top:-8rpx;right:-8rpx;" />
     </view>
   </view>
 
