@@ -3,6 +3,52 @@ page {
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 28rpx;
+
+  /* Vant Weapp 主题覆盖 */
+  --van-primary-color: #2563eb;
+  --van-success-color: #10b981;
+  --van-warning-color: #f59e0b;
+  --van-danger-color: #ef4444;
+  --van-font-size-xs: 22rpx;
+  --van-font-size-sm: 24rpx;
+  --van-font-size-md: 28rpx;
+  --van-font-size-lg: 32rpx;
+  --van-font-size-xl: 36rpx;
+  --van-border-radius-sm: 8rpx;
+  --van-border-radius-md: 12rpx;
+  --van-border-radius-lg: 16rpx;
+  --van-button-border-radius: 12rpx;
+  --van-button-normal-height: 88rpx;
+  --van-button-font-size: 28rpx;
+  --van-button-primary-background: #2563eb;
+  --van-button-primary-border-color: #2563eb;
+  --van-button-danger-background: #fee2e2;
+  --van-button-danger-border-color: #fee2e2;
+  --van-button-danger-color: #b91c1c;
+  --van-button-default-background: #f3f4f6;
+  --van-button-default-border-color: #f3f4f6;
+  --van-button-default-color: #374151;
+  --van-cell-group-background: transparent;
+  --van-cell-background: transparent;
+  --van-cell-border-color: #e5e7eb;
+  --van-cell-font-size: 30rpx;
+  --van-cell-label-font-size: 24rpx;
+  --van-cell-label-color: #6b7280;
+  --van-field-label-color: #374151;
+  --van-field-input-text-color: #111827;
+  --van-field-placeholder-text-color: #9ca3af;
+  --van-field-border-color: #d1d5db;
+  --van-field-background: #f9fafb;
+  --van-tag-border-radius: 4rpx;
+  --van-tag-font-size: 22rpx;
+  --van-tag-padding: 4rpx 12rpx;
+  --van-dialog-border-radius: 16rpx;
+  --van-dialog-header-font-weight: 700;
+  --van-dialog-message-font-size: 28rpx;
+  --van-badge-background: #ef4444;
+  --van-badge-font-size: 20rpx;
+  --van-empty-description-color: #9ca3af;
+  --van-empty-description-font-size: 28rpx;
 }
 
 .page {
@@ -51,47 +97,6 @@ page {
   margin-bottom: 8rpx;
 }
 
-input,
-textarea {
-  background: #f9fafb;
-  border: 1rpx solid #d1d5db;
-  border-radius: 8rpx;
-  box-sizing: border-box;
-  min-height: 76rpx;
-  padding: 16rpx;
-  width: 100%;
-}
-
-textarea {
-  min-height: 144rpx;
-}
-
-button {
-  border-radius: 8rpx;
-  font-size: 28rpx;
-  line-height: 2.4;
-  margin: 0;
-}
-
-.primary {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.secondary {
-  background: #eef2ff;
-  color: #1d4ed8;
-}
-
-.danger {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.ghost {
-  background: #f3f4f6;
-  color: #374151;
-}
 
 .list-item {
   border-bottom: 1rpx solid #e5e7eb;
@@ -113,8 +118,3 @@ button {
   margin-top: 8rpx;
 }
 
-.empty {
-  color: #9ca3af;
-  padding: 48rpx 0;
-  text-align: center;
-}

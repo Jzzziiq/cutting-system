@@ -1,18 +1,30 @@
 <view class="login-page">
   <view class="login-card">
-    <view class="title">板材切割系统</view>
-    <view class="muted">请输入账号信息</view>
-
-    <view class="field">
-      <view class="label">用户名</view>
-      <input value="{{username}}" placeholder="请输入用户名" data-field="username" bindinput="onInput" />
+    <view class="title" style="text-align:center;margin-bottom:40rpx;">板材切割系统</view>
+    <van-field
+      label="用户名"
+      placeholder="请输入用户名"
+      value="{{username}}"
+      data-field="username"
+      bind:input="onInput"
+      required
+    />
+    <van-field
+      label="密码"
+      type="password"
+      placeholder="请输入密码"
+      value="{{password}}"
+      data-field="password"
+      bind:input="onInput"
+      required
+    />
+    <view style="margin-top:32rpx;">
+      <van-button
+        type="primary"
+        block
+        loading="{{loading}}"
+        bindtap="onLogin"
+      >登录</van-button>
     </view>
-
-    <view class="field">
-      <view class="label">密码</view>
-      <input value="{{password}}" password placeholder="请输入密码" data-field="password" bindinput="onInput" />
-    </view>
-
-    <button class="primary" loading="{{loading}}" bindtap="onLogin">登录</button>
   </view>
 </view>

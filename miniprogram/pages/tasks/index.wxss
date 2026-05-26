@@ -1,0 +1,7 @@
+.bell-btn {
+  position: relative;
+  padding: 8rpx;
+}
+.bell-icon {
+  font-size: 40rpx;
+}

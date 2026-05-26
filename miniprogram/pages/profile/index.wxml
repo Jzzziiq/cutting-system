@@ -1,0 +1,56 @@
+<view class="page">
+  <!-- 用户信息 -->
+  <view class="section">
+    <view class="title">个人信息</view>
+    <view class="field">
+      <view class="label">用户名</view>
+      <view>{{userInfo.username || '-'}}</view>
+    </view>
+    <view class="field" wx:if="{{userInfo.realName}}">
+      <view class="label">姓名</view>
+      <view>{{userInfo.realName}}</view>
+    </view>
+    <view class="field" wx:if="{{userInfo.orgRole}}">
+      <view class="label">角色</view>
+      <view>{{userInfo.orgRole === 'viewer' ? '生产员' : userInfo.orgRole}}</view>
+    </view>
+  </view>
+
+  <!-- 操作 -->
+  <view class="section">
+    <van-button type="default" block bindtap="showChangePassword">修改密码</van-button>
+    <van-button type="danger" block style="margin-top:16rpx;" bindtap="onLogout">退出登录</van-button>
+  </view>
+
+  <!-- 修改密码弹窗 -->
+  <van-dialog
+    show="{{showPasswordDialog}}"
+    title="修改密码"
+    show-cancel-button
+    loading="{{saving}}"
+    bind:confirm="onChangePassword"
+    bind:cancel="hideChangePassword"
+  >
+    <van-field
+      type="password"
+      placeholder="请输入旧密码"
+      value="{{oldPassword}}"
+      data-field="oldPassword"
+      bind:input="onInput"
+    />
+    <van-field
+      type="password"
+      placeholder="请输入新密码"
+      value="{{newPassword}}"
+      data-field="newPassword"
+      bind:input="onInput"
+    />
+    <van-field
+      type="password"
+      placeholder="请再次输入新密码"
+      value="{{confirmPassword}}"
+      data-field="confirmPassword"
+      bind:input="onInput"
+    />
+  </van-dialog>
+</view>

@@ -1,0 +1,10 @@
+{
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "我的任务",
+  "usingComponents": {
+    "van-tag": "@vant/weapp/tag/index",
+    "van-badge": "@vant/weapp/badge/index",
+    "van-empty": "@vant/weapp/empty/index",
+    "van-loading": "@vant/weapp/loading/index"
+  }
+}
