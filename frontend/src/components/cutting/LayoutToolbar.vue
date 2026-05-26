@@ -1,20 +1,19 @@
 <script setup>
-import { ZoomIn, ZoomOut, FullScreen, Download, Setting, Upload, Back } from '@element-plus/icons-vue';
+import { ZoomIn, ZoomOut, FullScreen, Download, Setting, Back } from '@element-plus/icons-vue';
 
 defineProps({
   zoom: { type: Number, default: 1 },
-  taskRunning: { type: Boolean, default: false }
+  taskRunning: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false }
 });
 
 defineEmits([
-  'import-order',
   'start-layout',
   'open-settings',
   'zoom-in',
   'zoom-out',
   'fit-screen',
   'export-toolpath',
-  'export-file',
   'back-to-edit'
 ]);
 </script>
@@ -22,8 +21,7 @@ defineEmits([
 <template>
   <div class="layout-toolbar">
     <div class="toolbar-group">
-      <el-button size="small" :icon="Upload" @click="$emit('import-order')">选择订单</el-button>
-      <el-button v-permission="'order:write'" size="small" type="primary" :icon="Setting" :loading="taskRunning" @click="$emit('start-layout')">
+      <el-button v-permission="'order:write'" size="small" type="primary" :icon="Setting" :loading="taskRunning" :disabled="disabled" @click="$emit('start-layout')">
         开始排版
       </el-button>
     </div>
@@ -41,7 +39,6 @@ defineEmits([
 
     <div class="toolbar-group">
       <el-button v-permission="'order:write'" size="small" :icon="Download" @click="$emit('export-toolpath')">输出刀轨</el-button>
-      <el-button v-permission="'order:write'" size="small" :icon="Download" @click="$emit('export-file')">导出文件</el-button>
     </div>
 
     <div class="toolbar-spacer" />

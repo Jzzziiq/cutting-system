@@ -21,11 +21,8 @@ const navItems = [
   { name: 'audit-logs', label: '审计日志', perm: 'audit:read' },
 
   // operator
-  { name: 'data-input', label: '加工数据输入', perm: 'order:write' },
+  { name: 'data-input', label: '订单录入', perm: 'order:write' },
   { name: 'layout-workbench', label: '排版工作台', perm: 'layout:read' },
-
-  // producer
-  { name: 'producer-tasks', label: '我的任务', perm: 'production:read', producerOnly: true },
 
   // common
   { name: 'profile', label: '个人设置', perm: null }
@@ -34,7 +31,6 @@ const navItems = [
 const visibleItems = computed(() =>
   navItems.filter((item) => {
     if (item.adminOnly) return auth.isSystemAdmin;
-    if (item.producerOnly) return auth.isProducer;
     if (item.orgAdminExcluded && auth.isOrgAdmin) return false;
     if (item.operatorExcluded && (auth.isOperator || auth.isProducer)) return false;
     if (item.orgAdminOnly) return auth.isOrgAdmin;

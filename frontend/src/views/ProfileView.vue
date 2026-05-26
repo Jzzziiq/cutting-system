@@ -59,6 +59,10 @@ async function changePassword() {
 </script>
 
 <template>
+  <div v-if="auth.isProducer" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-yellow-800">
+    生产员请使用微信小程序处理生产任务
+  </div>
+
   <div class="section-block">
     <div class="section-title">
       <div>

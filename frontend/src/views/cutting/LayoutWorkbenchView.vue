@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { onActivated } from 'vue';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
@@ -9,8 +9,7 @@ import LayoutHistoryPanel from '@/components/cutting/LayoutHistoryPanel.vue';
 import LayoutCanvas from '@/components/cutting/LayoutCanvas.vue';
 import { useLayoutRunner } from '@/composables/useLayoutRunner';
 import { useLayoutDataLoader } from '@/composables/useLayoutDataLoader';
-import { exportToolpathSVG, exportResultJSON } from '@/utils/exportUtils';
-import { listOrders } from '@/api/orders';
+import { exportToolpathNC } from '@/utils/exportUtils';
 import { assignOrderTask } from '@/api/production-tasks';
 import { listUsers } from '@/api/users';
 
@@ -22,14 +21,15 @@ const layoutZoom = ref(1);
 const showSettings = ref(false);
 const settings = reactive({
   kerfWidth: 3,
-  gapDistance: 3,
   safeMargin: 5,
   allowRotation: true,
-  units: 'mm'
+  cutDepth: 3,
+  cutFeed: 3000,
+  spindleSpeed: 18000
 });
 
 // --- Runner ---
-const { submitting, runLayoutForGroups, parseResultJson, boardLabel } = useLayoutRunner();
+const { submitting, runLayoutForGroups, parseResultJson, decorateSolutions, boardLabel } = useLayoutRunner();
 
 // --- Data loader ---
 const {
@@ -47,7 +47,7 @@ const {
   onDeleteRecord,
   onSaveResult,
   resetRouteKey
-} = useLayoutDataLoader({ runLayoutForGroups, parseResultJson, boardLabel });
+} = useLayoutDataLoader({ runLayoutForGroups, parseResultJson, decorateSolutions, boardLabel });
 
 // --- Order import ---
 const activeOrderId = ref(0);
@@ -57,12 +57,26 @@ const assignRecord = ref(null);
 const assignAssigneeId = ref('');
 const userOptions = ref([]);
 const userLoading = ref(false);
+const hasLoadedHistoryRecord = ref(false);
+const enteredFromSidebar = computed(() => !route.query.orderId && !route.query.draftId && !route.query.taskId);
 
 watch(() => orderInfo.value?.orderId, (id) => {
   if (id) activeOrderId.value = Number(id);
 }, { immediate: true });
 
 async function onStartLayout() {
+  if (enteredFromSidebar.value && hasLoadedHistoryRecord.value) {
+    try {
+      await ElMessageBox.confirm(
+        '当前查看的是历史排版结果，重新排版将覆盖当前显示。是否继续？',
+        '重新排版确认',
+        { confirmButtonText: '继续排版', cancelButtonText: '取消', type: 'warning' }
+      );
+    } catch {
+      return;
+    }
+  }
+
   const orderId = Number(orderInfo.value?.orderId || route.query.orderId || 0);
   if (currentLayoutInput.value?.groups?.length) {
     const ok = await loadFromOrder(orderId, settings);
@@ -125,36 +139,6 @@ async function onStartLayout() {
     ElMessage.error(e.message || '排版计算失败');
   } finally {
     loadingCanvas.value = false;
-  }
-}
-
-async function onImportOrder() {
-  try {
-    const data = await listOrders({ pageNum: 1, pageSize: 20 });
-    const orders = Array.isArray(data) ? data : (data?.records ?? []);
-    if (!orders.length) {
-      ElMessage.info('暂无可导入的订单');
-      return;
-    }
-
-    const { value: orderId } = await ElMessageBox.prompt('请输入要排版的订单ID', '选择订单', {
-      confirmButtonText: '加载',
-      cancelButtonText: '取消',
-      inputType: 'text',
-      inputPlaceholder: orders.map(o => `${o.orderId}=${o.orderNo}`).join(', ')
-    });
-
-    if (orderId) {
-      const order = orders.find(o => String(o.orderId) === orderId.trim());
-      if (order) {
-        await router.push({ name: 'layout-workbench', query: { orderId: order.orderId } });
-        ElMessage.success('已加载订单排版输入');
-      } else {
-        ElMessage.warning('未找到该订单');
-      }
-    }
-  } catch (e) {
-    if (e !== 'cancel' && e?.message !== 'cancel') ElMessage.error('导入失败');
   }
 }
 
@@ -226,9 +210,24 @@ function onZoomOut() { canvasRef.value?.zoomOut(); }
 function onFitScreen() { canvasRef.value?.fitToScreen(); }
 function onZoomChange(value) { layoutZoom.value = value; }
 
-function onExportToolpath() { exportToolpathSVG(canvasRef); }
-function onExportFile() { exportResultJSON(solutions.value, settings, orderInfo.value); }
-
+async function onExportToolpath() {
+  if (!activeResultId.value) {
+    ElMessage.warning('请先保存排版结果后再导出NC文件');
+    return;
+  }
+  try {
+    const toolRadius = settings.kerfWidth / 2;
+    const cutParams = {
+      cutDepth: settings.cutDepth,
+      cutFeed: settings.cutFeed,
+      spindleSpeed: settings.spindleSpeed
+    };
+    await exportToolpathNC(activeResultId.value, toolRadius, cutParams);
+    ElMessage.success('NC文件已导出');
+  } catch (e) {
+    ElMessage.error(e?.message || 'NC文件导出失败');
+  }
+}
 function onBackToEdit() {
   const orderId = Number(orderInfo.value?.orderId || route.query.orderId || 0);
   router.push({ name: 'data-input', query: orderId > 0 ? { orderId } : {} });
@@ -237,6 +236,7 @@ function onBackToEdit() {
 // --- Route loading ---
 onActivated(() => {
   resetRouteKey();
+  hasLoadedHistoryRecord.value = false;
   const orderId = route.query.orderId;
   const draftId = route.query.draftId;
   const taskId = route.query.taskId;
@@ -251,6 +251,11 @@ onActivated(() => {
     solutions.value = [];
   }
 });
+
+function onSelectHistoryRecord(record) {
+  hasLoadedHistoryRecord.value = true;
+  onSelectRecord(record);
+}
 watch(
   () => route.query.orderId,
   (id) => {
@@ -265,14 +270,13 @@ watch(
       <LayoutToolbar
         :zoom="layoutZoom"
         :task-running="submitting"
-        @import-order="onImportOrder"
+        :disabled="enteredFromSidebar && !hasLoadedHistoryRecord"
         @start-layout="onStartLayout"
         @open-settings="showSettings = true"
         @zoom-in="onZoomIn"
         @zoom-out="onZoomOut"
         @fit-screen="onFitScreen"
         @export-toolpath="onExportToolpath"
-        @export-file="onExportFile"
         @back-to-edit="onBackToEdit"
       />
 
@@ -290,7 +294,7 @@ watch(
         <LayoutHistoryPanel
           :active-result-id="activeResultId"
           :refresh-key="historyRefreshKey"
-          @select-record="onSelectRecord"
+          @select-record="onSelectHistoryRecord"
           @delete-record="onDeleteRecord"
         />
 
@@ -298,7 +302,6 @@ watch(
           ref="canvasRef"
           :solutions="solutions"
           :kerf-width="settings.kerfWidth"
-          :gap-distance="settings.gapDistance"
           :allow-rotation="settings.allowRotation"
           :loading="loadingCanvas || submitting"
           :order-info="orderInfo"
@@ -306,13 +309,11 @@ watch(
         />
       </div>
 
-      <el-dialog v-model="showSettings" title="刀具参数设置" width="480px">
+      <el-dialog v-model="showSettings" title="刀具参数设置" width="520px">
+        <el-divider content-position="left">排版参数</el-divider>
         <el-form :model="settings" label-width="110px" size="small">
-          <el-form-item label="锯路宽度(mm)">
+          <el-form-item label="刀路宽度(mm)">
             <el-input-number v-model="settings.kerfWidth" :min="0" :max="20" :step="0.5" style="width:160px" />
-          </el-form-item>
-          <el-form-item label="刀轨间隙(mm)">
-            <el-input-number v-model="settings.gapDistance" :min="0" :max="50" :step="0.5" style="width:160px" />
           </el-form-item>
           <el-form-item label="安全边距(mm)">
             <el-input-number v-model="settings.safeMargin" :min="0" :max="50" :step="1" style="width:160px" />
@@ -320,11 +321,17 @@ watch(
           <el-form-item label="允许旋转">
             <el-switch v-model="settings.allowRotation" />
           </el-form-item>
-          <el-form-item label="默认单位">
-            <el-select v-model="settings.units" style="width:120px">
-              <el-option label="mm" value="mm" />
-              <el-option label="cm" value="cm" />
-            </el-select>
+        </el-form>
+        <el-divider content-position="left">加工参数</el-divider>
+        <el-form :model="settings" label-width="110px" size="small">
+          <el-form-item label="切割深度(mm)">
+            <el-input-number v-model="settings.cutDepth" :min="0.1" :max="100" :step="0.5" style="width:160px" />
+          </el-form-item>
+          <el-form-item label="切削进给(mm/min)">
+            <el-input-number v-model="settings.cutFeed" :min="100" :max="20000" :step="100" style="width:160px" />
+          </el-form-item>
+          <el-form-item label="主轴转速(RPM)">
+            <el-input-number v-model="settings.spindleSpeed" :min="1000" :max="30000" :step="1000" style="width:160px" />
           </el-form-item>
         </el-form>
         <template #footer>

@@ -6,7 +6,6 @@ import { Loading } from '@element-plus/icons-vue';
 const props = defineProps({
   solutions: { type: Array, default: () => [] },
   kerfWidth: { type: Number, default: 3 },
-  gapDistance: { type: Number, default: 3 },
   allowRotation: { type: Boolean, default: true },
   loading: { type: Boolean, default: false },
   orderInfo: { type: Object, default: () => ({}) }
@@ -18,7 +17,6 @@ const canvasRef = ref(null);
 
 const {
   kerfWidth: composableKerfWidth,
-  gapDistance: composableGapDistance,
   allowRotation: composableAllowRotation,
   zoom,
   boardCount,
@@ -42,13 +40,11 @@ const {
   drawFrame
 } = useLayoutCanvas(canvasRef, {
   kerfWidth: props.kerfWidth,
-  gapDistance: props.gapDistance,
   allowRotation: props.allowRotation
 });
 
 // Sync props → composable refs so tool settings dialog changes take effect
 watch(() => props.kerfWidth, (v) => { composableKerfWidth.value = v; });
-watch(() => props.gapDistance, (v) => { composableGapDistance.value = v; });
 watch(() => props.allowRotation, (v) => { composableAllowRotation.value = v; });
 watch(zoom, (value) => { emit('zoom-change', value); }, { immediate: true });
 
@@ -91,11 +87,6 @@ function boardGroupLabel(solution) {
   const bg = solution._boardGroup;
   return [bg.brand, bg.materialType, bg.color].filter(Boolean).join(' ');
 }
-
-const labelQrCells = Array.from({ length: 49 }, (_, index) => ({
-  index,
-  dark: index % 6 === 0 || index % 10 === 0 || [1, 2, 7, 14, 34, 41, 47, 48].includes(index)
-}));
 
 function formatNumber(value) {
   const num = Number(value);
@@ -142,21 +133,38 @@ const tooltipLayoutBlocks = computed(() => {
 const tooltipLabelData = computed(() => {
   const piece = tooltipData.value;
   if (!piece) return null;
-  const orderName = props.orderInfo.orderNo || props.orderInfo.orderName || `第 ${activeBoardIndex.value + 1} 张板`;
-  const pieceName = piece.partName || piece.label || `工件 ${tooltipPieceIndex.value || ''}`.trim();
-  const processName = props.orderInfo.processName || props.orderInfo.process || '排版切割';
+  const l = formatNumber(piece.l);
+  const w = formatNumber(piece.w);
+  const t = piece.thickness ?? currentSolution.value?._boardGroup?.thickness ?? '—';
   const coord = `X${formatNumber(piece.x)} Y${formatNumber(piece.y)}`;
+  const eb = piece.edgeBanding || {};
 
   return {
-    title: `${orderName}-${pieceName}`,
-    pieceName,
-    dimension: `${formatNumber(piece.l)}*${formatNumber(piece.w)}`,
-    processName,
+    customer: props.orderInfo.customer || '—',
+    cabinetName: piece.cabinetName || extractCabinetName(piece.partName) || '—',
+    partName: piece.partName || '',
+    dimension: `${l}×${w}×${t}mm`,
     material: tooltipBoardLabel.value,
+    edgeTop: eb.top ? 1 : 0,
+    edgeBottom: eb.bottom ? 1 : 0,
+    edgeLeft: eb.left ? 1 : 0,
+    edgeRight: eb.right ? 1 : 0,
+    grainDirection: piece.grainDirection || 'none',
     coord,
-    code: `${orderName}-${activeBoardIndex.value + 1}-${tooltipPieceIndex.value || 0}`,
-    page: `板${activeBoardIndex.value + 1}`
+    timestamp: props.orderInfo.layoutCompletedAt || '—'
   };
+});
+
+function extractCabinetName(partName) {
+  if (!partName) return '';
+  const idx = partName.indexOf('-');
+  return idx > 0 ? partName.substring(0, idx) : '';
+}
+
+const miniMapStyle = computed(() => {
+  const { L, W } = getContainerSize(currentSolution.value);
+  if (!L || !W) return {};
+  return { aspectRatio: `${L} / ${W}` };
 });
 </script>
 
@@ -261,40 +269,33 @@ const tooltipLabelData = computed(() => {
         class="layout-label-tooltip"
         :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
       >
-        <div class="label-title">{{ tooltipLabelData.title }}</div>
-        <div class="label-grid">
-          <div class="label-left">
-            <div class="label-part">{{ tooltipLabelData.pieceName }}</div>
-            <div class="label-size">{{ tooltipLabelData.dimension }}</div>
-            <div class="label-direction-row">
-              <div class="label-direction-box"></div>
-              <div class="label-qr">
-                <i
-                  v-for="cell in labelQrCells"
-                  :key="cell.index"
-                  :class="{ 'is-dark': cell.dark }"
-                ></i>
-              </div>
+        <div class="label-info">
+          <div class="label-head">
+            <span class="label-title">{{ tooltipLabelData.customer }}</span>
+            <span class="label-timestamp">{{ tooltipLabelData.timestamp }}</span>
+          </div>
+          <div v-if="tooltipLabelData.partName" class="label-part">{{ tooltipLabelData.cabinetName }}-{{ tooltipLabelData.partName }}</div>
+          <div class="label-spec-row">
+            <span class="label-dimension">{{ tooltipLabelData.dimension }}</span>
+            <div class="label-direction-box">
+              <span class="edge-tag edge-top">{{ tooltipLabelData.edgeTop }}</span>
+              <span class="edge-tag edge-bottom">{{ tooltipLabelData.edgeBottom }}</span>
+              <span class="edge-tag edge-left">{{ tooltipLabelData.edgeLeft }}</span>
+              <span class="edge-tag edge-right">{{ tooltipLabelData.edgeRight }}</span>
             </div>
           </div>
-          <div class="label-right">
-            <div class="label-process">工艺：{{ tooltipLabelData.processName }}</div>
-            <div class="label-layout-mini">
-              <span
-                v-for="block in tooltipLayoutBlocks"
-                :key="block.key"
-                :class="{ active: block.active }"
-                :style="block.style"
-              ></span>
-            </div>
-            <div class="label-code">{{ tooltipLabelData.code }}</div>
+          <div class="label-material">{{ tooltipLabelData.material }}</div>
+        </div>
+        <div class="label-map">
+          <div class="label-layout-mini" :style="miniMapStyle">
+            <span
+              v-for="block in tooltipLayoutBlocks"
+              :key="block.key"
+              :class="{ active: block.active }"
+              :style="block.style"
+            ></span>
           </div>
         </div>
-        <div class="label-footer">
-          <span>{{ tooltipLabelData.material }}</span>
-          <span>坐标 {{ tooltipLabelData.coord }}</span>
-        </div>
-        <div class="label-page">{{ tooltipLabelData.page }}</div>
       </div>
     </div>
   </div>
@@ -379,8 +380,7 @@ const tooltipLabelData = computed(() => {
 .layout-label-tooltip {
   position: absolute;
   width: 372px;
-  min-height: 232px;
-  padding: 12px 14px 14px;
+  padding: 16px;
   color: #111;
   background:
     linear-gradient(135deg, rgba(0, 0, 0, 0.045) 0 1px, transparent 1px 14px),
@@ -388,7 +388,7 @@ const tooltipLabelData = computed(() => {
   border: 2px solid #111;
   border-radius: 8px;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
-  font-family: KaiTi, STKaiti, "Microsoft YaHei", sans-serif;
+  font-family: SimSun, "宋体", "Microsoft YaHei", sans-serif;
   pointer-events: none;
   z-index: 100;
 }
@@ -401,53 +401,65 @@ const tooltipLabelData = computed(() => {
   border-radius: 4px;
 }
 
-.label-title,
-.label-grid,
-.label-footer {
+.label-info {
   position: relative;
   z-index: 1;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .label-title {
-  max-width: 280px;
-  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
   overflow: hidden;
-  color: #111;
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
-.label-grid {
-  display: grid;
-  grid-template-columns: 142px minmax(0, 1fr);
-  gap: 12px;
+.label-timestamp {
+  font-size: 14px;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .label-part {
-  overflow: hidden;
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1.08;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.label-size {
-  margin-top: 6px;
-  font-size: 26px;
-  font-weight: 900;
-  line-height: 1;
+.label-spec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.label-direction-row {
-  display: grid;
-  grid-template-columns: 60px 60px;
-  gap: 13px;
-  align-items: end;
-  margin-top: 17px;
+.label-dimension {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.label-material {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .label-direction-box {
@@ -456,6 +468,7 @@ const tooltipLabelData = computed(() => {
   height: 52px;
   border: 3px solid #111;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .label-direction-box::before,
@@ -480,40 +493,42 @@ const tooltipLabelData = computed(() => {
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
-.label-qr {
-  display: grid;
-  width: 60px;
-  height: 60px;
-  padding: 4px;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(7, 1fr);
-  background: #fff;
-  border: 3px solid #111;
-}
-
-.label-qr i {
-  display: block;
-  background: transparent;
-}
-
-.label-qr i.is-dark {
-  background: #111;
-}
-
-.label-process {
-  margin-top: 4px;
-  overflow: hidden;
-  font-size: 19px;
+.edge-tag {
+  position: absolute;
+  font-size: 12px;
   font-weight: 900;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #111;
+  line-height: 1;
+}
+.edge-tag.edge-top {
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.edge-tag.edge-bottom {
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.edge-tag.edge-left {
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.edge-tag.edge-right {
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.label-map {
+  position: relative;
+  z-index: 1;
 }
 
 .label-layout-mini {
   position: relative;
-  height: 76px;
-  margin-top: 9px;
+  width: 100%;
   overflow: hidden;
   background: #fff;
   border: 3px solid #111;
@@ -536,54 +551,6 @@ const tooltipLabelData = computed(() => {
 }
 
 .label-layout-mini span.active {
-  background: #111;
-}
-
-.label-code {
-  margin-top: 7px;
-  overflow: hidden;
-  font-family: "Courier New", Consolas, monospace;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.label-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 128px;
-  gap: 10px;
-  align-items: center;
-  margin-top: 12px;
-  padding-right: 62px;
-  font-size: 17px;
-  font-weight: 900;
-  line-height: 1.08;
-}
-
-.label-footer span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.label-page {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  z-index: 1;
-  width: 58px;
-  height: 54px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 7px;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 900;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
   background: #111;
 }
 

@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import { ElMessageBox } from 'element-plus/es/components/message-box/index.mjs';
-import { RefreshLeft, RefreshRight, Aim } from '@element-plus/icons-vue';
+import { ArrowLeft, RefreshLeft, RefreshRight, Aim } from '@element-plus/icons-vue';
 
 import { useThreeScene } from '@/composables/useThreeScene';
 import { useCabinetDesignStore } from '@/stores/cabinetDesign';
@@ -250,6 +250,16 @@ function onWizardConfirm(params) {
 }
 
 function onPresetClick(preset) {
+  // 本地预设（完整板件布局）直接加载，跳过向导
+  const template = parseTemplateJson(preset);
+  if (template?.boards?.length && String(preset.id).startsWith('preset-local-')) {
+    template.cabinet.orderId = store.orderId;
+    const draft = store.addCabinetDraft(template);
+    selectedBoard.value = null;
+    ensureSlotMapForCabinet(draft.clientCabinetId, template.boards);
+    buildScene(template, activeSlotMap.value, true);
+    return;
+  }
   store.setSelectedPreset(preset);
   wizard.value = getWizardDefaults(preset);
   showWizard.value = true;
@@ -317,6 +327,10 @@ async function onRemoveDraft(draft) {
       ElMessage.error(e?.message || '移除柜体失败');
     }
   }
+}
+
+function onRenameDraft({ clientCabinetId, newName }) {
+  store.renameCabinetDraft(clientCabinetId, newName);
 }
 
 // --- Free board add ---
@@ -487,6 +501,16 @@ async function loadBoardOptions() {
 }
 
 // --- Lifecycle ---
+async function onBackToDataInput() {
+  try {
+    sessionStorage.setItem(
+      `cabinet-drafts-${store.orderId}`,
+      JSON.stringify(store.cabinetDrafts)
+    );
+  } catch { /* storage full, ignore */ }
+  router.push({ name: 'data-input', query: { orderId: store.orderId } });
+}
+
 onMounted(async () => {
   const oid = Number(route.query.orderId);
   if (!Number.isFinite(oid) || oid <= 0) {
@@ -508,6 +532,16 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+  // 从 sessionStorage 恢复暂存的柜体草稿
+  try {
+    const cached = sessionStorage.getItem(`cabinet-drafts-${oid}`);
+    if (cached) {
+      const drafts = JSON.parse(cached);
+      store.restoreDrafts(drafts);
+      sessionStorage.removeItem(`cabinet-drafts-${oid}`);
+    }
+  } catch { /* ignore */ }
 
   await nextTick();
   if (canvasRef.value) {
@@ -533,6 +567,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="cabinet-design-shell">
     <div class="cd-header">
+      <el-tooltip content="返回数据输入" placement="bottom">
+        <el-button size="small" :icon="ArrowLeft" circle @click="onBackToDataInput" />
+      </el-tooltip>
       <span class="cd-title">3D 柜体设计</span>
       <span v-if="orderInfo" class="cd-order">
         订单 #{{ orderInfo.orderId }} | {{ orderInfo.customerName }} | {{ orderInfo.processName }}
@@ -572,6 +609,7 @@ onBeforeUnmount(() => {
         @select-draft="onSelectDraft"
         @copy-draft="onCopyDraft"
         @remove-draft="onRemoveDraft"
+        @rename-draft="onRenameDraft"
         @new-cabinet="onNewCabinet"
         @preset-click="onPresetClick"
         @edit-template="onEditTemplate"

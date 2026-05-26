@@ -7,7 +7,7 @@ const errorMessage = ref('');
 const records = ref([]);
 const total = ref(0);
 const page = reactive({ pageNum: 1, pageSize: 10 });
-const filters = reactive({ module: '', username: '', status: '' });
+const filters = reactive({ module: '', userId: '', status: '' });
 
 const moduleOptions = ['', '客户管理', '板材管理', '订单管理', '订单明细', '余料管理', '排样结果', '用户管理'];
 const statusOptions = [
@@ -41,7 +41,7 @@ function search() {
 
 function resetFilters() {
   filters.module = '';
-  filters.username = '';
+  filters.userId = '';
   filters.status = '';
   search();
 }
@@ -100,8 +100,8 @@ onMounted(loadData);
         </select>
       </label>
       <label class="filter-field">
-        <span>操作人</span>
-        <input v-model.trim="filters.username" class="input" placeholder="输入用户名" />
+        <span>操作人ID</span>
+        <input v-model.trim="filters.userId" class="input" placeholder="输入用户ID" />
       </label>
       <label class="filter-field compact">
         <span>状态</span>
@@ -126,7 +126,6 @@ onMounted(loadData);
             <th>模块</th>
             <th>操作</th>
             <th>操作人</th>
-            <th>IP</th>
             <th>耗时(ms)</th>
             <th>状态</th>
             <th>时间</th>
@@ -134,17 +133,16 @@ onMounted(loadData);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="8">加载中...</td>
+            <td colspan="7">加载中...</td>
           </tr>
           <tr v-else-if="!records.length">
-            <td colspan="8">暂无审计日志</td>
+            <td colspan="7">暂无审计日志</td>
           </tr>
           <tr v-for="item in records" v-else :key="item.logId">
             <td>{{ item.logId }}</td>
             <td>{{ item.module }}</td>
             <td>{{ item.action }}</td>
-            <td>{{ item.username }}</td>
-            <td>{{ item.ipAddress || '-' }}</td>
+            <td>{{ item.operatorName }}</td>
             <td>{{ item.durationMs }}</td>
             <td>
               <span class="status" :class="{ off: item.status === 1 }">

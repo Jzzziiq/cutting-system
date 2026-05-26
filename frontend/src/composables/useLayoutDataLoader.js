@@ -6,7 +6,13 @@ import { getAlgorithmResult } from '@/api/algorithm';
 import { getLayoutResult, createLayoutResult, deleteLayoutResult } from '@/api/layout-results';
 import { getLayoutInput, getOrder } from '@/api/orders';
 
-export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, boardLabel }) {
+function formatCompactTimestamp(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getFullYear() % 100)}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, decorateSolutions, boardLabel }) {
   const route = useRoute();
 
   const solutions = ref([]);
@@ -49,7 +55,8 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
       draftData.value = null;
       activeResultId.value = null;
       const effectiveConfig = {
-        gapDistance: input.algorithmConfig?.gapDistance ?? settings.gapDistance ?? 3,
+        gapDistance: input.algorithmConfig?.kerfWidth ?? settings.kerfWidth ?? 3,
+        safeMargin: input.algorithmConfig?.safeMargin ?? settings.safeMargin ?? 0,
         allowRotation: input.algorithmConfig?.allowRotation ?? settings.allowRotation ?? false
       };
       const baseOrderInfo = await buildOrderInfo(numericOrderId);
@@ -60,7 +67,8 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
         ...baseOrderInfo,
         utilizationRate: result.totalRate,
         containerCount: result.solutionCount,
-        boardGroupLabels: input.groups.map(group => boardLabel(group.board))
+        boardGroupLabels: input.groups.map(group => boardLabel(group.board)),
+        layoutCompletedAt: formatCompactTimestamp(new Date())
       };
       return true;
     } catch (e) {
@@ -103,12 +111,31 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
     try {
       const res = await getAlgorithmResult(taskId);
       if (res?.resultJson) {
-        solutions.value = parseResultJson(res.resultJson);
+        const parsed = parseResultJson(res.resultJson);
+
+        // 尝试从订单加载板材信息，为每个 solution 设置 _boardGroup
+        if (res.orderId && parsed.length) {
+          try {
+            const input = await getLayoutInput(res.orderId);
+            if (input?.groups?.length) {
+              for (const solution of parsed) {
+                if (solution._boardGroup) continue;
+                const sL = solution.containerLength || solution.instance?.L;
+                const sW = solution.containerWidth || solution.instance?.W;
+                const matched = input.groups.find(g => g.board?.length === sL && g.board?.width === sW);
+                if (matched) solution._boardGroup = matched.board;
+              }
+            }
+          } catch { /* 非致命，继续展示 */ }
+        }
+
+        solutions.value = parsed;
         orderInfo.value = {
           orderName: `任务 #${taskId}`,
           orderId: res.orderId || null,
           utilizationRate: res.bestRate,
-          containerCount: res.containerCount
+          containerCount: res.containerCount,
+          layoutCompletedAt: formatCompactTimestamp(new Date())
         };
       } else {
         ElMessage.warning('该任务没有排版结果数据');
@@ -193,14 +220,34 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
       const detail = await getLayoutResult(record.resultId);
       if (detail?.resultJson) {
         const data = typeof detail.resultJson === 'string' ? JSON.parse(detail.resultJson) : detail.resultJson;
-        solutions.value = parseResultJson(data);
+        const parsed = parseResultJson(data);
+
+        // 尝试从订单加载板材信息，为每个 solution 设置 _boardGroup
+        const orderId = detail.orderId || record.orderId;
+        if (orderId && parsed.length) {
+          try {
+            const input = await getLayoutInput(orderId);
+            if (input?.groups?.length) {
+              for (const solution of parsed) {
+                if (solution._boardGroup) continue;
+                const sL = solution.containerLength || solution.instance?.L;
+                const sW = solution.containerWidth || solution.instance?.W;
+                const matched = input.groups.find(g => g.board?.length === sL && g.board?.width === sW);
+                if (matched) solution._boardGroup = matched.board;
+              }
+            }
+          } catch { /* 非致命，继续展示 */ }
+        }
+
+        solutions.value = parsed;
         orderInfo.value = {
-          orderId: detail.orderId || record.orderId || null,
+          orderId: orderId || null,
           orderNo: detail.orderNo || record.orderNo || '',
           orderName: record.orderName || `排版 #${record.resultId}`,
           customer: record.customer,
           utilizationRate: detail.usageRate,
-          containerCount: detail.containerCount
+          containerCount: detail.containerCount,
+          layoutCompletedAt: formatCompactTimestamp(record.createdAt || detail.createTime || new Date())
         };
         currentLayoutInput.value = null;
         draftData.value = null;
@@ -264,13 +311,16 @@ export function useLayoutDataLoader({ runLayoutForGroups, parseResultJson, board
       }, 0);
       const rate = totalArea > 0 ? usedArea / totalArea : 0;
 
-      await createLayoutResult({
+      const saved = await createLayoutResult({
         orderId: existingOrderId,
         usageRate: rate,
         totalArea,
         containerCount: solutions.value.length,
         resultJson: JSON.stringify(solutions.value)
       });
+      if (saved?.resultId) {
+        activeResultId.value = saved.resultId;
+      }
       ElMessage.success('排版结果已保存');
       historyRefreshKey.value++;
     } catch (e) {

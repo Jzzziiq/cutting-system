@@ -1,4 +1,5 @@
 <script setup>
+import { ref, nextTick } from 'vue';
 import { Plus, CopyDocument, Delete, Edit, Rank } from '@element-plus/icons-vue';
 import { freeBoardParts, categoryLabels } from '@/constants/cabinet';
 
@@ -14,6 +15,7 @@ const emit = defineEmits([
   'select-draft',
   'copy-draft',
   'remove-draft',
+  'rename-draft',
   'new-cabinet',
   'preset-click',
   'edit-template',
@@ -22,6 +24,24 @@ const emit = defineEmits([
   'drag-end',
   'dblclick-part'
 ]);
+
+const editingId = ref(null);
+const editingName = ref('');
+const renameInputRef = ref(null);
+
+function startRename(draft) {
+  editingId.value = draft.clientCabinetId;
+  editingName.value = draft.cabinetJson?.cabinet?.name || '';
+  nextTick(() => renameInputRef.value?.focus());
+}
+
+function commitRename(draft) {
+  const newName = editingName.value.trim();
+  if (newName && newName !== draft.cabinetJson?.cabinet?.name) {
+    emit('rename-draft', { clientCabinetId: draft.clientCabinetId, newName });
+  }
+  editingId.value = null;
+}
 
 function getCategoryLabel(category) {
   return categoryLabels[category] || category;
@@ -47,7 +67,22 @@ function getCategoryLabel(category) {
         @keydown.space.prevent="emit('select-draft', draft.clientCabinetId)"
       >
         <span class="draft-main">
-          <span class="draft-name">{{ draft.cabinetJson?.cabinet?.name || '未命名柜体' }}</span>
+          <el-input
+            v-if="editingId === draft.clientCabinetId"
+            ref="renameInputRef"
+            v-model="editingName"
+            size="small"
+            class="draft-name-input"
+            @blur="commitRename(draft)"
+            @keydown.enter="commitRename(draft)"
+            @keydown.esc="editingId = null"
+            @click.stop
+          />
+          <span
+            v-else
+            class="draft-name"
+            @dblclick.stop="startRename(draft)"
+          >{{ draft.cabinetJson?.cabinet?.name || '未命名柜体' }}</span>
           <span class="draft-meta">
             {{ draft.cabinetJson?.cabinet?.width }} × {{ draft.cabinetJson?.cabinet?.height }} × {{ draft.cabinetJson?.cabinet?.depth }}mm
           </span>
@@ -199,6 +234,17 @@ function getCategoryLabel(category) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.draft-name-input {
+  width: 100%;
+}
+.draft-name-input :deep(.el-input__inner) {
+  font-size: 13px;
+  font-weight: 700;
+  color: #172033;
+  height: 24px;
+  padding: 0 4px;
 }
 
 .draft-meta {

@@ -46,7 +46,21 @@ const {
 } = useBoardWorkpieceGroups();
 
 const selectedOffcuts = ref([]);
+const newlyCreatedOrderIds = ref(new Set());
 const canConfirm = computed(() => totalErrors.value === 0 && totalItems.value > 0 && boardGroups.value.length > 0);
+
+function formatDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number' || val instanceof Date) {
+    const d = new Date(val);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  if (typeof val === 'string' && val.length >= 10) return val.slice(0, 10);
+  return '';
+}
 
 function displayOrderNo(order, fallbackId) {
   const id = order?.orderId ?? fallbackId;
@@ -63,6 +77,10 @@ function onAddBoard(board) {
   addBoardGroup(board);
 }
 
+function onOrderCreated(orderId) {
+  newlyCreatedOrderIds.value.add(orderId);
+}
+
 async function loadOrderContext(orderId) {
   const id = Number(orderId);
   if (!Number.isFinite(id) || id <= 0) return;
@@ -71,14 +89,16 @@ async function loadOrderContext(orderId) {
     currentOrderId.value = id;
     customer.value = order?.customerName || '';
     orderNo.value = displayOrderNo(order, id);
-    orderDate.value = order?.dispatchDate || order?.orderDate || order?.createTime?.slice(0, 10) || orderDate.value;
+    orderDate.value = formatDate(order?.dispatchDate || order?.orderDate || order?.createTime) || orderDate.value;
     remark.value = order?.remark || '';
     applyDefaultOperator();
 
     const layoutInput = await getLayoutInput(id);
-    if (layoutInput?.groups?.length) {
-      loadFromLayoutInput(layoutInput);
+    loadFromLayoutInput(layoutInput);
+    if (!layoutInput?.groups?.length && !newlyCreatedOrderIds.value.has(id)) {
+      ElMessage.info('该订单暂无已保存的工件明细');
     }
+    newlyCreatedOrderIds.value.delete(id);
   } catch (e) {
     ElMessage.error(e?.message || '加载订单失败');
   }
@@ -179,6 +199,13 @@ watch(
   }
 );
 
+// Load order context when order is selected from history dialog or created
+watch(currentOrderId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    loadOrderContext(newId);
+  }
+});
+
 onMounted(() => {
   applyDefaultOperator();
   if (route.query.orderId) {
@@ -198,6 +225,7 @@ onMounted(() => {
         v-model:operator="operator"
         v-model:remark="remark"
         v-model:order-id="currentOrderId"
+        @order-created="onOrderCreated"
       />
 
       <!-- Main: Left (boards + offcuts) | Right (board group tables) -->

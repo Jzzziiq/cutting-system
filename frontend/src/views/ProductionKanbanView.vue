@@ -1,11 +1,20 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onBeforeUnmount, reactive, ref } from 'vue';
 import { kanbanData, deleteTask, assignTask } from '@/api/production-tasks';
 import { listUsers } from '@/api/users';
 
 const loading = ref(false);
 const errorMessage = ref('');
 const searchQuery = ref('');
+
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+}
 const columns = reactive([
   { status: 0, label: '待生产', tasks: [] },
   { status: 1, label: '生产中', tasks: [] },
@@ -13,16 +22,23 @@ const columns = reactive([
 ]);
 
 const filteredColumns = computed(() => {
-  if (!searchQuery.value) return columns;
-  const q = searchQuery.value.toLowerCase();
-  return columns.map(col => ({
-    ...col,
-    tasks: col.tasks.filter(t =>
-      (t.orderNo || '').toLowerCase().includes(q) ||
-      (t.taskName || '').toLowerCase().includes(q) ||
-      (t.assigneeName || '').toLowerCase().includes(q)
-    )
-  }));
+  let result = columns;
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    result = columns.map(col => ({
+      ...col,
+      tasks: col.tasks.filter(t =>
+        (t.orderNo || '').toLowerCase().includes(q) ||
+        (t.taskName || '').toLowerCase().includes(q) ||
+        (t.assigneeName || '').toLowerCase().includes(q)
+      )
+    }));
+  }
+  return result.map(col =>
+    col.status === 2
+      ? { ...col, tasks: col.tasks.filter(t => isToday(t.completeTime)) }
+      : col
+  );
 });
 
 const modalMode = ref('');
@@ -112,17 +128,42 @@ function closeModal() {
   errorMessage.value = '';
 }
 
-onMounted(loadData);
+const isFullscreen = ref(false);
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function onFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement;
+  document.documentElement.classList.toggle('kanban-fullscreen', isFullscreen.value);
+}
+
+onMounted(() => {
+  loadData();
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
+});
 </script>
 
 <template>
-  <div class="section-block">
+  <div class="section-block section-block--kanban">
     <div class="section-title">
       <div>
         <h2>生产看板</h2>
         <p>查看和管理生产加工任务</p>
       </div>
       <div class="action-group">
+        <button class="btn ghost" type="button" @click="toggleFullscreen">
+          {{ isFullscreen ? '退出全屏' : '全屏显示' }}
+        </button>
         <input
           v-model="searchQuery"
           class="input"

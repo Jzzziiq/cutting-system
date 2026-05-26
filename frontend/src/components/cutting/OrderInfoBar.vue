@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus/es/components/message/index.mjs';
 import { listCustomers } from '@/api/customers';
 import { listOrders, createOrder, getOrder } from '@/api/orders';
@@ -19,8 +19,23 @@ const emit = defineEmits([
   'update:orderDate',
   'update:operator',
   'update:remark',
-  'update:orderId'
+  'update:orderId',
+  'order-loaded',
+  'order-created'
 ]);
+
+function formatDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number' || val instanceof Date) {
+    const d = new Date(val);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  if (typeof val === 'string' && val.length >= 10) return val.slice(0, 10);
+  return '';
+}
 
 const customerModel = computed({
   get: () => props.customer,
@@ -62,34 +77,33 @@ async function queryCustomers(query) {
   }
 }
 
-// === Order selection ===
-const orderOptions = ref([]);
-const selectedOrderId = ref(props.orderId);
-const orderSearchLoading = ref(false);
+// === History order dialog ===
+const historyDialogVisible = ref(false);
+const historyOrders = ref([]);
+const historySearch = ref('');
+const historyLoading = ref(false);
 
-watch(() => props.orderId, (val) => {
-  selectedOrderId.value = val;
-});
+async function openHistoryDialog() {
+  historySearch.value = '';
+  historyDialogVisible.value = true;
+  await loadHistoryOrders();
+}
 
-async function loadOrders(query) {
-  orderSearchLoading.value = true;
+async function loadHistoryOrders() {
+  historyLoading.value = true;
   try {
-    const data = await listOrders({ pageNum: 1, pageSize: 30, search: query || '' });
-    const records = data?.records ?? (Array.isArray(data) ? data : []);
-    if (records.length > 0 && records[0].orderId !== undefined) {
-      orderOptions.value = records.map(o => ({
-        value: o.orderId,
-        label: `#${o.orderId} ${o.orderNo || ''} - ${o.customerName || ''}`,
-        order: o
-      }));
-    } else {
-      orderOptions.value = [];
-    }
+    const data = await listOrders({ pageNum: 1, pageSize: 50, search: historySearch.value || '' });
+    historyOrders.value = data?.records ?? (Array.isArray(data) ? data : []);
   } catch {
-    orderOptions.value = [];
+    historyOrders.value = [];
   } finally {
-    orderSearchLoading.value = false;
+    historyLoading.value = false;
   }
+}
+
+function selectHistoryOrder(order) {
+  historyDialogVisible.value = false;
+  onOrderSelect(order.orderId);
 }
 
 async function onOrderSelect(orderId) {
@@ -103,9 +117,10 @@ async function onOrderSelect(orderId) {
     const order = data?.orderId !== undefined ? data : (data?.data ?? data);
     emit('update:customer', order.customerName || '');
     emit('update:orderNo', String(order.orderId || orderId));
-    emit('update:orderDate', order.dispatchDate || order.orderDate || order.createTime?.slice(0, 10) || '');
+    emit('update:orderDate', formatDate(order.dispatchDate || order.orderDate || order.createTime));
     emit('update:remark', order.remark || '');
     emit('update:orderId', orderId);
+    emit('order-loaded', orderId);
   } catch (e) {
     ElMessage.error('加载订单详情失败');
   }
@@ -173,14 +188,13 @@ async function onCreateOrder() {
       processName: newOrderForm.value.processName.trim() || null,
       dispatchDate: newOrderForm.value.dispatchDate,
       remark: newOrderForm.value.remark.trim(),
-      orderStatus: 0
+      orderStatus: 1
     });
     const orderId = result?.orderId ?? result?.data?.orderId;
     if (orderId) {
       ElMessage.success('订单创建成功');
       createDialogVisible.value = false;
-      loadOrders('');
-      selectedOrderId.value = orderId;
+      emit('order-created', orderId);
       await onOrderSelect(orderId);
     } else {
       ElMessage.error('创建订单失败：未返回订单ID');
@@ -196,40 +210,21 @@ async function onCreateOrder() {
 <template>
   <div class="order-info-bar">
     <div class="bar-row">
-      <!-- Order selection -->
       <div class="order-select-group">
         <span class="group-label">目标订单</span>
-        <el-select
-          :model-value="selectedOrderId"
-          filterable
-          remote
-          reserve-keyword
-          placeholder="选择已有订单"
-          size="small"
-          style="width:240px"
-          clearable
-          :remote-method="loadOrders"
-          :loading="orderSearchLoading"
-          @focus="loadOrders('')"
-          @change="onOrderSelect"
-        >
-          <el-option
-            v-for="opt in orderOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
         <el-button size="small" type="primary" plain @click="openCreateDialog">
           新建订单
+        </el-button>
+        <el-button size="small" @click="openHistoryDialog">
+          选择历史订单
         </el-button>
       </div>
     </div>
 
     <!-- Existing info fields -->
-    <div class="bar-row">
+    <div v-show="orderId" class="bar-row">
       <el-form :inline="true" size="small">
-        <el-form-item label="客户名称">
+        <el-form-item label="客户">
           <el-select
             v-model="customerModel"
             filterable
@@ -256,7 +251,7 @@ async function onCreateOrder() {
           <el-input v-model="orderNoModel" placeholder="创建后自动生成" style="width:140px" readonly />
         </el-form-item>
         <el-form-item label="排单日期">
-          <el-date-picker v-model="orderDateModel" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width:140px" clearable />
+          <el-input :model-value="orderDateModel" placeholder="创建后自动生成" style="width:140px" readonly />
         </el-form-item>
         <el-form-item label="创建者">
           <el-input v-model="operatorModel" placeholder="当前登录用户" style="width:140px" readonly />
@@ -291,11 +286,8 @@ async function onCreateOrder() {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="加工名称">
-          <el-input v-model="newOrderForm.processName" placeholder="如：主卧衣柜板材加工" maxlength="100" />
-        </el-form-item>
         <el-form-item label="排单日期">
-          <el-date-picker v-model="newOrderForm.dispatchDate" type="date" placeholder="选择排单日期" value-format="YYYY-MM-DD" style="width:100%" clearable />
+          <el-input :model-value="newOrderForm.dispatchDate" placeholder="自动填入当天" style="width:100%" readonly />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="newOrderForm.remark" type="textarea" placeholder="可选" maxlength="255" :rows="2" />
@@ -307,6 +299,46 @@ async function onCreateOrder() {
           创建
         </el-button>
       </template>
+    </el-dialog>
+
+    <!-- History Order Dialog -->
+    <el-dialog v-model="historyDialogVisible" title="选择历史订单" width="680px" :close-on-click-modal="false">
+      <div style="margin-bottom:12px">
+        <el-input
+          v-model="historySearch"
+          placeholder="搜索订单号、客户名称"
+          clearable
+          size="default"
+          @keyup.enter="loadHistoryOrders"
+          @clear="loadHistoryOrders"
+        >
+          <template #append>
+            <el-button @click="loadHistoryOrders">搜索</el-button>
+          </template>
+        </el-input>
+      </div>
+      <el-table
+        :data="historyOrders"
+        v-loading="historyLoading"
+        size="small"
+        stripe
+        highlight-current-row
+        max-height="400"
+        style="width:100%"
+        @row-dblclick="selectHistoryOrder"
+      >
+        <el-table-column prop="orderId" label="ID" width="60" />
+        <el-table-column prop="customerName" label="客户" min-width="100" />
+        <el-table-column prop="processName" label="加工名称" min-width="120" />
+        <el-table-column label="排单日期" width="110">
+          <template #default="{ row }">{{ formatDate(row.dispatchDate) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="80" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="selectHistoryOrder(row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-dialog>
   </div>
 </template>

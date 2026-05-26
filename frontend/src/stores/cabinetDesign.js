@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { executeSplit, confirmSplit } from '@/api/order-split';
 import { listCabinetTemplates } from '@/api/cabinet-templates';
+import { presetCabinets } from '@/constants/cabinet';
 
 function cloneJson(json) {
   return json ? JSON.parse(JSON.stringify(json)) : null;
@@ -211,6 +212,13 @@ export const useCabinetDesignStore = defineStore('cabinetDesign', {
       }
       this.clearSplitPreview();
     },
+    renameCabinetDraft(clientCabinetId, newName) {
+      const draft = this.cabinetDrafts.find(d => d.clientCabinetId === clientCabinetId);
+      if (draft?.cabinetJson?.cabinet && newName?.trim()) {
+        this.captureHistory();
+        draft.cabinetJson.cabinet.name = newName.trim();
+      }
+    },
     addBoardToActiveCabinet(board) {
       const draft = this.activeDraft;
       if (!draft?.cabinetJson) return null;
@@ -268,6 +276,18 @@ export const useCabinetDesignStore = defineStore('cabinetDesign', {
         const data = await listCabinetTemplates({ pageNum: 1, pageSize: 50 });
         this.presets = data?.records ?? (Array.isArray(data) ? data : []);
       } catch { this.presets = []; }
+      // 合并本地预设（去重：如果后端已有同名模板则跳过）
+      const existingNames = new Set(this.presets.map(p => p.name));
+      const localPresets = presetCabinets
+        .filter(p => !existingNames.has(p.name))
+        .map((p, i) => ({
+          id: `preset-local-${i}`,
+          name: p.name,
+          category: p.category,
+          isOfficial: 1,
+          cabinetJson: { cabinet: { name: p.name, category: p.category, width: p.width, height: p.height, depth: p.depth }, boards: p.boards }
+        }));
+      this.presets = [...localPresets, ...this.presets];
     },
     async executeSplit(cabinetJson, materialSlotBoardMap) {
       this.splitting = true;
@@ -354,6 +374,14 @@ export const useCabinetDesignStore = defineStore('cabinetDesign', {
       this.splitGroups = [];
       this.splitResult = null;
       this.splitResults = [];
+    },
+    restoreDrafts(drafts) {
+      if (!Array.isArray(drafts) || drafts.length === 0) return;
+      this.cabinetDrafts = cloneJson(drafts);
+      this.activeCabinetId = this.cabinetDrafts[0]?.clientCabinetId || null;
+      this.undoStack = [];
+      this.redoStack = [];
+      this.clearSplitPreview();
     },
     reset() {
       this.selectedPreset = null;

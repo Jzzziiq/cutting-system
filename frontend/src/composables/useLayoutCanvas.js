@@ -161,7 +161,6 @@ function buildPieceColorMap(solutions, tolerance) {
 
 export function useLayoutCanvas(canvasRef, options = {}) {
   const kerfWidth = ref(options.kerfWidth ?? 3);
-  const gapDistance = ref(options.gapDistance ?? 3);
   const allowRotation = ref(options.allowRotation ?? true);
 
   const solutions = ref([]);
@@ -186,7 +185,7 @@ export function useLayoutCanvas(canvasRef, options = {}) {
 
   const pieceColorMap = computed(() => buildPieceColorMap(
     solutions.value,
-    Math.max(kerfWidth.value, gapDistance.value, 1) + 0.5
+    kerfWidth.value + 0.5
   ));
 
   const summary = computed(() => {
@@ -554,7 +553,6 @@ export function useLayoutCanvas(canvasRef, options = {}) {
 
   return {
     kerfWidth,
-    gapDistance,
     allowRotation,
     solutions,
     activeBoardIndex,

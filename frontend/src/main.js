@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { ElButton } from 'element-plus/es/components/button/index.mjs';
+import { ElDatePicker } from 'element-plus/es/components/date-picker/index.mjs';
 import { ElCheckbox } from 'element-plus/es/components/checkbox/index.mjs';
 import { ElDialog } from 'element-plus/es/components/dialog/index.mjs';
 import { ElDivider } from 'element-plus/es/components/divider/index.mjs';
@@ -15,6 +16,7 @@ import { ElTag } from 'element-plus/es/components/tag/index.mjs';
 import 'element-plus/es/components/base/style/css';
 import 'element-plus/es/components/button/style/css';
 import 'element-plus/es/components/checkbox/style/css';
+import 'element-plus/es/components/date-picker/style/css';
 import 'element-plus/es/components/dialog/style/css';
 import 'element-plus/es/components/divider/style/css';
 import 'element-plus/es/components/form/style/css';
@@ -39,6 +41,7 @@ const app = createApp(App);
 const elementComponents = [
   ElButton,
   ElCheckbox,
+  ElDatePicker,
   ElDialog,
   ElDivider,
   ElForm,

@@ -13,9 +13,7 @@ const OrganizationsView = () => import('@/views/OrganizationsView.vue');
 const OrgUsersView = () => import('@/views/OrgUsersView.vue');
 const AuditLogView = () => import('@/views/AuditLogView.vue');
 const ProductionKanbanView = () => import('@/views/ProductionKanbanView.vue');
-const ProductionMyOrdersView = () => import('@/views/ProductionMyOrdersView.vue');
 const ProfileView = () => import('@/views/ProfileView.vue');
-const ProducerTasksView = () => import('@/views/ProducerTasksView.vue');
 
 const routes = [
   {
@@ -52,12 +50,6 @@ const routes = [
         name: 'profile',
         component: ProfileView,
         meta: { title: '个人设置' }
-      },
-      {
-        path: 'producer/tasks',
-        name: 'producer-tasks',
-        component: ProducerTasksView,
-        meta: { title: '我的任务', perm: 'production:read' }
       },
       {
         path: 'customers',
@@ -102,16 +94,10 @@ const routes = [
         meta: { title: '生产看板', perm: 'board:read' }
       },
       {
-        path: 'production/my-orders',
-        name: 'production-my-orders',
-        component: ProductionMyOrdersView,
-        meta: { title: '我的生产订单', perm: 'order:read' }
-      },
-      {
         path: 'cutting/data-input',
         name: 'data-input',
         component: () => import('@/views/cutting/DataInputView.vue'),
-        meta: { title: '加工数据输入', perm: 'order:write' }
+        meta: { title: '订单录入', perm: 'order:write' }
       },
       {
         path: 'cutting/layout-workbench',
@@ -149,7 +135,7 @@ router.beforeEach((to) => {
   if (to.name === 'login' && auth.isAuthenticated) {
     // role-based default landing page
     if (auth.isSystemAdmin) return { name: 'admin-dashboard' };
-    if (auth.isProducer) return { name: 'producer-tasks' };
+    if (auth.isProducer) return { name: 'profile' };
     return { name: 'dashboard' };
   }
 
@@ -161,7 +147,7 @@ router.beforeEach((to) => {
   if (to.meta.perm && !auth.hasPermission(to.meta.perm)) {
     // redirect to appropriate default page
     if (auth.isSystemAdmin) return { name: 'admin-dashboard' };
-    if (auth.isProducer) return { name: 'producer-tasks' };
+    if (auth.isProducer) return { name: 'profile' };
     return { name: 'dashboard' };
   }
 

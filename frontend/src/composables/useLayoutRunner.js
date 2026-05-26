@@ -47,10 +47,18 @@ export function useLayoutRunner() {
         const code = pieceId.split('-').slice(0, -1).join('-');
         const orderItemId = pieceId.split('-')[0];
         const sourceItem = itemByCode.get(code) || itemById.get(orderItemId);
+        let edgeBanding = null;
+        if (sourceItem?.edgeBanding) {
+          try { edgeBanding = typeof sourceItem.edgeBanding === 'string' ? JSON.parse(sourceItem.edgeBanding) : sourceItem.edgeBanding; } catch { /* ignore */ }
+        }
         return {
           ...piece,
           partCode: sourceItem?.partCode || piece.partCode,
-          partName: sourceItem?.partName || piece.partName
+          partName: sourceItem?.partName || piece.partName,
+          cabinetName: sourceItem?.cabinetName || '',
+          grainDirection: sourceItem?.grainDirection || 'none',
+          edgeBanding,
+          thickness: sourceItem?.thickness ?? board?.thickness ?? null
         };
       })
     }));
@@ -84,7 +92,8 @@ export function useLayoutRunner() {
         L: board.length,
         W: board.width,
         isRotateEnable: algorithmConfig.allowRotation ?? settings.allowRotation ?? true,
-        gapDistance: algorithmConfig.gapDistance ?? settings.gapDistance ?? 3,
+        gapDistance: algorithmConfig.kerfWidth ?? settings.kerfWidth ?? 3,
+        safeMargin: algorithmConfig.safeMargin ?? settings.safeMargin ?? 0,
         squareList
       });
 
