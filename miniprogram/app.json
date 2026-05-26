@@ -1,17 +1,14 @@
 {
   "pages": [
     "pages/login/login",
-    "pages/customers/index",
-    "pages/customers/detail",
-    "pages/customers/edit",
-    "pages/boards/index",
-    "pages/boards/detail",
-    "pages/boards/edit",
-    "pages/algorithm/index"
+    "pages/tasks/index",
+    "pages/tasks/detail",
+    "pages/profile/index",
+    "pages/notifications/index"
   ],
   "window": {
     "navigationBarTitleText": "板材切割系统",
-    "navigationBarBackgroundColor": "#1f2937",
+    "navigationBarBackgroundColor": "#2563eb",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f6f7f9"
   },
@@ -19,19 +16,18 @@
     "color": "#6b7280",
     "selectedColor": "#2563eb",
     "backgroundColor": "#ffffff",
-    "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/customers/index",
-        "text": "客户"
+        "pagePath": "pages/tasks/index",
+        "text": "我的任务",
+        "iconPath": "assets/icons/task.png",
+        "selectedIconPath": "assets/icons/task-active.png"
       },
       {
-        "pagePath": "pages/boards/index",
-        "text": "板材"
-      },
-      {
-        "pagePath": "pages/algorithm/index",
-        "text": "算法"
+        "pagePath": "pages/profile/index",
+        "text": "个人设置",
+        "iconPath": "assets/icons/profile.png",
+        "selectedIconPath": "assets/icons/profile-active.png"
       }
     ]
   },

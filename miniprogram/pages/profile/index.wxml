@@ -1,25 +1,23 @@
 <view class="page">
-  <!-- 用户信息 -->
-  <view class="section">
-    <view class="title">个人信息</view>
-    <view class="field">
-      <view class="label">用户名</view>
-      <view>{{userInfo.username || '-'}}</view>
-    </view>
-    <view class="field" wx:if="{{userInfo.realName}}">
-      <view class="label">姓名</view>
-      <view>{{userInfo.realName}}</view>
-    </view>
-    <view class="field" wx:if="{{userInfo.orgRole}}">
-      <view class="label">角色</view>
-      <view>{{userInfo.orgRole === 'viewer' ? '生产员' : userInfo.orgRole}}</view>
-    </view>
+  <!-- 用户头像卡片 -->
+  <view class="avatar-card">
+    <view class="avatar">👤</view>
+    <view class="avatar-name">{{userInfo.username || '-'}}</view>
+    <view class="avatar-role" wx:if="{{userInfo.orgRole}}">{{userInfo.orgRole === 'viewer' ? '生产员' : userInfo.orgRole}}</view>
   </view>
 
-  <!-- 操作 -->
-  <view class="section">
-    <van-button type="default" block bindtap="showChangePassword">修改密码</van-button>
-    <van-button type="danger" block style="margin-top:16rpx;" bindtap="onLogout">退出登录</van-button>
+  <!-- 菜单列表 -->
+  <view class="menu-card">
+    <view class="menu-item" bindtap="showChangePassword">
+      <view class="menu-icon blue">🔒</view>
+      <view class="menu-text">修改密码</view>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onLogout">
+      <view class="menu-icon red">🚪</view>
+      <view class="menu-text danger">退出登录</view>
+      <text class="menu-arrow">›</text>
+    </view>
   </view>
 
   <!-- 修改密码弹窗 -->

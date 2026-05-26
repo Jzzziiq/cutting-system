@@ -1,7 +1,7 @@
 <view class="page">
   <!-- 标题栏 -->
   <view class="between section">
-    <view class="title">我的任务</view>
+    <view class="title" style="margin-bottom:0;">我的任务</view>
     <view class="bell-btn" bindtap="goNotifications">
       <text class="bell-icon">🔔</text>
       <van-info wx:if="{{unreadCount > 0}}" content="{{unreadCount > 99 ? '99+' : unreadCount}}" style="position:absolute;top:-8rpx;right:-8rpx;" />
@@ -9,8 +9,9 @@
   </view>
 
   <!-- 任务列表 -->
-  <view class="section" wx:if="{{tasks.length}}">
-    <view class="list-item" wx:for="{{tasks}}" wx:key="taskId" data-id="{{item.taskId}}" bindtap="goDetail">
+  <view wx:if="{{tasks.length}}">
+    <view class="task-card status-{{item.status === 0 ? 'pending' : item.status === 1 ? 'progress' : 'done'}}"
+          wx:for="{{tasks}}" wx:key="taskId" data-id="{{item.taskId}}" bindtap="goDetail">
       <view class="between">
         <view class="item-title">{{item.taskName || '未命名任务'}}</view>
         <van-tag wx:if="{{item.status === 0}}" type="warning">待处理</van-tag>

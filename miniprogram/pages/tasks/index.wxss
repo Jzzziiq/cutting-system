@@ -5,3 +5,31 @@
 .bell-icon {
   font-size: 40rpx;
 }
+
+/* 任务卡片 */
+.task-card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+.task-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6rpx;
+}
+.task-card.status-pending::before {
+  background: #f59e0b;
+}
+.task-card.status-progress::before {
+  background: #2563eb;
+}
+.task-card.status-done::before {
+  background: #10b981;
+}

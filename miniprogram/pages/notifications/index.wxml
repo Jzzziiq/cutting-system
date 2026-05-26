@@ -1,20 +1,20 @@
 <view class="page">
   <view class="between section">
-    <view class="title">通知</view>
+    <view class="title" style="margin-bottom:0;">消息通知</view>
     <van-button size="small" plain bindtap="onMarkAllRead">全部已读</van-button>
   </view>
 
-  <view class="section" wx:if="{{notifications.length}}">
-    <view class="list-item" wx:for="{{notifications}}" wx:key="id"
+  <view class="notif-card" wx:if="{{notifications.length}}">
+    <view class="notif-item" wx:for="{{notifications}}" wx:key="id"
           data-item="{{item}}" bindtap="onTapNotification">
-      <view class="between">
-        <view class="item-title" style="{{item.isRead ? 'color:#6b7280' : ''}}">
-          <text wx:if="{{!item.isRead}}" style="color:#2563eb;margin-right:8rpx;">●</text>
-          {{item.title}}
+      <view class="notif-dot {{item.isRead ? 'read' : 'unread'}}"></view>
+      <view class="notif-content">
+        <view class="between">
+          <view class="notif-title" style="{{item.isRead ? 'color:#6b7280;font-weight:400;' : ''}}">{{item.title}}</view>
+          <view class="notif-time">{{item.createdAt}}</view>
         </view>
-        <view class="muted">{{item.createdAt}}</view>
+        <view class="notif-desc">{{item.content}}</view>
       </view>
-      <view class="item-meta">{{item.content}}</view>
     </view>
   </view>
 

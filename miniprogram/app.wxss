@@ -1,8 +1,9 @@
 page {
-  background: #f6f7f9;
-  color: #111827;
+  background: #f5f7fa;
+  color: #1f2937;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 28rpx;
+  line-height: 1.6;
 
   /* Vant Weapp 主题覆盖 */
   --van-primary-color: #2563eb;
@@ -26,7 +27,7 @@ page {
   --van-button-danger-border-color: #fee2e2;
   --van-button-danger-color: #b91c1c;
   --van-button-default-background: #f3f4f6;
-  --van-button-default-border-color: #f3f4f6;
+  --van-button-default-border-color: #e5e7eb;
   --van-button-default-color: #374151;
   --van-cell-group-background: transparent;
   --van-cell-background: transparent;
@@ -35,46 +36,50 @@ page {
   --van-cell-label-font-size: 24rpx;
   --van-cell-label-color: #6b7280;
   --van-field-label-color: #374151;
-  --van-field-input-text-color: #111827;
+  --van-field-input-text-color: #1f2937;
   --van-field-placeholder-text-color: #9ca3af;
-  --van-field-border-color: #d1d5db;
+  --van-field-border-color: #e5e7eb;
   --van-field-background: #f9fafb;
-  --van-tag-border-radius: 4rpx;
+  --van-tag-border-radius: 20rpx;
   --van-tag-font-size: 22rpx;
-  --van-tag-padding: 4rpx 12rpx;
+  --van-tag-padding: 4rpx 16rpx;
   --van-dialog-border-radius: 16rpx;
   --van-dialog-header-font-weight: 700;
   --van-dialog-message-font-size: 28rpx;
-  --van-badge-background: #ef4444;
-  --van-badge-font-size: 20rpx;
   --van-empty-description-color: #9ca3af;
   --van-empty-description-font-size: 28rpx;
 }
 
+/* 页面容器 */
 .page {
-  padding: 24rpx;
+  padding: 24rpx 32rpx;
 }
 
+/* 卡片容器 */
 .section {
   background: #ffffff;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  margin-bottom: 20rpx;
-  padding: 24rpx;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
+/* 区域标题 */
 .title {
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: 700;
   line-height: 1.3;
   margin-bottom: 16rpx;
+  color: #1f2937;
 }
 
+/* 辅助文字 */
 .muted {
-  color: #6b7280;
+  color: #9ca3af;
   font-size: 24rpx;
 }
 
+/* Flex 工具 */
 .row {
   align-items: center;
   display: flex;
@@ -87,20 +92,22 @@ page {
   justify-content: space-between;
 }
 
+/* 表单字段 */
 .field {
   margin-bottom: 18rpx;
 }
 
 .label {
-  color: #374151;
+  color: #6b7280;
   font-size: 24rpx;
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
+  font-weight: 500;
 }
 
-
+/* 列表项 */
 .list-item {
-  border-bottom: 1rpx solid #e5e7eb;
   padding: 20rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
 }
 
 .list-item:last-child {
@@ -110,11 +117,11 @@ page {
 .item-title {
   font-size: 30rpx;
   font-weight: 600;
+  color: #1f2937;
 }
 
 .item-meta {
-  color: #6b7280;
+  color: #9ca3af;
   font-size: 24rpx;
-  margin-top: 8rpx;
+  margin-top: 6rpx;
 }
-

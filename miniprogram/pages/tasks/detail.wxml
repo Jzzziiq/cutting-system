@@ -5,22 +5,32 @@
   </view>
 
   <block wx:if="{{task && !loading}}">
+    <!-- 状态 Hero 卡片 -->
+    <view class="hero-card">
+      <view class="hero-top">
+        <view>
+          <view class="hero-label">订单号</view>
+          <view class="hero-id">{{task.orderNo || '-'}}</view>
+        </view>
+        <van-tag wx:if="{{task.status === 0}}" type="warning" round>待处理</van-tag>
+        <van-tag wx:elif="{{task.status === 1}}" type="primary" round>生产中</van-tag>
+        <van-tag wx:else type="success" round>已完成</van-tag>
+      </view>
+      <view class="hero-stats">
+        <view class="hero-stat">
+          <view class="hero-stat-label">任务名称</view>
+          <view class="hero-stat-value">{{task.taskName || '未命名'}}</view>
+        </view>
+        <view class="hero-stat" wx:if="{{task.estimatedHours}}">
+          <view class="hero-stat-label">预计工时</view>
+          <view class="hero-stat-value">{{task.estimatedHours}}h</view>
+        </view>
+      </view>
+    </view>
+
     <!-- 基本信息 -->
     <view class="section">
-      <view class="between">
-        <view class="title">{{task.taskName || '未命名任务'}}</view>
-        <van-tag wx:if="{{task.status === 0}}" type="warning">待处理</van-tag>
-        <van-tag wx:elif="{{task.status === 1}}" type="primary">生产中</van-tag>
-        <van-tag wx:else type="success">已完成</van-tag>
-      </view>
-      <view class="field">
-        <view class="label">订单号</view>
-        <view>{{task.orderNo || '-'}}</view>
-      </view>
-      <view class="field" wx:if="{{task.estimatedHours}}">
-        <view class="label">预计工时</view>
-        <view>{{task.estimatedHours}}h</view>
-      </view>
+      <view class="section-title">基本信息</view>
       <view class="field" wx:if="{{task.startTime}}">
         <view class="label">开始时间</view>
         <view>{{task.startTime}}</view>
@@ -32,6 +42,9 @@
       <view class="field" wx:if="{{task.remark}}">
         <view class="label">备注</view>
         <view>{{task.remark}}</view>
+      </view>
+      <view class="field" wx:if="{{!task.startTime && !task.completeTime && !task.remark}}">
+        <view style="color:#9ca3af;font-size:26rpx;">暂无更多信息</view>
       </view>
     </view>
 
