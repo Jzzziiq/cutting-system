@@ -37,6 +37,15 @@ public class GeneticAlgorithm implements CuttingAlgorithm {
 
     @Override
     public Solution search() {
+        if (instance.getSquareList() == null || instance.getSquareList().isEmpty()) {
+            Solution empty = new Solution();
+            empty.setInstance(instance);
+            empty.setSquareList(List.of());
+            empty.setPlaceSquareList(List.of());
+            empty.setRate(0);
+            return empty;
+        }
+
         List<List<Square>> population = initPopulation();
         Map<String, Solution> cache = new HashMap<>();
 

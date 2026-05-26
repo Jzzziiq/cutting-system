@@ -112,6 +112,57 @@ class AlgorithmUnitTest {
         assertThrows(IllegalStateException.class, () -> new ReadDataUtil().getSolution(json));
     }
 
+    // --- Genetic Algorithm tests ---
+
+    @Test
+    void gaSearchFindsPlacementForSingleRectangle() throws Exception {
+        Instance instance = instance(10, 10, false, 0,
+                List.of(new Square("square-1", 5, 5)));
+
+        Solution solution = new GeneticAlgorithm(instance).search();
+
+        assertEquals(1, solution.getPlaceSquareList().size());
+        assertEquals(0.25, solution.getRate(), 0.000001);
+        assertEquals("square-1", solution.getPlaceSquareList().get(0).getId());
+    }
+
+    @Test
+    void gaSearchHandlesMultipleRectangles() throws Exception {
+        Instance instance = instance(10, 10, false, 0,
+                List.of(
+                        new Square("sq-1", 5, 5),
+                        new Square("sq-2", 5, 5),
+                        new Square("sq-3", 5, 5),
+                        new Square("sq-4", 5, 5)
+                ));
+
+        Solution solution = new GeneticAlgorithm(instance).search();
+
+        assertEquals(4, solution.getPlaceSquareList().size());
+        assertEquals(1.0, solution.getRate(), 0.000001);
+    }
+
+    @Test
+    void gaSearchReturnsZeroRateForEmptySquareList() throws Exception {
+        Instance instance = instance(10, 10, false, 0, List.of());
+
+        Solution solution = new GeneticAlgorithm(instance).search();
+
+        assertEquals(0, solution.getPlaceSquareList().size());
+        assertEquals(0, solution.getRate(), 0.000001);
+    }
+
+    @Test
+    void gaSearchWithRotation() throws Exception {
+        Instance instance = instance(5, 10, true, 0,
+                List.of(new Square("square-1", 10, 5)));
+
+        Solution solution = new GeneticAlgorithm(instance).search();
+
+        assertEquals(1, solution.getPlaceSquareList().size());
+        assertEquals(1.0, solution.getRate(), 0.000001);
+    }
+
     private Instance instance(double length, double width, boolean rotateEnable, double gapDistance, List<Square> squares) {
         Instance instance = new Instance();
         instance.setL(length);

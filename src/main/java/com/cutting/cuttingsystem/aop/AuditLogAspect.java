@@ -13,8 +13,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -43,13 +41,11 @@ public class AuditLogAspect {
         if (userId != null) {
             logEntry.setUserId(userId);
         }
-        logEntry.setUsername("uid:" + (userId != null ? userId : "?"));
-
-        try {
-            logEntry.setIpAddress(getClientIp());
-        } catch (Exception e) {
-            logEntry.setIpAddress("unknown");
+        String displayName = UserContext.getCurrentRealName();
+        if (displayName == null || displayName.isBlank()) {
+            displayName = UserContext.getCurrentUsername();
         }
+        logEntry.setUsername(displayName != null ? displayName : "unknown");
 
         logEntry.setRequestParams(toJsonString(joinPoint.getArgs()));
 
@@ -72,24 +68,6 @@ public class AuditLogAspect {
         }
 
         return result;
-    }
-
-    private String getClientIp() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs == null) return "unknown";
-            HttpServletRequest request = attrs.getRequest();
-            String ip = request.getHeader("X-Forwarded-For");
-            if (ip == null || ip.isBlank()) {
-                ip = request.getHeader("X-Real-IP");
-            }
-            if (ip == null || ip.isBlank()) {
-                ip = request.getRemoteAddr();
-            }
-            return ip;
-        } catch (Exception e) {
-            return "unknown";
-        }
     }
 
     private String toJsonString(Object[] args) {
