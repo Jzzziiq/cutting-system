@@ -8,134 +8,232 @@
 
 - **风格**：简约专业，参考飞书/钉钉企业工具风格——克制、专业、不花哨
 - **场景**：混合场景（工厂车间 + 办公室），需中偏大字号、高对比度、大触摸区域
-- **实现**：引入 Vant Weapp 组件库全面迁移
+- **实现**：引入 Vant Weapp 1.x 组件库全面迁移
+
+## npm 构建链路
+
+当前小程序无任何 npm 基础设施。`.gitignore` 已包含 `miniprogram/node_modules/` 和 `miniprogram/miniprogram_npm/`。
+
+### 构建步骤
+
+1. **创建 `miniprogram/package.json`**：
+   ```json
+   {
+     "name": "cutting-system-miniprogram",
+     "version": "1.0.0",
+     "private": true,
+     "dependencies": {
+       "@vant/weapp": "^1.11.7"
+     }
+   }
+   ```
+   注意：必须用 `@vant/weapp` 1.x（微信小程序版），不能用 `vant` 2.x+（React 版）。
+
+2. **安装依赖**：`cd miniprogram && npm install`
+
+3. **配置 `project.config.json`**：将 `packNpmManually` 改为 `true`，添加 `packNpmRelationList`：
+   ```json
+   "packNpmManually": true,
+   "packNpmRelationList": [
+     {
+       "packageJsonPath": "./package.json",
+       "miniprogramNpmDistDir": "./"
+     }
+   ]
+   ```
+
+4. **微信开发者工具构建**：点击 "工具 > 构建 npm"，生成 `miniprogram_npm/` 目录。
+
+5. **后续维护**：每次 `npm install` 或变更依赖后，需重新执行"构建 npm"。
 
 ## 设计规范（Design Tokens）
 
-通过 Vant 主题变量系统统一管理。在 `app.wxss` 中用 `page` 选择器覆盖 Vant 默认主题变量，自定义 Token 以 `--app-` 前缀区分：
+通过 Vant 的 `--van-*` 前缀 CSS 变量覆盖主题。在 `app.wxss` 的 `page` 选择器中设置：
 
-| 类别 | 变量 | 值 | 说明 |
-|------|------|------|------|
-| 主色 | `--primary-color` | `#2563eb` | 品牌蓝，专业感 |
-| 成功色 | `--success-color` | `#10b981` | 完成状态 |
-| 警告色 | `--warning-color` | `#f59e0b` | 待处理状态 |
-| 危险色 | `--danger-color` | `#ef4444` | 删除/错误 |
-| 主文字 | `--text-primary` | `#1f2937` | 深灰近黑 |
-| 次文字 | `--text-secondary` | `#6b7280` | 辅助信息 |
-| 占位文字 | `--text-placeholder` | `#9ca3af` | 输入框占位 |
-| 页面背景 | `--bg-page` | `#f5f7fa` | 略偏蓝灰 |
-| 卡片背景 | `--bg-card` | `#ffffff` | 白色 |
-| 正文字号 | 基准 | `28rpx` | 正文 |
-| 小字 | 辅助 | `24rpx` | 次要信息 |
-| 区域标题 | 标题 | `32rpx` | 区域标题 |
-| 页面标题 | 大标题 | `36rpx` | 页面标题 |
-| 卡片圆角 | `--radius-card` | `16rpx` | 比当前 12rpx 更圆润 |
-| 按钮圆角 | `--radius-btn` | `12rpx` | 比当前 8rpx 更现代 |
-| 页面边距 | `--spacing-page` | `32rpx` | 比当前 24rpx 更宽松 |
-| 卡片内边距 | `--spacing-card` | `28rpx` | 统一内边距 |
+```css
+page {
+  /* 品牌色 */
+  --van-primary-color: #2563eb;
+  --van-success-color: #10b981;
+  --van-warning-color: #f59e0b;
+  --van-danger-color: #ef4444;
+
+  /* 字号 */
+  --van-font-size-xs: 22rpx;
+  --van-font-size-sm: 24rpx;
+  --van-font-size-md: 28rpx;
+  --van-font-size-lg: 32rpx;
+  --van-font-size-xl: 36rpx;
+
+  /* 圆角 */
+  --van-border-radius-sm: 8rpx;
+  --van-border-radius-md: 12rpx;
+  --van-border-radius-lg: 16rpx;
+
+  /* 按钮 */
+  --van-button-border-radius: 12rpx;
+  --van-button-normal-height: 88rpx;
+  --van-button-font-size: 28rpx;
+  --van-button-primary-background: #2563eb;
+  --van-button-primary-border-color: #2563eb;
+  --van-button-danger-background: #fee2e2;
+  --van-button-danger-border-color: #fee2e2;
+  --van-button-danger-color: #b91c1c;
+  --van-button-default-background: #f3f4f6;
+  --van-button-default-border-color: #f3f4f6;
+  --van-button-default-color: #374151;
+
+  /* 单元格 */
+  --van-cell-group-background: transparent;
+  --van-cell-background: transparent;
+  --van-cell-border-color: #e5e7eb;
+  --van-cell-font-size: 30rpx;
+  --van-cell-label-font-size: 24rpx;
+  --van-cell-label-color: #6b7280;
+
+  /* 输入框 */
+  --van-field-label-color: #374151;
+  --van-field-input-text-color: #111827;
+  --van-field-placeholder-text-color: #9ca3af;
+  --van-field-border-color: #d1d5db;
+  --van-field-background: #f9fafb;
+
+  /* 标签 */
+  --van-tag-border-radius: 4rpx;
+  --van-tag-font-size: 22rpx;
+  --van-tag-padding: 4rpx 12rpx;
+
+  /* 弹窗 */
+  --van-dialog-border-radius: 16rpx;
+  --van-dialog-header-font-weight: 700;
+  --van-dialog-message-font-size: 28rpx;
+
+  /* 徽标 */
+  --van-badge-background: #ef4444;
+  --van-badge-font-size: 20rpx;
+
+  /* 空状态 */
+  --van-empty-description-color: #9ca3af;
+  --van-empty-description-font-size: 28rpx;
+}
+```
+
+这些变量直接覆盖 Vant 组件的内部样式，无需额外的自定义 CSS。
+
+## TabBar 策略
+
+**保持原生 tabBar，不使用 Vant TabBar。**
+
+- 当前 2 个 Tab：「我的任务」和「个人设置」，数量和页面不变
+- 原生 tabBar 不受 CSS 变量影响，颜色通过 `app.json` 的 `tabBar.color` / `tabBar.selectedColor` 配置
+- 4 个图标文件（`assets/icons/`）保持不变
+- 不创建 `custom-tab-bar/` 目录
+- Vant 的 `--van-tabbar-*` 变量仅预留给未来可能的自定义 TabBar，当前不生效
 
 ## Vant 组件映射
 
 | 当前自定义 | 替换为 Vant 组件 | 说明 |
 |------------|-----------------|------|
-| `.primary` / `.secondary` / `.danger` / `.ghost` | `van-button` | type/size/loading/disabled |
-| `.field` + 原生 input/textarea | `van-field` | 内置标签、校验、清除 |
-| `.section` 白色卡片 | `van-cell-group` + `van-cell` | 标准列表卡片 |
-| `.status-tag` | `van-tag` | primary/success/warning/danger |
-| `.dialog-mask` / `.dialog` | `van-dialog` | 内置确认/取消 |
-| 密码修改弹窗 | `van-dialog` + `van-field` | 组合使用 |
-| `.badge` / `.dot` | `van-badge` | 数字和小红点 |
-| 任务列表 `.list-item` | `van-cell` + `van-icon` | 图标 + 标题 + 描述 + 箭头 |
-| `.empty` | `van-empty` | 内置空状态插图 |
-| 标题栏 `.title` | `van-nav-bar` | 统一标题栏 |
-| 加载状态 | `van-button` loading 属性 | 原生支持 |
-| TabBar | Vant 自定义 TabBar | 图标 + 文字 + 徽标 |
-| 搜索框 | `van-search` | 内置搜索图标和清除 |
-| 状态筛选 | `van-tab` + `van-tabs` | 胶囊筛选标签 |
-| 下拉刷新 | `van-pull-refresh` | 任务列表刷新 |
-| 上拉加载 | `van-list` | 分页加载更多 |
+| `<button class="primary">` | `<van-button type="primary">` | 直接替换 |
+| `<button class="secondary">` | `<van-button type="default">` | 默认样式 |
+| `<button class="danger">` | `<van-button type="danger">` | 直接替换 |
+| `<button class="ghost">` | `<van-button type="default" plain>` | 朴素按钮 |
+| `<input>` / `<textarea>` | `<van-field>` | 内置标签、校验 |
+| `.dialog-mask` + `.dialog` | `<van-dialog>` | 内置遮罩和确认/取消 |
+| `.status-tag` | `<van-tag type="warning/primary/success">` | 状态标签 |
+| `.badge` | `<van-badge>` | 数字徽标 |
+| `.empty` | `<van-empty>` | 空状态插图 |
+| 加载文字 | `<van-loading vertical>` | 加载动画 |
 
-## 图标方案
+**不替换的自定义类**（Vant 无等价组件）：
+- `.page` / `.section` / `.title` — 布局容器
+- `.list-item` / `.item-title` / `.item-meta` — 自定义列表布局
+- `.field` / `.label` — 只读信息展示（非表单输入）
+- `.muted` / `.row` / `.between` — 辅助工具类
 
-使用 Vant 内置图标（`vant-icon`）：
+## 现有全局类处置清单
 
-| 位置 | 图标名 | 用途 |
-|------|--------|------|
-| 任务列表项 | `orders-o` | 任务图标 |
-| 任务详情-板材 | `description` | 板材信息 |
-| 通知列表 | `bell` | 通知图标 |
-| 个人中心-用户 | `user-o` | 用户信息 |
-| 个人中心-密码 | `lock` | 修改密码 |
-| 个人中心-退出 | `power-off` | 退出登录 |
-| 列表箭头 | `arrow` | 右侧导航 |
-| 空状态 | `search` / `info-o` | 无数据提示 |
-| 搜索框 | `search` | 搜索图标 |
+### app.wxss — 删除 7 个，保留 11 个
 
-## 视觉设计要点
+| 类 | 处置 | 原因 |
+|----|------|------|
+| `page` | 保留 | 全局页面样式，所有页面使用 |
+| `.page` | 保留 | 页面容器 padding |
+| `.section` | 保留 | 卡片容器，Vant 无等价组件 |
+| `.title` | 保留 | 区域标题，5 个页面均使用 |
+| `.muted` | 保留 | 辅助文字颜色 |
+| `.row` | 保留 | flex 行布局 |
+| `.between` | 保留 | flex 两端对齐 |
+| `.field` | 保留 | 只读信息字段容器 |
+| `.label` | 保留 | 只读标签文字 |
+| `.list-item` | 保留 | 自定义列表项 |
+| `.item-title` | 保留 | 列表项标题 |
+| `.item-meta` | 保留 | 列表项元信息 |
+| `input, textarea` | **删除** | 被 `van-field` 替代 |
+| `button` | **删除** | 被 `van-button` 替代 |
+| `.primary` | **删除** | 被 `van-button type="primary"` 替代 |
+| `.secondary` | **删除** | 被 `van-button type="default"` 替代 |
+| `.danger` | **删除** | 被 `van-button type="danger"` 替代 |
+| `.ghost` | **删除** | 被 `van-button plain` 替代 |
+| `.empty` | **删除** | 被 `van-empty` 替代 |
 
-### 任务列表页
-- 顶部品牌蓝导航栏（`#2563eb` 渐变到 `#1d4ed8`）
-- 搜索框：白色圆角卡片 + 搜索图标
-- 状态筛选：胶囊标签栏（全部/待处理/进行中/已完成），选中态带蓝色阴影
-- 任务卡片：左侧状态色竖条（蓝/黄/绿）+ 订单图标 + 信息区 + 状态胶囊标签
-- 卡片底部：日期（灰色）+ "查看详情"蓝色链接，用分隔线隔开
-- 底部 TabBar：图标放大、选中态加粗
+### 页面专属类处置
 
-### 任务详情页
-- 顶部 Hero 卡片：品牌蓝渐变背景 + 半透明圆形装饰
-- Hero 内容：订单号大字 + 状态胶囊 + 客户/板材/日期三列统计
-- 板材清单：白色卡片 + 表头灰底 + 行分隔线
-- 操作区：主按钮加大加投影，次按钮白底描边
+| 页面 | 类 | 处置 |
+|------|-----|------|
+| login | `.login-page` / `.login-card` | 保留（布局），圆角改为 16rpx |
+| tasks/index | `.bell-btn` / `.bell-icon` | 保留（无 Vant 等价） |
+| tasks/index | `.badge` / `.status-tag/*` | **删除**（van-badge / van-tag 替代） |
+| tasks/detail | `.section-title` / `.board-info` / `.table-*` / `.col-*` / `.action-bar` | 保留（自定义表格布局） |
+| tasks/detail | `.status-tag/*` | **删除**（van-tag 替代） |
+| profile | `.dialog-mask` / `.dialog` | **删除**（van-dialog 替代） |
+| notifications | `.dot` | **删除**（van-badge dot 模式替代） |
 
-### 个人中心页
-- 头像卡片：顶部渐变蓝背景 + 白色边框圆形头像 + 姓名角色
-- 菜单列表：图标（圆角方块背景）+ 文字 + 箭头，退出登录用红色
+## 渐进迁移策略
 
-### 通知页
-- 通知列表：圆角卡片包裹，每项左侧状态圆点
-- 未读：蓝色圆点 + 光晕（box-shadow 扩散）
-- 已读：灰色圆点
-- 每项：标题（加粗）+ 时间（右对齐灰色）+ 描述（次级灰色）
+### 阶段一：构建链路 + 登录页验证
 
-### 通用改进
-- 所有白色区域统一 16rpx 圆角 + box-shadow（`0 1px 4px rgba(0,0,0,0.04)`）
-- 卡片触摸反馈：`active` 态缩小 0.98 + 阴影加深（微信小程序无 hover，用 `active` 伪类模拟）
-- 信息层次：标题加粗 > 描述灰色 > 日期最淡
-- 状态标签改为胶囊形（border-radius: 100px）
+目标：建立 npm 基础设施，用最简单的登录页验证 Vant 集成全链路。
 
-## 文件变更范围
+1. 创建 `package.json`，`npm install @vant/weapp`
+2. 配置 `project.config.json` 的 `packNpmManually`
+3. 微信开发者工具执行"构建 npm"
+4. `app.wxss` 注入 `--van-*` 主题变量（保留所有现有类）
+5. 登录页引入 `van-field` + `van-button`，替换原生 input 和 button
+6. 验证：登录流程正常、Vant 组件渲染正确
 
-### 新增依赖
-- `miniprogram/package.json` — 添加 `@vant/weapp` 依赖
+### 阶段二：核心页面迁移
 
-### 全局样式重构
-- `miniprogram/app.wxss` — 删除大部分自定义类，改为 Vant 主题变量 + 少量全局覆盖
-- `miniprogram/app.json` — 引用 Vant 组件、更新 TabBar 配置
+目标：迁移优先级最高的 3 个页面。
 
-### 页面重构（优先级排序）
-1. `miniprogram/pages/tasks/index.*` — 任务列表（van-search, van-tabs, van-cell, van-pull-refresh, van-list）
-2. `miniprogram/pages/tasks/detail.*` — 任务详情（van-cell-group, van-tag, van-button）
-3. `miniprogram/pages/profile/index.*` — 个人中心（van-cell, van-dialog, van-field）
-4. `miniprogram/pages/notifications/index.*` — 通知页（van-cell, van-badge）
-5. `miniprogram/pages/login/login.*` — 登录页（van-field, van-button）
+1. **任务列表**：`van-tag`（状态标签）、`van-badge`（通知徽标）、`van-empty`（空状态）、`van-loading`（加载态）
+2. **任务详情**：`van-tag`、`van-button`（操作按钮）、`van-loading`
+3. **个人中心**：`van-dialog`（密码修改弹窗）、`van-field`（弹窗内表单）、`van-button`
 
-### 删除重复代码
-- `tasks/index.wxss` 和 `tasks/detail.wxss` 中重复的 `.status-tag` 类
+每个页面迁移后独立验证，确保功能不退化。
 
-## 交互反馈改进
+### 阶段三：通知页 + 清理
 
-- 按钮点击：`van-button` 内置 loading 状态
-- 表单提交：`van-dialog` 确认弹窗 + `van-toast` 成功提示
-- 列表加载：`van-pull-refresh` 下拉刷新 + `van-list` 触底加载
-- 空状态：`van-empty` 组件展示无数据插图
-- 操作成功：`van-toast` 轻提示（2秒自动消失）
+1. **通知页**：`van-button`（全部已读）、`van-empty`、`van-loading`
+2. **清理 app.wxss**：删除 7 个被替代的全局类
+3. **清理页面 wxss**：删除重复的 `.status-tag` 类（tasks/index + tasks/detail）、删除 `.dialog-mask`/`.dialog`（profile）、删除 `.badge`/`.dot`
+4. 全量回归验证
+
+## 事件处理注意事项
+
+Vant 组件的事件绑定与原生组件不同：
+
+| 对比 | 原生 | Vant |
+|------|------|------|
+| 事件绑定 | `bindinput` | `bind:input`（带冒号） |
+| 取值方式 | `e.detail.value` | `e.detail`（直接是值） |
+
+所有 `onInput` 处理函数需从 `e.detail.value` 改为 `e.detail`。
 
 ## 验证方案
 
-1. 安装 Vant Weapp 后在微信开发者工具中预览各页面
-2. 检查所有页面的 Vant 组件渲染是否正常
-3. 测试任务列表的筛选、搜索、下拉刷新功能
-4. 测试任务详情的操作按钮交互
-5. 测试个人中心的密码修改弹窗
-6. 测试通知页的未读/已读状态显示
-7. 在不同屏幕尺寸下验证布局适配
+每个阶段完成后验证：
+
+1. **阶段一**：微信开发者工具预览登录页，Vant field/button 渲染正常，登录流程通过
+2. **阶段二**：任务列表状态标签、通知徽标、空状态显示正常；任务详情操作按钮交互正常；个人中心密码修改弹窗流程通过
+3. **阶段三**：通知页功能正常；app.wxss 精简后无样式丢失；全页面回归通过
