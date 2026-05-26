@@ -201,6 +201,18 @@ public class UserController {
         return Result.success();
     }
 
+    /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/me")
+    @RequirePermission({})
+    public Result me() {
+        Long userId = UserContext.getCurrentUserId();
+        TUser user = userService.getById(userId);
+        if (user == null) return Result.error("用户不存在");
+        return Result.success(toVO(user));
+    }
+
     private UserVO toVO(TUser user) {
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);

@@ -107,12 +107,14 @@ public class TabuSearch implements CuttingAlgorithm {
         solution.setSquareList(new ArrayList<>(squareList));
         List<PlaceSquare> placeSquareList = new ArrayList<>();
         double gap = instance.getGapDistance();
+        double margin = instance.getSafeMargin();
         double containerL = instance.getL();
         double containerW = instance.getW();
 
-        // 初始化天际线
+        // 初始化天际线，板边取安全边距和件间距的较大值
+        double edgeMargin = Math.max(margin, gap);
         List<SkylineSegment> skyline = new ArrayList<>();
-        skyline.add(new SkylineSegment(gap, gap, containerL - 2 * gap));
+        skyline.add(new SkylineSegment(edgeMargin, edgeMargin, containerL - 2 * edgeMargin));
 
         // 遍历矩形放置
         for (Square square : squareList) {
@@ -135,7 +137,7 @@ public class TabuSearch implements CuttingAlgorithm {
                 double h = rectSize[1];
                 for (int i = 0; i < skyline.size(); i++) {
                     SkylineSegment seg = skyline.get(i);
-                    if (seg.getWidth() >= w && seg.getX() + w + gap <= containerL && seg.getY() + h + gap <= containerW) {
+                    if (seg.getWidth() >= w && seg.getX() + w + gap <= containerL - edgeMargin && seg.getY() + h + gap <= containerW - edgeMargin) {
                         double availableWidth = seg.getWidth();
                         int j = i;
                         double currentX = seg.getX();

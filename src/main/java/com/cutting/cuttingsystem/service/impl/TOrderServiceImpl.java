@@ -7,6 +7,7 @@ import com.cutting.cuttingsystem.entitys.DTO.TOrderDTO;
 import com.cutting.cuttingsystem.entitys.DTO.TOrderItemDTO;
 import com.cutting.cuttingsystem.entitys.OrderStatus;
 import com.cutting.cuttingsystem.entitys.TCustomer;
+import com.cutting.cuttingsystem.entitys.CabinetOrderItem;
 import com.cutting.cuttingsystem.entitys.TOrder;
 import com.cutting.cuttingsystem.entitys.TBoard;
 import com.cutting.cuttingsystem.entitys.TOrderItem;
@@ -15,6 +16,7 @@ import com.cutting.cuttingsystem.entitys.TaskStatus;
 import com.cutting.cuttingsystem.entitys.VO.LayoutInputVO;
 import com.cutting.cuttingsystem.entitys.VO.TOrderItemVO;
 import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
+import com.cutting.cuttingsystem.mapper.CabinetOrderItemMapper;
 import com.cutting.cuttingsystem.mapper.TOrderMapper;
 import com.cutting.cuttingsystem.service.TBoardService;
 import com.cutting.cuttingsystem.service.TCustomerService;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> implements TOrderService {
@@ -50,6 +53,9 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
     @Autowired
     private TProductionTaskService productionTaskService;
 
+    @Autowired
+    private CabinetOrderItemMapper cabinetOrderItemMapper;
+
     @Override
     @Transactional
     public TOrderVO createOrder(TOrderDTO orderDTO) {
@@ -61,7 +67,7 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
             order.setOrderNo("ORD" + datePart + String.format("%03d", seq));
         }
         if (order.getOrderStatus() == null) {
-            order.setOrderStatus(0);
+            order.setOrderStatus(OrderStatus.APPROVED.getCode());
         }
         fillCustomerSnapshot(order);
         save(order);
@@ -106,7 +112,7 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
         TOrder order = getById(orderId);
         if (order == null) throw new RuntimeException("订单不存在");
 
-        int currentCode = order.getOrderStatus() != null ? order.getOrderStatus() : 0;
+        int currentCode = order.getOrderStatus() != null ? order.getOrderStatus() : OrderStatus.APPROVED.getCode();
         OrderStatus current = OrderStatus.fromCode(currentCode);
         if (!current.canTransitionTo(targetStatus)) {
             throw new RuntimeException(
@@ -221,6 +227,16 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
             grouped.computeIfAbsent(item.getBoardId(), k -> new ArrayList<>()).add(item);
         }
 
+        // 批量查询 CabinetOrderItem，获取柜名、封边、纹理等扩展字段
+        List<Long> orderItemIds = items.stream().map(TOrderItem::getItemId).collect(Collectors.toList());
+        Map<Long, CabinetOrderItem> cabinetMap = new LinkedHashMap<>();
+        if (!orderItemIds.isEmpty()) {
+            List<CabinetOrderItem> cabinetItems = cabinetOrderItemMapper.selectList(
+                    new QueryWrapper<CabinetOrderItem>().in("order_item_id", orderItemIds));
+            cabinetMap = cabinetItems.stream()
+                    .collect(Collectors.toMap(CabinetOrderItem::getOrderItemId, c -> c, (a, b) -> a));
+        }
+
         LayoutInputVO vo = new LayoutInputVO();
         List<LayoutInputVO.GroupVO> groups = new ArrayList<>();
         boolean hasTextureItems = false;
@@ -248,6 +264,17 @@ public class TOrderServiceImpl extends ServiceImpl<TOrderMapper, TOrder> impleme
                 itemVO.setLength(item.getLength());
                 itemVO.setWidth(item.getWidth());
                 itemVO.setQuantity(item.getQuantity());
+
+                CabinetOrderItem cabItem = cabinetMap.get(item.getItemId());
+                if (cabItem != null) {
+                    itemVO.setCabinetName(cabItem.getCabinetName());
+                    itemVO.setGrainDirection(cabItem.getGrainDirection());
+                    itemVO.setEdgeBanding(cabItem.getEdgeBanding());
+                    itemVO.setThickness(cabItem.getThickness());
+                } else {
+                    itemVO.setThickness(item.getThickness());
+                }
+
                 itemVOs.add(itemVO);
                 if (item.getIsTexture() != null && item.getIsTexture() == 1) hasTextureItems = true;
             }

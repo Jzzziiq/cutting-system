@@ -17,6 +17,7 @@ public class TOrderItemVO {
     private Integer thickness;
     private Integer quantity;
     private String materialName;
+    private String brand;
     private String color;
     private Integer edgeLeft;
     private Integer edgeRight;

@@ -41,11 +41,6 @@ public class AuditLogAspect {
         if (userId != null) {
             logEntry.setUserId(userId);
         }
-        String displayName = UserContext.getCurrentRealName();
-        if (displayName == null || displayName.isBlank()) {
-            displayName = UserContext.getCurrentUsername();
-        }
-        logEntry.setUsername(displayName != null ? displayName : "unknown");
 
         logEntry.setRequestParams(toJsonString(joinPoint.getArgs()));
 

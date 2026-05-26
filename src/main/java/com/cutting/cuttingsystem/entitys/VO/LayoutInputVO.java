@@ -35,6 +35,10 @@ public class LayoutInputVO {
         private Integer length;
         private Integer width;
         private Integer quantity;
+        private String cabinetName;
+        private String grainDirection;
+        private String edgeBanding;
+        private Integer thickness;
     }
 
     @Data

@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.entitys.VO;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
@@ -13,6 +14,7 @@ public class TOrderVO {
     private String customerName;
     private String customerAddress;
     private String processName;
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Shanghai")
     private Date dispatchDate;
     private Integer orderStatus;
     private String statusLabel;

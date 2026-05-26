@@ -38,6 +38,7 @@ public class ReadDataUtil {
         instance.setW(dto.getW());
         instance.setRotateEnable(dto.isRotateEnable());
         instance.setGapDistance(dto.getGapDistance());
+        instance.setSafeMargin(dto.getSafeMargin());
 
         // 3. 转换 Square 列表，保留原始 ID 或回退到 UUID
         List<Square> squareList = new ArrayList<>();
@@ -70,6 +71,7 @@ public class ReadDataUtil {
             currentInstance.setW(originInstance.getW());
             currentInstance.setRotateEnable(originInstance.isRotateEnable());
             currentInstance.setGapDistance(originInstance.getGapDistance());
+            currentInstance.setSafeMargin(originInstance.getSafeMargin());
             currentInstance.setSquareList(new ArrayList<>(remainingSquares));
 
             try {
@@ -140,6 +142,7 @@ public class ReadDataUtil {
             singleSquareInstance.setW(originInstance.getW());
             singleSquareInstance.setRotateEnable(originInstance.isRotateEnable());
             singleSquareInstance.setGapDistance(originInstance.getGapDistance());
+            singleSquareInstance.setSafeMargin(originInstance.getSafeMargin());
             singleSquareInstance.setSquareList(List.of(square));
 
             CuttingAlgorithm alg = registry.create(algorithmName, singleSquareInstance);

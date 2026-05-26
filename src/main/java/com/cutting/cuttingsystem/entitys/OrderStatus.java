@@ -6,14 +6,12 @@ import java.util.Set;
 /** 订单生命周期状态机 */
 public enum OrderStatus {
 
-    PENDING_REVIEW(0, "待审核", Set.of(1, -1)),
-    APPROVED(1, "已审核", Set.of(2, -2)),
+    APPROVED(1, "已创建", Set.of(2, -2)),
     CALCULATING(2, "排样中", Set.of(3, -3)),
     LAYOUT_DONE(3, "已排样", Set.of(4, -2)),
     IN_PRODUCTION(4, "生产中", Set.of(5)),
     COMPLETED(5, "已完工", Set.of(6)),
     DELIVERED(6, "已交付", Set.of()),
-    REJECTED(-1, "已驳回", Set.of(0)),
     CANCELLED(-2, "已取消", Set.of()),
     LAYOUT_FAILED(-3, "排样失败", Set.of(1));
 

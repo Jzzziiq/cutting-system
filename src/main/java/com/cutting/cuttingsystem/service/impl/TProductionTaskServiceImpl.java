@@ -14,9 +14,12 @@ import com.cutting.cuttingsystem.entitys.VO.TOrderVO;
 import com.cutting.cuttingsystem.entitys.VO.TProductionTaskDetailVO;
 import com.cutting.cuttingsystem.entitys.VO.TProductionTaskVO;
 import com.cutting.cuttingsystem.mapper.TLayoutResultMapper;
+import com.cutting.cuttingsystem.entitys.TBoard;
+import com.cutting.cuttingsystem.mapper.TBoardMapper;
 import com.cutting.cuttingsystem.mapper.TOrderItemMapper;
 import com.cutting.cuttingsystem.mapper.TOrderMapper;
 import com.cutting.cuttingsystem.mapper.TProductionTaskMapper;
+import com.cutting.cuttingsystem.service.TNotificationService;
 import com.cutting.cuttingsystem.service.TProductionTaskService;
 import com.cutting.cuttingsystem.service.TUserService;
 import com.cutting.cuttingsystem.util.UserContext;
@@ -49,6 +52,12 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
 
     @Autowired
     private TOrderItemMapper orderItemMapper;
+
+    @Autowired
+    private TBoardMapper boardMapper;
+
+    @Autowired
+    private TNotificationService notificationService;
 
     @Override
     public TProductionTaskVO getTaskDetail(Long taskId) {
@@ -89,6 +98,16 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
         task.setAssigneeId(assigneeId);
         task.setAssigneeName(assigneeName);
         updateById(task);
+
+        // 创建通知
+        String taskName = task.getTaskName() != null ? task.getTaskName() : "任务";
+        notificationService.createNotification(
+            assigneeId,
+            "任务分配变更",
+            "任务已分配给您：" + taskName,
+            task.getTaskId()
+        );
+
         return getTaskDetail(taskId);
     }
 
@@ -121,6 +140,15 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
 
         // 同步排版结果的生产任务状态
         syncLayoutResultTaskStatus(task.getLayoutResultId(), task.getStatus());
+
+        // 创建通知
+        String taskName = task.getTaskName() != null ? task.getTaskName() : "新任务";
+        notificationService.createNotification(
+            assigneeId,
+            "新任务分配",
+            "您有新的生产任务：" + taskName,
+            task.getTaskId()
+        );
 
         return toVO(baseMapper.selectByIdIgnoreTenant(task.getTaskId()));
     }
@@ -257,6 +285,12 @@ public class TProductionTaskServiceImpl extends ServiceImpl<TProductionTaskMappe
     private TOrderItemVO toItemVO(TOrderItem item) {
         TOrderItemVO vo = new TOrderItemVO();
         BeanUtils.copyProperties(item, vo);
+        if (item.getBoardId() != null) {
+            TBoard board = boardMapper.selectById(item.getBoardId());
+            if (board != null) {
+                vo.setBrand(board.getBrand());
+            }
+        }
         return vo;
     }
 

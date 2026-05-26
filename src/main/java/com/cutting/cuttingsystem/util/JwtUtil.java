@@ -30,6 +30,9 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getUserId());
         claims.put("username", user.getUsername());
+        if (user.getRealName() != null) {
+            claims.put("realName", user.getRealName());
+        }
         if (roleCodes != null && !roleCodes.isEmpty()) {
             claims.put("roles", roleCodes);
         }
@@ -72,6 +75,22 @@ public class JwtUtil {
     public Long getOrgIdFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims.get("orgId", Long.class);
+    }
+
+    /**
+     * 从 Token 中获取用户名
+     */
+    public String getUsernameFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("username", String.class);
+    }
+
+    /**
+     * 从 Token 中获取真实姓名
+     */
+    public String getRealNameFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims.get("realName", String.class);
     }
 
     /**

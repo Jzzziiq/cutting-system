@@ -47,6 +47,8 @@ public class TokenInterceptor implements HandlerInterceptor {
 
         Long userId = jwtUtil.getUserIdFromToken(token);
         Long orgId = jwtUtil.getOrgIdFromToken(token);
+        String username = jwtUtil.getUsernameFromToken(token);
+        String realName = jwtUtil.getRealNameFromToken(token);
         List<String> roles = jwtUtil.getRolesFromToken(token);
         List<String> permissions;
         try {
@@ -57,6 +59,8 @@ public class TokenInterceptor implements HandlerInterceptor {
         }
 
         UserContext.setCurrentUserId(userId);
+        UserContext.setCurrentUsername(username);
+        UserContext.setCurrentRealName(realName);
         UserContext.setCurrentOrgId(orgId);
         UserContext.setRoles(roles);
         UserContext.setPermissions(permissions);

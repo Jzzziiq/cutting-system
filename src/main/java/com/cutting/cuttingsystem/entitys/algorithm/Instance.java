@@ -34,6 +34,11 @@ public class Instance {
      */
     private double gapDistance = 0;
     /**
+     * 板边安全边距
+     * 工件距板材边缘的最小距离，用于避开板边破损区域
+     */
+    private double safeMargin = 0;
+    /**
      * 待装入的物品列表
      * 包含所有需要装入容器的 Square 对象
      */

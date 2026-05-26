@@ -306,7 +306,7 @@ class OrderModuleTest {
         order.setCustomerId(1L);
         order.setCustomerName("ACME Furniture");
         order.setProcessName("cabinet-door-cutting");
-        order.setOrderStatus(0);
+        order.setOrderStatus(1);
         return order;
     }
 
@@ -317,7 +317,7 @@ class OrderModuleTest {
         orderVO.setCustomerId(1L);
         orderVO.setCustomerName("ACME Furniture");
         orderVO.setProcessName("cabinet-door-cutting");
-        orderVO.setOrderStatus(0);
+        orderVO.setOrderStatus(1);
         orderVO.setItems(List.of(orderItemVO()));
         return orderVO;
     }
@@ -339,7 +339,7 @@ class OrderModuleTest {
                 {
                   "customerId": 1,
                   "processName": "cabinet-door-cutting",
-                  "orderStatus": 0,
+                  "orderStatus": 1,
                   "items": [
                     {
                       "partName": "left-door",

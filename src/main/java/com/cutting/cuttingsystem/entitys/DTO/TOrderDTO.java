@@ -1,5 +1,6 @@
 package com.cutting.cuttingsystem.entitys.DTO;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -29,9 +30,10 @@ public class TOrderDTO {
     @Size(max = 100, message = "processName must be at most 100 characters")
     private String processName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Shanghai")
     private Date dispatchDate;
 
-    @Min(value = 0, message = "orderStatus must be at least 0")
+    @Min(value = 1, message = "orderStatus must be at least 1")
     @Max(value = 9, message = "orderStatus must be at most 9")
     private Integer orderStatus;
 

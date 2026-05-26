@@ -46,6 +46,12 @@ public class InstanceDTO {
     @PositiveOrZero(message = "间隙距离不能小于0")
     private double gapDistance = 0;
     /**
+     * 板边安全边距
+     * 工件距板材边缘的最小距离，用于避开板边破损区域
+     */
+    @PositiveOrZero(message = "安全边距不能小于0")
+    private double safeMargin = 0;
+    /**
      * 待装入的物品列表
      * 包含所有需要装入容器的 Square 对象
      */

@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 用户上下文工具类 - 存储当前登录用户的 userId / roles / permissions
+ * 用户上下文工具类 - 存储当前登录用户的身份信息、组织和权限
  */
 public class UserContext {
 
     private static final ThreadLocal<Long> USER_ID_TL = new ThreadLocal<>();
+    private static final ThreadLocal<String> USERNAME_TL = new ThreadLocal<>();
+    private static final ThreadLocal<String> REAL_NAME_TL = new ThreadLocal<>();
     private static final ThreadLocal<Long> ORG_ID_TL = new ThreadLocal<>();
     private static final ThreadLocal<List<String>> ROLES_TL = ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<List<String>> PERMISSIONS_TL = ThreadLocal.withInitial(ArrayList::new);
@@ -20,6 +22,22 @@ public class UserContext {
 
     public static Long getCurrentUserId() {
         return USER_ID_TL.get();
+    }
+
+    public static void setCurrentUsername(String username) {
+        USERNAME_TL.set(username);
+    }
+
+    public static String getCurrentUsername() {
+        return USERNAME_TL.get();
+    }
+
+    public static void setCurrentRealName(String realName) {
+        REAL_NAME_TL.set(realName);
+    }
+
+    public static String getCurrentRealName() {
+        return REAL_NAME_TL.get();
     }
 
     public static void setCurrentOrgId(Long orgId) {
@@ -61,6 +79,8 @@ public class UserContext {
 
     public static void clear() {
         USER_ID_TL.remove();
+        USERNAME_TL.remove();
+        REAL_NAME_TL.remove();
         ORG_ID_TL.remove();
         ROLES_TL.remove();
         PERMISSIONS_TL.remove();

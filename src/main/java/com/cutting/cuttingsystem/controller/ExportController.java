@@ -4,9 +4,10 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.cutting.cuttingsystem.annotation.RequirePermission;
 import com.cutting.cuttingsystem.entitys.*;
+import com.cutting.cuttingsystem.entitys.VO.TAuditLogVO;
 import com.cutting.cuttingsystem.entitys.VO.TBoardVO;
 import com.cutting.cuttingsystem.entitys.VO.TCustomerVO;
-import com.cutting.cuttingsystem.service.TAuditLogService;
+import com.cutting.cuttingsystem.mapper.TAuditLogMapper;
 import com.cutting.cuttingsystem.service.TBoardService;
 import com.cutting.cuttingsystem.service.TCustomerService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,7 +32,7 @@ public class ExportController {
     private TBoardService boardService;
 
     @Autowired
-    private TAuditLogService auditLogService;
+    private TAuditLogMapper auditLogMapper;
 
     @GetMapping("/customers/export")
     @RequirePermission({"customer:read", "customer:write"})
@@ -63,8 +64,8 @@ public class ExportController {
     @RequirePermission("audit:read")
     public void exportAuditLogs(HttpServletResponse response) throws IOException {
         setExcelResponse(response, "audit-logs.xlsx");
-        List<TAuditLog> list = auditLogService.list();
-        EasyExcel.write(response.getOutputStream(), TAuditLog.class).sheet("审计日志").doWrite(list);
+        List<TAuditLogVO> list = auditLogMapper.selectLogList(null, null, null);
+        EasyExcel.write(response.getOutputStream(), TAuditLogVO.class).sheet("审计日志").doWrite(list);
     }
 
     private void setExcelResponse(HttpServletResponse response, String filename) {

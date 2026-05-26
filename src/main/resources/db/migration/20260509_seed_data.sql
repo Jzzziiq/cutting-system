@@ -196,16 +196,16 @@ INSERT INTO t_algorithm_task (task_id, user_id, algorithm, status, input_json, r
 -- 8. 审计日志样例
 -- ============================================================
 
-INSERT INTO t_audit_log (user_id, username, module, action, target_class, target_method, request_params, ip_address, duration_ms, status, create_time) VALUES
-(1, 'admin', '用户', '创建', 'TUserController', 'createUser', '{"username":"wangwu","realName":"王工"}', '127.0.0.1', 45, 0, DATE_SUB(NOW(), INTERVAL 6 DAY)),
-(1, 'admin', '用户', '更新', 'TUserController', 'updateUser', '{"userId":2,"accountStatus":1}', '127.0.0.1', 38, 0, DATE_SUB(NOW(), INTERVAL 6 DAY)),
-(2, 'zhangsan', '订单', '创建', 'OrderController', 'createOrder', '{"customerId":1,"processName":"常规切割"}', '127.0.0.1', 120, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
-(2, 'zhangsan', '订单', '创建', 'OrderController', 'createOrder', '{"customerId":2,"processName":"高精度切割"}', '127.0.0.1', 95, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
-(3, 'lisi', '订单', '创建', 'OrderController', 'createOrder', '{"customerId":3,"processName":"常规切割"}', '127.0.0.1', 88, 0, DATE_SUB(NOW(), INTERVAL 4 DAY)),
-(2, 'zhangsan', '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"tabu_search"}', '127.0.0.1', 1250, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
-(3, 'lisi', '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"tabu_search"}', '127.0.0.1', 1000, 0, DATE_SUB(NOW(), INTERVAL 3 DAY)),
-(2, 'zhangsan', '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"genetic_algorithm"}', '127.0.0.1', 2480, 0, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(1, 'admin', '订单', '更新', 'OrderController', 'updateOrderStatus', '{"orderId":4,"orderStatus":-1}', '127.0.0.1', 52, 0, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(2, 'zhangsan', '生产任务', '分配', 'ProductionTaskController', 'assignTask', '{"taskId":1,"assigneeId":3}', '127.0.0.1', 67, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
-(3, 'lisi', '生产任务', '分配', 'ProductionTaskController', 'assignTask', '{"taskId":2,"assigneeId":4}', '127.0.0.1', 55, 0, DATE_SUB(NOW(), INTERVAL 3 DAY)),
-(2, 'zhangsan', '生产任务', '创建', 'ProductionTaskController', 'createTask', '{"orderId":2,"taskName":"厨房柜门切割"}', '127.0.0.1', 72, 0, NOW());
+INSERT INTO t_audit_log (user_id, module, action, target_class, target_method, request_params, duration_ms, status, create_time) VALUES
+(1, '用户', '创建', 'TUserController', 'createUser', '{"username":"wangwu","realName":"王工"}', 45, 0, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(1, '用户', '更新', 'TUserController', 'updateUser', '{"userId":2,"accountStatus":1}', 38, 0, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(2, '订单', '创建', 'OrderController', 'createOrder', '{"customerId":1,"processName":"常规切割"}', 120, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(2, '订单', '创建', 'OrderController', 'createOrder', '{"customerId":2,"processName":"高精度切割"}', 95, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(3, '订单', '创建', 'OrderController', 'createOrder', '{"customerId":3,"processName":"常规切割"}', 88, 0, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(2, '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"tabu_search"}', 1250, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(3, '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"tabu_search"}', 1000, 0, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(2, '算法', '执行', 'AlgorithmController', 'submitAlgorithm', '{"algorithm":"genetic_algorithm"}', 2480, 0, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(1, '订单', '更新', 'OrderController', 'updateOrderStatus', '{"orderId":4,"orderStatus":-1}', 52, 0, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(2, '生产任务', '分配', 'ProductionTaskController', 'assignTask', '{"taskId":1,"assigneeId":3}', 67, 0, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(3, '生产任务', '分配', 'ProductionTaskController', 'assignTask', '{"taskId":2,"assigneeId":4}', 55, 0, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(2, '生产任务', '创建', 'ProductionTaskController', 'createTask', '{"orderId":2,"taskName":"厨房柜门切割"}', 72, 0, NOW());
