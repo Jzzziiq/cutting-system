@@ -3,9 +3,6 @@
 ## 目录结构
 
 - `pages/login`：登录页，对接 `POST /auth/login`
-- `pages/customers`：客户列表、详情、新增、编辑，对接 `/customers`
-- `pages/boards`：板材列表、详情、新增、编辑、删除，对接 `/boards`
-- `pages/algorithm`：算法参数输入、结果表格和 canvas 排样图，对接 `POST /algorithm/answer`
 - `services/api.js`：后端接口封装
 - `utils/request.js`：统一请求、token、401 处理
 - `utils/config.js`：后端服务地址配置

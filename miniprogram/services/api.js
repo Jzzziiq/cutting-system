@@ -4,67 +4,65 @@ function login(username, password) {
   return request({
     url: '/auth/login',
     method: 'POST',
+    data: { username, password },
     auth: false,
-    form: true,
-    data: { username, password }
+    form: true
   });
 }
 
-function listCustomers(pageNum = 1, pageSize = 20) {
-  return request({ url: '/customers', data: { pageNum, pageSize } });
+function listMyTasks() {
+  return request({ url: '/production-tasks/my' });
 }
 
-function getCustomer(id) {
-  return request({ url: `/customers/${id}` });
+function getMyTaskDetail(taskId) {
+  return request({ url: `/production-tasks/my/${taskId}` });
 }
 
-function createCustomer(data) {
-  return request({ url: '/customers', method: 'POST', data });
+function transitionTask(taskId, status) {
+  return request({
+    url: `/production-tasks/my/${taskId}/status`,
+    method: 'PUT',
+    data: { status }
+  });
 }
 
-function updateCustomer(id, data) {
-  return request({ url: `/customers/${id}`, method: 'PUT', data });
+function listNotifications(pageNum = 1, pageSize = 20) {
+  return request({ url: '/notifications', data: { pageNum, pageSize } });
 }
 
-function deleteCustomer(id) {
-  return request({ url: `/customers/${id}`, method: 'DELETE' });
+function markNotificationRead(id) {
+  return request({ url: `/notifications/${id}/read`, method: 'PUT' });
 }
 
-function listBoards(pageNum = 1, pageSize = 20) {
-  return request({ url: '/boards', data: { pageNum, pageSize } });
+function markAllNotificationsRead() {
+  return request({ url: '/notifications/read-all', method: 'PUT' });
 }
 
-function getBoard(id) {
-  return request({ url: `/boards/${id}` });
+function getUnreadCount() {
+  return request({ url: '/notifications/unread-count' });
 }
 
-function createBoard(data) {
-  return request({ url: '/boards', method: 'POST', data });
+function getProfile() {
+  return request({ url: '/users/me' });
 }
 
-function updateBoard(id, data) {
-  return request({ url: `/boards/${id}`, method: 'PUT', data });
-}
-
-function deleteBoard(id) {
-  return request({ url: `/boards/${id}`, method: 'DELETE' });
-}
-
-function solveAlgorithm(data) {
-  return request({ url: '/algorithm/answer', method: 'POST', data, raw: true });
+function changePassword(oldPassword, newPassword) {
+  return request({
+    url: '/users/me/password',
+    method: 'PUT',
+    data: { oldPassword, newPassword }
+  });
 }
 
 module.exports = {
   login,
-  listCustomers,
-  getCustomer,
-  createCustomer,
-  updateCustomer,
-  deleteCustomer,
-  listBoards,
-  getBoard,
-  createBoard,
-  updateBoard,
-  deleteBoard,
-  solveAlgorithm
+  listMyTasks,
+  getMyTaskDetail,
+  transitionTask,
+  listNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getUnreadCount,
+  getProfile,
+  changePassword
 };
