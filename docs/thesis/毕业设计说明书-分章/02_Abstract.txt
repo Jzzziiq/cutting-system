@@ -1,0 +1,90 @@
+Abstract
+　　To solve some problems in cabinet door panel processing, such as scattered cutting data management, low efficiency of manual layout, unstable board utilization rate, and difficult tracing of layout results, this thesis designs and implements a cabinet door panel cutting layout system based on Spring Boot. The system covers the main business process, including basic data maintenance, processing data input, algorithm layout, result display, and production task management. The backend uses Spring Boot, MyBatis-Plus, and MySQL, and adopts JWT and interceptors to realize user authentication and interface access control. The frontend is developed with Vue 3, Vite, Pinia, Element Plus, and Canvas 2D, supporting backend management, data input, and layout result visualization. The main modules include user authentication, customer management, board management, order management, leftover material management, layout result management, production task management, and layout algorithm solving.
+　　The main innovation of this thesis is to combine production business management with intelligent layout algorithm for cabinet door panel processing. A hybrid layout strategy based on tabu search and skyline placement algorithm is designed. Tabu search is used to optimize the placing order of rectangular workpieces, generate neighborhood solutions by random exchange, and use a tabu list to avoid local optimum. During evaluation, the skyline algorithm maintains available board segments, checks placement feasibility under boundary, spacing, size, and rotation constraints, and selects lower and more left positions as far as possible to improve layout compactness and material utilization. A multi-container solving mechanism is also introduced, which supports rotation control, gap constraint, utilization rate calculation, and coordinate output, so that the layout results can be used for Canvas visualization and result persistence.
+　　For system testing, this thesis uses ApiFox to test core interfaces such as user login, customer management, board management, layout parameter submission, and layout result return. Chrome browser is used to verify the display and interaction of Vue frontend pages. The test results show that the system can correctly complete user authentication, basic data maintenance, parameter validation, algorithm request processing, and layout result return. The interface structure is relatively clear, business data can be returned correctly, and the frontend can display tables and draw layout diagrams through Canvas. Overall, the system runs relatively stably and can basically meet the use requirements of cabinet door panel cutting layout business.
+　　Key Words: Panel Cutting; Multi-Container Layout; Tabu Search; Skyline Algorithm; Spring Boot; Vue 3
+目 录
+1	引言	4
+1.1	课题研究的背景	4
+1.2	课题研究的发展现状	4
+1.3	课题研究的目的和意义	5
+1.4	课题研究的主要内容	5
+2	相关技术介绍	7
+2.1	Spring Boot	7
+2.2	MyBatis-Plus	7
+2.3	MySQL数据库	7
+2.4	JWT身份认证	8
+2.5	B/S架构与前后端分离	8
+2.6	Vue 3、Vite与Element Plus	8
+2.7	Vue前端	8
+2.8	排样算法	9
+2.9	开发环境与工具	10
+3	系统分析与设计	11
+3.1	系统需求分析	11
+3.1.1	可行性分析	11
+3.1.2	系统用例分析	11
+3.1.3	功能需求	15
+3.1.4	非功能需求	15
+3.2	系统总体设计	15
+3.3	数据库设计	17
+3.3.1	数据库需求分析	17
+3.3.2	数据库概念结构设计	18
+3.3.3	主要数据表结构	19
+3.4	本节小结	22
+4	排样问题建模与算法设计	23
+4.1	排样问题描述	23
+4.2	排样问题数学模型	24
+4.2.1	优化目标	24
+4.2.2	约束条件	24
+4.2.3	主要符号说明	26
+4.2.4	模型说明	27
+4.3	排样算法总体框架	27
+4.3.1	排列编码方案	28
+4.3.2	启发式编码方案	29
+4.3.3	元启发式搜索策略	29
+4.4	天际线放置算法设计	30
+4.4.1	天际线数据结构	30
+4.4.2	工件放置策略	31
+4.4.3	天际线更新策略	31
+4.5	禁忌搜索优化策略	32
+4.5.1	初始解构造	32
+4.5.2	领域解生成	33
+4.5.3	禁忌表设计	33
+4.5.4	适应度评价与最优解更新	33
+4.5.5	特赦准则与终止条件	34
+4.6	多板材排样策略	34
+4.6.1	多容器迭代排样	35
+4.6.2	剩余工件处理	35
+4.6.3	单件兜底机制	35
+4.7	本章小结	36
+5	系统实现	37
+5.1	系统实现概述	37
+5.2	后端功能实现	37
+5.2.1	用户登录与身份认证实现	37
+5.2.2	客户管理功能实现	38
+5.2.3	板材管理功能实现	39
+5.2.4	订单与加工数据功能实现	40
+5.2.5	排样结果与生产任务功能实现	40
+5.2.6	排样算法接口实现	40
+5.3	排样算法模块实现	41
+5.3.1	ReadDataUtil的流程组织实现	41
+5.3.2	TabuSearch的单板求解实现	42
+5.3.3	TabuMapTree的禁忌记录实现	42
+5.3.4	法结果封装实现	43
+5.4	前端页面实现	43
+5.4.1	登录与基础资料页面实现	43
+5.4.2	加工数据输入页面实现	43
+5.4.3	排版工作台页面实现	44
+5.4.4	生产看板页面实现	44
+5.5	本章小结	45
+6	系统测试与功能分析	46
+6.1	测试目的与测试环境	46
+6.2	接口测试与分析	46
+6.2.1	客户管理接口测试	47
+6.2.2	板材管理接口测试	49
+6.2.3	排样参数提交接口测试	49
+6.2.4	排样结果返回接口测试	50
+6.3	本章小结	51
+7	结论	52
+参考文献	53
+致谢	54
