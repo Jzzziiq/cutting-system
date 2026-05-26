@@ -118,5 +118,12 @@ lerna-debug.log*
 .superpowers/
 output/
 cc_mimo.bat
+cc_mimo_vision.bat
+bash.exe.stackdump
 docs/test/
 docs/user-manual/参考资料/
+docs/thesis/
+docs/ppt/node_modules/
+scripts/test-*.py
+scripts/screenshots/
+uploads/
